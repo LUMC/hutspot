@@ -29,6 +29,7 @@ dependencies:
 - cycler=0.10.0=py36_0
 - dbus=1.10.22=0
 - docutils=0.14=py36_0
+- drmaa=0.7.7=py36_0
 - dropbox=8.4.0=py_0
 - expat=2.2.1=0
 - fontconfig=2.12.1=5
