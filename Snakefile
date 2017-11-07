@@ -1,7 +1,8 @@
 import json
 from os.path import join
 from os import mkdir
-import re
+
+from pyfaidx import Fasta
 
 OUT_DIR = config.get("OUTPUT_DIR")
 REFERENCE = config.get("REFERENCE")
@@ -29,6 +30,27 @@ settings_template = join(join(_this_dir, "templates"), "pipeline_settings.md.j2"
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
 SAMPLES = SAMPLE_CONFIG['samples'].keys()
+
+
+def split_genome(ref, approx_n_chunks=100):
+    fa = Fasta(ref)
+    tot_size = sum([len(x) for x in fa.records.values()])
+    chunk_size = tot_size//approx_n_chunks
+    chunks = []
+    for chrom_name, chrom_value in fa.records.items():
+        pos = 0
+        while pos <= len(chrom_value):
+            end = pos+chunk_size
+            if end <= len(chrom_value):
+                chunk = "{0}:{1}-{2}".format(chrom_name, pos, end)
+            else:
+                chunk = "{0}:{1}-{2}".format(chrom_name, pos, len(chrom_value))
+            chunks.append(chunk)
+            pos = end
+    return chunks
+
+CHUNKS = split_genome(REFERENCE)
+
 
 def out_path(path):
     return join(OUT_DIR, path)
@@ -160,31 +182,61 @@ rule printreads:
            "-o {output.bam} -R {input.ref} -BQSR {input.grp}"
 
 
-rule qdir:
-    params:
-        qdir=out_path("{sample}/.qdir")
-    output:
-        aux=out_path("{sample}/.qdir/.aux")
-    shell: "touch {output.aux}"
+# rule qdir:
+#     params:
+#         qdir=out_path("{sample}/.qdir")
+#     output:
+#         aux=out_path("{sample}/.qdir/.aux")
+#     shell: "touch {output.aux}"
 
 
-rule gvcf:
+rule gvcf_scatter:
     input:
-        bam=out_path("{sample}/bams/{sample}.baserecal.bam"),
-        queue=QUEUE,
-        dbsnp=DBSNP,
+        bam=out_path("{sample}/bams/{sample}/baserecal.bam")
+        dbnsp=DBSNP,
         ref=REFERENCE,
-        gc=GSC,
-        qaux=out_path("{sample}/.qdir/.aux")
+        gatk=GATK
     params:
-        qdir=out_path("{sample}/.qdir")
+        chunk="{chunk}"
+    output:
+        gvcf=out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz")
+    conda: "envs/gatk.yaml"
+    shell: "java -jar {input.gatk} -T HaplotypeCaller -ERC GVCF -I "\
+           "{input.bam} -R {input.ref} -D {input.dbsnp} "\
+           "-L {params.chunk} -o {input.gvcf}"
+
+
+rule gvcf_gather:
+    input:
+        gvcfs=expand(out_path("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz"), chunk=CHUNKS),
+        ref=REFERENCE,
+        gatk=GATK
+    params:
+        gvcfs=" -V ".join(expand(out_path("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz"), chunk=CHUNKS))
     output:
         gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
-    conda: "envs/gatk.yml"
-    shell: "java -jar {input.queue} -S {input.gc} -I {input.bam} "\
-           "-D {input.dbsnp} -R {input.ref} -o {output.gvcf} "\
-           "-jobResReq 'h_vmem=10G' -run -qsub -jobParaEnv BWA "\
-           "-runDir {params.qdir}"
+    conda: "envs/gatk.yaml"
+    shell: "java -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
+           "-R {input.ref} -V {params.gvcfs} -output {output.gvcf} -assumeSorted"
+
+
+# rule gvcf:
+#     input:
+#         bam=out_path("{sample}/bams/{sample}.baserecal.bam"),
+#         queue=QUEUE,
+#         dbsnp=DBSNP,
+#         ref=REFERENCE,
+#         gc=GSC,
+#         qaux=out_path("{sample}/.qdir/.aux")
+#     params:
+#         qdir=out_path("{sample}/.qdir")
+#     output:
+#         gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
+#     conda: "envs/gatk.yml"
+#     shell: "java -jar {input.queue} -S {input.gc} -I {input.bam} "\
+#            "-D {input.dbsnp} -R {input.ref} -o {output.gvcf} "\
+#            "-jobResReq 'h_vmem=10G' -run -qsub -jobParaEnv BWA "\
+#            "-runDir {params.qdir}"
 
 rule genotype:
     input:
