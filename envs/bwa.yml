@@ -1,0 +1,27 @@
+name: hutspot-bwa
+channels:
+- bioconda
+- conda-forge
+- defaults
+- r
+dependencies:
+- bwa=0.7.16=pl5.22.0_0
+- picard=2.14=py36_0
+- ca-certificates=2017.7.27.1=0
+- certifi=2017.7.27.1=py36_0
+- ncurses=5.9=10
+- openssl=1.0.2l=0
+- perl=5.22.0.1=0
+- pip=9.0.1=py36_0
+- python=3.6.3=0
+- readline=6.2=0
+- setuptools=36.6.0=py36_1
+- sqlite=3.13.0=1
+- tk=8.5.19=2
+- wheel=0.30.0=py_1
+- xz=5.2.3=0
+- zlib=1.2.8=3
+- libgcc=5.2.0=0
+- openjdk=8.0.121=1
+prefix: /home/ahbbollen/miniconda3/envs/hutspot-bwa
+

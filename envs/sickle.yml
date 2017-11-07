@@ -1,0 +1,11 @@
+name: hutspot-sickle
+channels:
+- bioconda
+- conda-forge
+- defaults
+- r
+dependencies:
+- sickle-trim=1.33=1
+- zlib=1.2.8=3
+prefix: /home/ahbbollen/miniconda3/envs/hutspot-sickle
+

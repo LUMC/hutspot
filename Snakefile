@@ -1,0 +1,208 @@
+import json
+from os.path import join
+from os import mkdir
+import re
+
+_run_re = re.compile('([\w\d-]+)_([\w\d-]+)')
+
+OUT_DIR = config.get("OUTPUT_DIR")
+REFERENCE = config.get("REFERENCE")
+JAVA = config.get("JAVA")
+GATK = config.get("GATK")
+DBSNP = config.get("DBSNP")
+ONETHOUSAND = config.get("ONETHOUSAND")
+HAPMAP = config.get("HAPMAP")
+QUEUE = config.get("QUEUE")
+BED = config.get("BED")
+REFFLAT = config.get("REFFLAT")
+FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
+
+_this_dir = workflow.current_basedir
+
+GSC = join(join(_this_dir, "src"), "gc.sc")
+CGSC = join(join(_this_dir, "src"), "cg.sc")
+
+
+env_dir = join(_this_dir, "envs")
+main_env = join(_this_dir, "environment.yml")
+
+settings_template = join(join(_this_dir, "templates"), "pipeline_settings.md.j2")
+
+with open(config.get("SAMPLE_CONFIG")) as handle:
+    SAMPLE_CONFIG = json.load(handle)
+SAMPLES = SAMPLE_CONFIG['samples'].keys()
+RUN_NAME = SAMPLE_CONFIG['run_name']  # this should match regex ([\w\d-]+)_([\w\d-]+)
+
+
+def out_path(path):
+    return join(OUT_DIR, path)
+
+
+try:
+    mkdir(out_path("tmp"))
+except OSError:
+    pass
+
+
+def get_r1(wildcards):
+    s = SAMPLE_CONFIG['samples'].get(wildcards.sample)
+    r1 = [x['R1'] for _, x in s['libraries'].items()]
+    return r1
+
+
+def get_r2(wildcards):
+    s = SAMPLE_CONFIG['samples'].get(wildcards.sample)
+    r2 = [x['R2'] for _, x in s['libraries'].items()]
+    return r2
+
+
+def sample_gender(wildcards):
+    sam = SAMPLE_CONFIG['samples'].get(wildcards.sample)
+    return sam.get("gender", "null")
+
+
+rule all:
+    input:
+        combined=out_path("multisample/genotyped.vcf.gz")
+
+rule genome:
+    input: REFERENCE
+    output: out_path("current.genome")
+    shell: "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output}"
+
+rule merge_r1:
+    input: get_r1
+    output: temp(out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"))
+    shell: "cat {input} > {output}"
+
+rule merge_r2:
+    input: get_r2
+    output: temp(out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz"))
+    shell: "cat {input} > {output}"
+
+rule sickle:
+    input:
+        r1 = out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
+        r2 = out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
+    output:
+        r1 = temp(out_path("{sample}/pre_process/{sample}.trimmed_R1.fastq")),
+        r2 = temp(out_path("{sample}/pre_process/{sample}.trimmed_R2.fastq")),
+        s = out_path("{sample}/pre_process/{sample}.trimmed_singles.fastq"),
+    conda: "envs/sickle.yml"
+    shell: "sickle pe -f {input.r1} -r {input.r2} -t sanger -o {output.r1} " \
+           "-p {output.r2} -s {output.s}"
+
+rule cutadapt:
+    input:
+        r1 = out_path("{sample}/pre_process/{sample}.trimmed_R1.fastq"),
+        r2 = out_path("{sample}/pre_process/{sample}.trimmed_R2.fastq")
+    output:
+        r1 = temp(out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq")),
+        r2 = temp(out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq"))
+    conda: "envs/cutadapt.yml"
+    shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG -m 1 -o {output.r1} " \
+           "{input.r1} -p {output.r2} {input.r2}"
+
+rule align:
+    input:
+        r1 = out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
+        r2 = out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq"),
+        ref = REFERENCE
+    params:
+        rg = "@RG\\tID:{sample}_lib1\\tSM:{sample}\\tPL:ILLUMINA"
+    output: temp(out_path("{sample}/bams/{sample}.sorted.bam"))
+    conda: "envs/bwa.yml"
+    shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} " \
+           "| picard SortSam CREATE_INDEX=TRUE TMP_DIR=null " \
+           "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate"
+
+rule markdup:
+    input:
+        bam = out_path("{sample}/bams/{sample}.sorted.bam"),
+    params:
+        tmp = out_path("tmp")
+    output:
+        bam = temp(out_path("{sample}/bams/{sample}.markdup.bam")),
+        metrics = out_path("{sample}/bams/{sample}.markdup.metrics")
+    conda: "envs/picard.yml"
+    shell: "picard MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={params.tmp} " \
+           "INPUT={input.bam} OUTPUT={output.bam} " \
+           "METRICS_FILE={output.metrics} " \
+           "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
+
+rule baserecal:
+    input:
+        bam = out_path("{sample}/bams/{sample}.markdup.bam"),
+        java = JAVA,
+        gatk = GATK,
+        ref = REFERENCE,
+        dbsnp = DBSNP,
+        one1kg = ONETHOUSAND,
+        hapmap = HAPMAP
+    output:
+        grp = out_path("{sample}/bams/{sample}.baserecal.grp")
+    conda: "envs/gatk.yml"
+    shell: "{input.java} -jar {input.gatk} -T BaseRecalibrator " \
+           "-I {input.bam} -o {output.grp} -nct 8 -R {input.ref} " \
+           "-cov ReadGroupCovariate -cov QualityScoreCovariate " \
+           "-cov CycleCovariate -cov ContextCovariate -knownSites " \
+           "{input.dbsnp} -knownSites {input.one1kg} " \
+           "-knownSites {input.hapmap}"
+
+rule printreads:
+    input:
+        grp=out_path("{sample}/bams/{sample}.baserecal.grp"),
+        bam=out_path("{sample}/bams/{sample}.markdup.bam"),
+        java=JAVA,
+        gatk=GATK,
+        ref=REFERENCE
+    output:
+        bam=out_path("{sample}/bams/{sample}.baserecal.bam"),
+        bai=out_path("{sample}/bams/{sample}.baserecal.bai")
+    conda: "envs/gatk.yml"
+    shell: "{input.java} -jar {input.gatk} -T PrintReads -I {input.bam} "\
+           "-o {output.bam} -R {input.ref} -BQSR {input.grp}"
+
+
+rule qdir:
+    params:
+        qdir=out_path("{sample}/.qdir")
+    output:
+        aux=out_path("{sample}/.qdir/.aux")
+    shell: "touch {output.aux}"
+
+
+rule gvcf:
+    input:
+        bam=out_path("{sample}/bams/{sample}.baserecal.bam"),
+        queue=QUEUE,
+        dbsnp=DBSNP,
+        ref=REFERENCE,
+        gc=GSC,
+        qaux=out_path("{sample}/.qdir/.aux")
+    params:
+        qdir=out_path("{sample}/.qdir")
+    output:
+        gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
+    conda: "envs/gatk.yml"
+    shell: "java -jar {input.queue} -S {nput.gc} -I {input.bam} "\
+           "-D {input.dbsnp} -R {input.ref} -o {output.gvcf} "\
+           "-jobResReq 'h_vmem=10G' -run -qsub -jobParaEnv BWA "\
+           "-runDir {params.qdir}"
+
+rule genotype:
+    input:
+        gvcfs=expand(out_path("{sample}/vcf/{sample}.g.vcf.gz"), sample=SAMPLES),
+        queue=QUEUE,
+        ref=REFERENCE,
+        cg=CGSC
+    params:
+        li=" -I ".join(expand(out_path("{sample}/vcf/{sample}.g.vcf.gz"), sample=SAMPLES))
+    output:
+        combined=out_path("multisample/genotyped.vcf.gz")
+    conda: "envs/gatk.yml"
+    shell: "java -jar {input.queue} -S {input.cg} -I {params.li} "\
+           "-R {inut.ref} -o {output.combined} "\
+           "-jobResReq 'h_vmem=10G' -run -qsub -jobParaEnv BWA"
+
+
