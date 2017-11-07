@@ -181,7 +181,7 @@ rule gvcf:
     output:
         gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -jar {input.queue} -S {nput.gc} -I {input.bam} "\
+    shell: "java -jar {input.queue} -S {input.gc} -I {input.bam} "\
            "-D {input.dbsnp} -R {input.ref} -o {output.gvcf} "\
            "-jobResReq 'h_vmem=10G' -run -qsub -jobParaEnv BWA "\
            "-runDir {params.qdir}"
