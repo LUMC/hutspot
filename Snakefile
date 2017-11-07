@@ -192,7 +192,7 @@ rule printreads:
 
 rule gvcf_scatter:
     input:
-        bam=out_path("{sample}/bams/{sample}/baserecal.bam"),
+        bam=out_path("{sample}/bams/{sample}.baserecal.bam"),
         dbnsp=DBSNP,
         ref=REFERENCE,
         gatk=GATK
