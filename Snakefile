@@ -198,7 +198,7 @@ rule genotype:
         combined=out_path("multisample/genotyped.vcf.gz")
     conda: "envs/gatk.yml"
     shell: "java -jar {input.queue} -S {input.cg} -I {params.li} "\
-           "-R {inut.ref} -o {output.combined} "\
+           "-R {input.ref} -o {output.combined} "\
            "-jobResReq 'h_vmem=10G' -run -qsub -jobParaEnv BWA"
 
 
