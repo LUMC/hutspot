@@ -1,0 +1,21 @@
+__default__:
+  job_name: hutspot
+  threads: 1
+  vmem: 4G
+  queue: all.q
+align:
+  threads: 8
+  vmem: 4G
+markdup:
+  vmem: 10G
+baserecal:
+  threads: 8
+  vmem: 6G
+printreads:
+  vmem: 10G
+gvcf:
+  vmem: 10G
+  queue: pipeline_submit.q
+genotype:
+  vmem: 10G
+  queue: pipeline_submit.q
