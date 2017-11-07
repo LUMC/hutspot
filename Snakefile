@@ -3,8 +3,6 @@ from os.path import join
 from os import mkdir
 import re
 
-_run_re = re.compile('([\w\d-]+)_([\w\d-]+)')
-
 OUT_DIR = config.get("OUTPUT_DIR")
 REFERENCE = config.get("REFERENCE")
 JAVA = config.get("JAVA")
@@ -31,8 +29,6 @@ settings_template = join(join(_this_dir, "templates"), "pipeline_settings.md.j2"
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
 SAMPLES = SAMPLE_CONFIG['samples'].keys()
-RUN_NAME = SAMPLE_CONFIG['run_name']  # this should match regex ([\w\d-]+)_([\w\d-]+)
-
 
 def out_path(path):
     return join(OUT_DIR, path)
