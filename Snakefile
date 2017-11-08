@@ -242,7 +242,7 @@ rule genotype_gather:
     output:
         combined=out_path("multisample/genotyped.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tool.CatVariants "\
+    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
            "-R {input.ref} -V {params.vcfs} -out {output.combined} "\
            "-assumeSorted"
 
