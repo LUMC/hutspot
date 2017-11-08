@@ -208,8 +208,8 @@ rule gvcf_gather:
     output:
         gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -cp -Xmx4G {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
-           "-R {input.ref} -V {params.gvcfs} -output {output.gvcf} "\
+    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
+           "-R {input.ref} -V {params.gvcfs} -out {output.gvcf} "\
            "-assumeSorted"
 
 
@@ -242,8 +242,8 @@ rule genotype_gather:
     output:
         combined=out_path("multisample/genotyped.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -cp -Xmx4G {input.gatk} org.broadinstitute.gatk.tool.CatVariants "\
-           "-R {input.ref} -V {params.vcfs} -output {output.combined} "\
+    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tool.CatVariants "\
+           "-R {input.ref} -V {params.vcfs} -out {output.combined} "\
            "-assumeSorted"
 
 
