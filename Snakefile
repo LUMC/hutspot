@@ -220,7 +220,7 @@ rule genotype_scatter:
         gatk=GATK
     params:
         li=" -V ".join(expand(out_path("{sample}/vcf/{sample}.g.vcf.gz"),
-                              sample=SAMPLES))
+                              sample=SAMPLES)),
         chunk="{chunk}"
     output:
         vcf=out_path("multisample/genotype.{chunk}.part.vcf.gz")
