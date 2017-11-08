@@ -61,13 +61,17 @@ except OSError:
 
 def get_r1(wildcards):
     s = SAMPLE_CONFIG['samples'].get(wildcards.sample)
-    r1 = [x['R1'] for _, x in s['libraries'].items()]
+    r1 = []
+    for l in sorted(s['libraries'].keys()):
+        r1.append(s['libraries'][l]['R1'])
     return r1
 
 
 def get_r2(wildcards):
     s = SAMPLE_CONFIG['samples'].get(wildcards.sample)
-    r2 = [x['R2'] for _, x in s['libraries'].items()]
+    r2 = []
+    for l in sorted(s['libraries'].keys()):
+        r2.append(s['libraries'][l]['R1'])
     return r2
 
 
