@@ -71,7 +71,7 @@ def get_r2(wildcards):
     s = SAMPLE_CONFIG['samples'].get(wildcards.sample)
     r2 = []
     for l in sorted(s['libraries'].keys()):
-        r2.append(s['libraries'][l]['R1'])
+        r2.append(s['libraries'][l]['R2'])
     return r2
 
 
