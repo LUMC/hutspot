@@ -1,7 +1,8 @@
 import json
 from os.path import join
 from os import mkdir
-import re
+
+from pyfaidx import Fasta
 
 OUT_DIR = config.get("OUTPUT_DIR")
 REFERENCE = config.get("REFERENCE")
@@ -17,9 +18,6 @@ FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
 
 _this_dir = workflow.current_basedir
 
-GSC = join(join(_this_dir, "src"), "gc.sc")
-CGSC = join(join(_this_dir, "src"), "cg.sc")
-
 
 env_dir = join(_this_dir, "envs")
 main_env = join(_this_dir, "environment.yml")
@@ -29,6 +27,27 @@ settings_template = join(join(_this_dir, "templates"), "pipeline_settings.md.j2"
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
 SAMPLES = SAMPLE_CONFIG['samples'].keys()
+
+
+def split_genome(ref, approx_n_chunks=100):
+    fa = Fasta(ref)
+    tot_size = sum([len(x) for x in fa.records.values()])
+    chunk_size = tot_size//approx_n_chunks
+    chunks = []
+    for chrom_name, chrom_value in fa.records.items():
+        pos = 1
+        while pos <= len(chrom_value):
+            end = pos+chunk_size
+            if end <= len(chrom_value):
+                chunk = "{0}:{1}-{2}".format(chrom_name, pos, end)
+            else:
+                chunk = "{0}:{1}-{2}".format(chrom_name, pos, len(chrom_value))
+            chunks.append(chunk)
+            pos = end
+    return chunks
+
+CHUNKS = split_genome(REFERENCE)
+
 
 def out_path(path):
     return join(OUT_DIR, path)
@@ -160,45 +179,71 @@ rule printreads:
            "-o {output.bam} -R {input.ref} -BQSR {input.grp}"
 
 
-rule qdir:
-    params:
-        qdir=out_path("{sample}/.qdir")
-    output:
-        aux=out_path("{sample}/.qdir/.aux")
-    shell: "touch {output.aux}"
-
-
-rule gvcf:
+rule gvcf_scatter:
     input:
         bam=out_path("{sample}/bams/{sample}.baserecal.bam"),
-        queue=QUEUE,
         dbsnp=DBSNP,
         ref=REFERENCE,
-        gc=GSC,
-        qaux=out_path("{sample}/.qdir/.aux")
+        gatk=GATK
     params:
-        qdir=out_path("{sample}/.qdir")
+        chunk="{chunk}"
+    output:
+        gvcf=out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz")
+    conda: "envs/gatk.yml"
+    shell: "java -jar -Xmx4G {input.gatk} -T HaplotypeCaller -ERC GVCF -I "\
+           "{input.bam} -R {input.ref} -D {input.dbsnp} "\
+           "-L {params.chunk} -o {output.gvcf} "\
+           "-variant_index_type LINEAR -variant_index_parameter 128000"
+
+
+rule gvcf_gather:
+    input:
+        gvcfs=expand(out_path("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz"),
+                     chunk=CHUNKS),
+        ref=REFERENCE,
+        gatk=GATK
+    params:
+        gvcfs=" -V ".join(expand(out_path("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz"),
+                                 chunk=CHUNKS))
     output:
         gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -jar {input.queue} -S {input.gc} -I {input.bam} "\
-           "-D {input.dbsnp} -R {input.ref} -o {output.gvcf} "\
-           "-jobResReq 'h_vmem=10G' -run -qsub -jobParaEnv BWA "\
-           "-runDir {params.qdir}"
+    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
+           "-R {input.ref} -V {params.gvcfs} -out {output.gvcf} "\
+           "-assumeSorted"
 
-rule genotype:
+
+rule genotype_scatter:
     input:
-        gvcfs=expand(out_path("{sample}/vcf/{sample}.g.vcf.gz"), sample=SAMPLES),
-        queue=QUEUE,
+        gvcfs = expand(out_path("{sample}/vcf/{sample}.g.vcf.gz"),
+                       sample=SAMPLES),
         ref=REFERENCE,
-        cg=CGSC
+        gatk=GATK
     params:
-        li=" -I ".join(expand(out_path("{sample}/vcf/{sample}.g.vcf.gz"), sample=SAMPLES))
+        li=" -V ".join(expand(out_path("{sample}/vcf/{sample}.g.vcf.gz"),
+                              sample=SAMPLES)),
+        chunk="{chunk}"
+    output:
+        vcf=out_path("multisample/genotype.{chunk}.part.vcf.gz")
+    conda: "envs/gatk.yml"
+    shell: "java -jar -Xmx4G {input.gatk} -T GenotypeGVCFs -R {input.ref} "\
+           "-V {params.li} -L {params.chunk} -o {output.vcf}"
+
+
+rule genotype_gather:
+    input:
+        vcfs=expand(out_path("multisample/genotype.{chunk}.part.vcf.gz"),
+                    chunk=CHUNKS),
+        ref=REFERENCE,
+        gatk=GATK
+    params:
+        vcfs=" -V ".join(expand(out_path("multisample/genotype.{chunk}.part.vcf.gz"),
+                                chunk=CHUNKS))
     output:
         combined=out_path("multisample/genotyped.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -jar {input.queue} -S {input.cg} -I {params.li} "\
-           "-R {input.ref} -o {output.combined} "\
-           "-jobResReq 'h_vmem=10G' -run -qsub -jobParaEnv BWA"
+    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
+           "-R {input.ref} -V {params.vcfs} -out {output.combined} "\
+           "-assumeSorted"
 
 
