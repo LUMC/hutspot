@@ -35,7 +35,7 @@ def split_genome(ref, approx_n_chunks=100):
     chunk_size = tot_size//approx_n_chunks
     chunks = []
     for chrom_name, chrom_value in fa.records.items():
-        pos = 0
+        pos = 1
         while pos <= len(chrom_value):
             end = pos+chunk_size
             if end <= len(chrom_value):
