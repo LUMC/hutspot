@@ -13,9 +13,11 @@ baserecal:
   vmem: 6G
 printreads:
   vmem: 10G
-gvcf:
+gvcf_scatter:
   vmem: 10G
-  queue: pipeline_submit.q
-genotype:
+gvcf_gather:
   vmem: 10G
-  queue: pipeline_submit.q
+genotype_scatter:
+  vmem: 10G
+genotype_gather:
+  vmem: 10G
