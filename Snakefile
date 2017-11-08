@@ -189,7 +189,7 @@ rule gvcf_scatter:
         chunk="{chunk}"
     output:
         gvcf=out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz")
-    conda: "envs/gatk.yaml"
+    conda: "envs/gatk.yml"
     shell: "java -jar {input.gatk} -T HaplotypeCaller -ERC GVCF -I "\
            "{input.bam} -R {input.ref} -D {input.dbsnp} "\
            "-L {params.chunk} -o {input.gvcf}"
@@ -206,7 +206,7 @@ rule gvcf_gather:
                                  chunk=CHUNKS))
     output:
         gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
-    conda: "envs/gatk.yaml"
+    conda: "envs/gatk.yml"
     shell: "java -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
            "-R {input.ref} -V {params.gvcfs} -output {output.gvcf} "\
            "-assumeSorted"
@@ -224,7 +224,7 @@ rule genotype_scatter:
         chunk="{chunk}"
     output:
         vcf=out_path("multisample/genotype.{chunk}.part.vcf.gz")
-    conda: "envs/gatk.yaml"
+    conda: "envs/gatk.yml"
     shell: "java -jar {input.gatk} -T GenotypeGVCFs -R {input.ref} "\
            "-V {params.li} -L {params.chunk} -o {output.vcf}"
 
