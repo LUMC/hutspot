@@ -190,7 +190,7 @@ rule gvcf_scatter:
     output:
         gvcf=out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -jar {input.gatk} -T HaplotypeCaller -ERC GVCF -I "\
+    shell: "java -jar -Xmx4G {input.gatk} -T HaplotypeCaller -ERC GVCF -I "\
            "{input.bam} -R {input.ref} -D {input.dbsnp} "\
            "-L {params.chunk} -o {output.gvcf} "\
            "-variant_index_type LINEAR -variant_index_parameter 128000"
@@ -208,7 +208,7 @@ rule gvcf_gather:
     output:
         gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
+    shell: "java -cp -Xmx4G {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
            "-R {input.ref} -V {params.gvcfs} -output {output.gvcf} "\
            "-assumeSorted"
 
@@ -226,7 +226,7 @@ rule genotype_scatter:
     output:
         vcf=out_path("multisample/genotype.{chunk}.part.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -jar {input.gatk} -T GenotypeGVCFs -R {input.ref} "\
+    shell: "java -jar -Xmx4G {input.gatk} -T GenotypeGVCFs -R {input.ref} "\
            "-V {params.li} -L {params.chunk} -o {output.vcf}"
 
 
@@ -242,7 +242,7 @@ rule genotype_gather:
     output:
         combined=out_path("multisample/genotyped.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -cp {input.gatk} org.broadinstitute.gatk.tool.CatVariants "\
+    shell: "java -cp -Xmx4G {input.gatk} org.broadinstitute.gatk.tool.CatVariants "\
            "-R {input.ref} -V {params.vcfs} -output {output.combined} "\
            "-assumeSorted"
 
