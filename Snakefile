@@ -192,7 +192,7 @@ rule gvcf_scatter:
     conda: "envs/gatk.yml"
     shell: "java -jar {input.gatk} -T HaplotypeCaller -ERC GVCF -I "\
            "{input.bam} -R {input.ref} -D {input.dbsnp} "\
-           "-L {params.chunk} -o {input.gvcf}"
+           "-L {params.chunk} -o {output.gvcf}"
 
 
 rule gvcf_gather:
