@@ -101,7 +101,7 @@ def metrics(do_metrics=True):
                   sample=SAMPLES)
     fnumpre = expand(out_path("{sample}/pre_process/{sample}.preqc_count.json"),
                      sample=SAMPLES)
-    fnumpos = expand(out_path("{sample}/pre_process/{sample}.preqc_count.json"),
+    fnumpos = expand(out_path("{sample}/pre_process/{sample}.postqc_count.json"),
                      sample=SAMPLES)
 
     return mnum + mbnum + unum + ubnum + fqcr + fqcm + fqcp + fnumpre + fnumpos
