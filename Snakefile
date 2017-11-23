@@ -293,7 +293,7 @@ rule usable_basenum:
 
 rule fastqc_raw
     input:
-        r1=get_r1
+        r1=get_r1,
         r2=get_r2
     params:
         odir=out_path("{sample}/pre_process/raw_fastqc")
@@ -305,7 +305,7 @@ rule fastqc_raw
 
 rule fastqc_merged
     input:
-        r1=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz")
+        r1=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
         r2=out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
     params:
         odir=out_path("{sample}/pre_process/merged_fastqc")
@@ -317,7 +317,7 @@ rule fastqc_merged
 
 rule fastqc_postqc
     input:
-        r1=out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq")
+        r1=out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
         r2=out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
     params:
         odir=out_path("{sample}/pre_process/postqc_fastqc")
@@ -325,3 +325,23 @@ rule fastqc_postqc
         aux=out_path("{sample}/pre_process/postqc_fastqc/.done.txt")
     conda: "envs/fastqc.yml"
     shell: "fastqc -o {params.odir} {input.r1} {input.r2} && echo 'done' > {output.aux}"
+
+
+## fastq-count
+
+rule fqcount_preqc:
+    input:
+        r1=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
+        r2=out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
+    output:
+        out_path("{sample}/pre_process/{sample}.preqc_count.json")
+    shell: "fastq-count {input.r1} {input.r2} > {output}"
+
+
+rule fqcount_postqc:
+    input:
+        r1=out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
+        r2=out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
+    output:
+        out_path("{sample}/pre_process/{sample}.postqc_count.json")
+    shell: "fastq-count {input.r1} {input.r2} > {output}"
