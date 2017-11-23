@@ -80,9 +80,36 @@ def sample_gender(wildcards):
     return sam.get("gender", "null")
 
 
+def metrics(do_metrics=True):
+    if not do_metrics:
+        return ""
+
+    mnum = expand(out_path("{sample}/bams/{sample}.mapped.num"),
+                  sample=SAMPLES)
+    mbnum = expand(out_path("{sample}/bams/{sample}.mapped.basenum"),
+                   sample=SAMPLES)
+    unum = expand(out_path("{sample}/bams/{sample}.unique.num"),
+                  sample=SAMPLES)
+    ubnum = expand(out_path("{sample}/bams/{sample}.usable.basenum"),
+                   sample=SAMPLES)
+    fqcr = expand(out_path("{sample}/pre_process/raw_fastqc/.done.txt"),
+                  sample=SAMPLES)
+    fqcm = expand(out_path("{sample}/pre_process/merged_fastqc/.done.txt"),
+                  sample=SAMPLES)
+    fqcp = expand(out_path("{sample}/pre_process/postqc_fastqc/.done.txt"),
+                  sample=SAMPLES)
+    fnumpre = expand(out_path("{sample}/pre_process/{sample}.preqc_count.json"),
+                     sample=SAMPLES)
+    fnumpos = expand(out_path("{sample}/pre_process/{sample}.preqc_count.json"),
+                     sample=SAMPLES)
+
+    return mnum + mbnum + unum + ubnum + fqcr + fqcm + fqcp + fnumpre + fnumpos
+
+
 rule all:
     input:
-        combined=out_path("multisample/genotyped.vcf.gz")
+        combined=out_path("multisample/genotyped.vcf.gz"),
+        stats=metrics()
 
 rule genome:
     input: REFERENCE
