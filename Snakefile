@@ -251,3 +251,39 @@ rule genotype_gather:
            "-assumeSorted"
 
 
+## bam metrics
+
+rule mapped_num:
+    input:
+        bam=out_path("{sample}/bams/{sample}.sorted.bam")
+    output:
+        num=out_path("{sample}/bams/{sample}.mapped.num")
+    conda: "envs/samtools.yml"
+    shell: "samtools view -F 4 {input.bam} | wc -l > {output.num}"
+
+
+rule mapped_basenum:
+    input:
+        bam=out_path("{sample}/bams/{sample}.sorted.bam")
+    output:
+        num=out_path("{sample}/bams/{sample}.mapped.basenum")
+    conda: "envs/samtools.yml"
+    shell: "samtools view -F 4 {input.bam} | wc -c > {output.num}"
+
+
+rule unique_num:
+    input:
+        bam=out_path("{sample}/bams/{sample}.markdup.bam")
+    output:
+        num=out_path("{sample}/bams/{sample}.unique.num")
+    conda: "envs/samtools.yml"
+    shell: "samtools view -F 4 -F 1024 {input.bam} | wc -l {output.num}"
+
+
+rule usable_basenum:
+    input:
+        bam=out_path("{sample}/bams/{sample}.markdup.bam")
+    output:
+        num=out_path("{sample}/bams/{sample}.usable.basenum")
+    conda: "envs/samtools.yml"
+    shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f10 | wc -c > {output.num}"
