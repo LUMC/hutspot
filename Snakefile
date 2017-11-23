@@ -287,3 +287,41 @@ rule usable_basenum:
         num=out_path("{sample}/bams/{sample}.usable.basenum")
     conda: "envs/samtools.yml"
     shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f10 | wc -c > {output.num}"
+
+
+## fastqc
+
+rule fastqc_raw
+    input:
+        r1=get_r1
+        r2=get_r2
+    params:
+        odir=out_path("{sample}/pre_process/raw_fastqc")
+    output:
+        aux=out_path("{sample}/pre_process/raw_fastqc/.done.txt")
+    shell: "fastqc -o {params.odir} {input.r1} {input.r2} && echo 'done' > {output.aux}"
+
+
+rule fastqc_merged
+    input:
+        r1=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz")
+        r2=out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
+    params:
+        odir=out_path("{sample}/pre_process/merged_fastqc")
+    output:
+        aux=out_path("{sample}/pre_process/merged_fastqc/.done.txt")
+    shell: "fastqc -o {params.odir} {input.r1} {input.r2} && echo 'done' > {output.aux}"
+
+
+rule fastqc_postqc
+    input:
+        r1=out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq")
+        r2=out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
+    params:
+        odir=out_path("{sample}/pre_process/postqc_fastqc")
+    output:
+        aux=out_path("{sample}/pre_process/postqc_fastqc/.done.txt")
+    shell: "fastqc -o {params.odir} {input.r1} {input.r2} && echo 'done' > {output.aux}"
+
+
+

@@ -1,0 +1,11 @@
+name: hutspot-fastqc
+channels:
+- bioconda
+- conda-forge
+- defaults
+- r
+dependencies:
+- fastqc=0.11.5=pl5.22.0_3
+- perl=5.22.0.1=0
+- openjdk=8.0.121=1
+
