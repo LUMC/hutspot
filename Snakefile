@@ -299,6 +299,7 @@ rule fastqc_raw
         odir=out_path("{sample}/pre_process/raw_fastqc")
     output:
         aux=out_path("{sample}/pre_process/raw_fastqc/.done.txt")
+    conda: "envs/fastqc.yml"
     shell: "fastqc -o {params.odir} {input.r1} {input.r2} && echo 'done' > {output.aux}"
 
 
@@ -310,6 +311,7 @@ rule fastqc_merged
         odir=out_path("{sample}/pre_process/merged_fastqc")
     output:
         aux=out_path("{sample}/pre_process/merged_fastqc/.done.txt")
+    conda: "envs/fastqc.yml"
     shell: "fastqc -o {params.odir} {input.r1} {input.r2} && echo 'done' > {output.aux}"
 
 
@@ -321,7 +323,5 @@ rule fastqc_postqc
         odir=out_path("{sample}/pre_process/postqc_fastqc")
     output:
         aux=out_path("{sample}/pre_process/postqc_fastqc/.done.txt")
+    conda: "envs/fastqc.yml"
     shell: "fastqc -o {params.odir} {input.r1} {input.r2} && echo 'done' > {output.aux}"
-
-
-
