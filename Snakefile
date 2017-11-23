@@ -1,5 +1,5 @@
 import json
-from os.path import join
+from os.path import join, basename
 from os import mkdir
 
 from pyfaidx import Fasta
@@ -12,8 +12,8 @@ DBSNP = config.get("DBSNP")
 ONETHOUSAND = config.get("ONETHOUSAND")
 HAPMAP = config.get("HAPMAP")
 QUEUE = config.get("QUEUE")
-BED = config.get("BED")
-REFFLAT = config.get("REFFLAT")
+BED = config.get("BED")  # comma-separated list of BED files
+REFFLAT = config.get("REFFLAT")  # comma-separated list of refFlat files
 FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
 FASTQ_COUNT = config.get("FASTQ_COUNT")
 
@@ -24,10 +24,17 @@ env_dir = join(_this_dir, "envs")
 main_env = join(_this_dir, "environment.yml")
 
 settings_template = join(join(_this_dir, "templates"), "pipeline_settings.md.j2")
+covpy = join(join(_this_dir, "src"), "covstats.py")
 
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
 SAMPLES = SAMPLE_CONFIG['samples'].keys()
+
+BEDS = BED.split(",")
+REFFLATS = REFFLAT.split(",")
+
+BASE_BEDS = [basename(x) for x in BEDS]
+BASE_REFFLATS = [basename(x) for x in BEDS]
 
 
 def split_genome(ref, approx_n_chunks=100):
@@ -76,6 +83,14 @@ def get_r2(wildcards):
     return r2
 
 
+def get_bedpath(wildcards):
+    return [x for x in BEDS if basename(x) == wildcards.bed][0]
+
+
+def get_refflatpath(wildcards):
+    return [x for x in REFFLATS if basename(x) == wildcards.refflat][0]
+
+
 def sample_gender(wildcards):
     sam = SAMPLE_CONFIG['samples'].get(wildcards.sample)
     return sam.get("gender", "null")
@@ -104,7 +119,10 @@ def metrics(do_metrics=True):
     fnumpos = expand(out_path("{sample}/pre_process/{sample}.postqc_count.json"),
                      sample=SAMPLES)
 
-    return mnum + mbnum + unum + ubnum + fqcr + fqcm + fqcp + fnumpre + fnumpos
+    covs = expand(out_path("{sample}/coverage/{bed}.covstats.json"),
+                  sample=SAMPLES, bed=BASE_BEDS)
+
+    return mnum + mbnum + unum + ubnum + fqcr + fqcm + fqcp + fnumpre + fnumpos + covs
 
 
 rule all:
@@ -377,3 +395,21 @@ rule fqcount_postqc:
     output:
         out_path("{sample}/pre_process/{sample}.postqc_count.json")
     shell: "{params.fastqcount} {input.r1} {input.r2} > {output}"
+
+
+## coverages
+
+rule covstats:
+    input:
+        bam=out_path("{sample}/bams/{sample}.markdup.bam"),
+        genome=out_path("current.genome"),
+        covpy=covpy,
+        bed=get_bedpath
+    params:
+        subt="Sample {sample}"
+    output:
+        covj=out_path("{sample}/coverage/{bed}.covstats.json"),
+        covp=out_path("{sample}/cpverage/{bed}.covstats.png")
+    shell: "bedtools coverage -sorted -a {input.bed} -b {input.bam} " \
+           "-d  | python {input.covpy} - --plot {output.covp} " \
+           "--title 'Targets coverage' --subtitle '{params.subt}' > {output.covj}"
