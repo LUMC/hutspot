@@ -15,6 +15,7 @@ QUEUE = config.get("QUEUE")
 BED = config.get("BED")
 REFFLAT = config.get("REFFLAT")
 FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
+FASTQ_COUNT = config.get("FASTQ_COUNT")
 
 _this_dir = workflow.current_basedir
 
@@ -360,15 +361,19 @@ rule fqcount_preqc:
     input:
         r1=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
         r2=out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
+    params:
+        fastqcount=FASTQ_COUNT
     output:
         out_path("{sample}/pre_process/{sample}.preqc_count.json")
-    shell: "fastq-count {input.r1} {input.r2} > {output}"
+    shell: "{params.fastqcount} {input.r1} {input.r2} > {output}"
 
 
 rule fqcount_postqc:
     input:
         r1=out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
         r2=out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
+    params:
+        fastqcount=FASTQ_COUNT
     output:
         out_path("{sample}/pre_process/{sample}.postqc_count.json")
-    shell: "fastq-count {input.r1} {input.r2} > {output}"
+    shell: "{params.fastqcount} {input.r1} {input.r2} > {output}"
