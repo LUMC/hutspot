@@ -25,6 +25,7 @@ main_env = join(_this_dir, "environment.yml")
 
 settings_template = join(join(_this_dir, "templates"), "pipeline_settings.md.j2")
 covpy = join(join(_this_dir, "src"), "covstats.py")
+colpy = join(join(_this_dir, "src"), "collect_stats.py")
 
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
@@ -100,29 +101,14 @@ def metrics(do_metrics=True):
     if not do_metrics:
         return ""
 
-    mnum = expand(out_path("{sample}/bams/{sample}.mapped.num"),
-                  sample=SAMPLES)
-    mbnum = expand(out_path("{sample}/bams/{sample}.mapped.basenum"),
-                   sample=SAMPLES)
-    unum = expand(out_path("{sample}/bams/{sample}.unique.num"),
-                  sample=SAMPLES)
-    ubnum = expand(out_path("{sample}/bams/{sample}.usable.basenum"),
-                   sample=SAMPLES)
     fqcr = expand(out_path("{sample}/pre_process/raw_fastqc/.done.txt"),
                   sample=SAMPLES)
     fqcm = expand(out_path("{sample}/pre_process/merged_fastqc/.done.txt"),
                   sample=SAMPLES)
     fqcp = expand(out_path("{sample}/pre_process/postqc_fastqc/.done.txt"),
                   sample=SAMPLES)
-    fnumpre = expand(out_path("{sample}/pre_process/{sample}.preqc_count.json"),
-                     sample=SAMPLES)
-    fnumpos = expand(out_path("{sample}/pre_process/{sample}.postqc_count.json"),
-                     sample=SAMPLES)
-
-    covs = expand(out_path("{sample}/coverage/{bed}.covstats.json"),
-                  sample=SAMPLES, bed=BASE_BEDS)
-
-    return mnum + mbnum + unum + ubnum + fqcr + fqcm + fqcp + fnumpre + fnumpos + covs
+    sstats = expand(out_path("{sample}/{sample}.stats.json"), sample=SAMPLES)
+    return  fqcr + fqcm + fqcp + sstats
 
 
 rule all:
@@ -414,3 +400,24 @@ rule covstats:
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} -b {input.bam} " \
            "-d  | python {input.covpy} - --plot {output.covp} " \
            "--title 'Targets coverage' --subtitle '{params.subt}' > {output.covj}"
+
+
+## collection
+rule collectstats:
+    input:
+        preqc=out_path("{sample}/pre_process/{sample}.preqc_count.json"),
+        postq=out_path("{sample}/pre_process/{sample}.postqc_count.json"),
+        mnum=out_path("{sample}/bams/{sample}.mapped.num"),
+        mbnum=out_path("{sample}/bams/{sample}.mapped.basenum"),
+        unum=out_path("{sample}/bams/{sample}.unique.num"),
+        ubnum=out_path("{sample}/bams/{sample}.usable.basenum"),
+        cov=expand(out_path("{{sample}}/coverage/{bed}.covstats.json"), bed=BASE_BEDS),
+        colpy=colpy
+    params:
+        fthresh=FEMALE_THRESHOLD
+    output=out_path("{sample}/{sample}.stats.json")
+    shell: "python {input.colpy} --pre-qc-fastq {input.preqc} --post-qc-fastq " \
+           "{input.postqc} --mapped-num {input.mnum} --mapped-basenum " \
+           "{input.mbnum} --unique-num {input.unum} --unique-basenum " \
+           "{input.mbnum} --female-threshold {params.fthresh} " \
+           "--covstats {input.cov} > {output}"
