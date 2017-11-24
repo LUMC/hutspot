@@ -323,7 +323,7 @@ rule unique_num:
     output:
         num=out_path("{sample}/bams/{sample}.unique.num")
     conda: "envs/samtools.yml"
-    shell: "samtools view -F 4 -F 1024 {input.bam} | wc -l {output.num}"
+    shell: "samtools view -F 4 -F 1024 {input.bam} | wc -l > {output.num}"
 
 
 rule usable_basenum:
