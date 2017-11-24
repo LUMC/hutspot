@@ -16,6 +16,7 @@ BED = config.get("BED", "")  # comma-separated list of BED files
 REFFLAT = config.get("REFFLAT", "")  # comma-separated list of refFlat files
 FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
 FASTQ_COUNT = config.get("FASTQ_COUNT")
+MAX_BASES = config.get("MAX_BASES", "")
 
 _this_dir = workflow.current_basedir
 
@@ -131,10 +132,55 @@ rule merge_r2:
     output: temp(out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz"))
     shell: "cat {input} > {output}"
 
+
+rule seqtk_r1:
+    input:
+        stats=out_path("{sample}/pre_process/{sample}.preqc_count.json"),
+        fastq=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz")
+    params:
+        max_bases=MAX_BASES
+    output:
+        fastq=temp(out_path("{sample}/pre_process/{sample}.sampled_R1.fastq.gz"))
+    run:
+        with open("{input.stats}") as handle:
+            bases = json.load(handle)['bases']
+        if MAX_BASES == "":
+            frac = 100
+        else:
+            frac = MAX_BASES/float(bases)
+
+        if frac > 1:
+            shell("ln -s {input.fastq} {output.fastq}")
+        else:
+            shell("seqtk sample -s100 {input.fastq} " + str(frac) + " | gzip -c > {output.fastq}")
+
+
+rule seqtk_r2:
+    input:
+        stats = out_path("{sample}/pre_process/{sample}.preqc_count.json"),
+        fastq = out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
+    params:
+        max_bases = MAX_BASES
+    output:
+        fastq = temp(out_path("{sample}/pre_process/{sample}.sampled_R2.fastq.gz"))
+    run:
+        with open("{input.stats}") as handle:
+            bases = json.load(handle)['bases']
+        if MAX_BASES == "":
+            frac = 100
+        else:
+            frac = MAX_BASES / float(bases)
+
+        if frac > 1:
+            shell("ln -s {input.fastq} {output.fastq}")
+        else:
+            shell("seqtk sample -s100 {input.fastq} " + str(frac) + " | gzip -c > {output.fastq}")
+
+
 rule sickle:
     input:
-        r1 = out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
-        r2 = out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
+        r1 = out_path("{sample}/pre_process/{sample}.sampled_R1.fastq.gz"),
+        r2 = out_path("{sample}/pre_process/{sample}.sampled_R2.fastq.gz")
     output:
         r1 = temp(out_path("{sample}/pre_process/{sample}.trimmed_R1.fastq")),
         r2 = temp(out_path("{sample}/pre_process/{sample}.trimmed_R2.fastq")),
