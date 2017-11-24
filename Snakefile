@@ -416,6 +416,7 @@ rule collectstats:
     params:
         fthresh=FEMALE_THRESHOLD
     output=out_path("{sample}/{sample}.stats.json")
+    conda: "envs/collectstats.yml"
     shell: "python {input.colpy} --pre-qc-fastq {input.preqc} --post-qc-fastq " \
            "{input.postqc} --mapped-num {input.mnum} --mapped-basenum " \
            "{input.mbnum} --unique-num {input.unum} --unique-basenum " \
