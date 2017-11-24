@@ -409,7 +409,7 @@ rule covstats:
         subt="Sample {sample}"
     output:
         covj=out_path("{sample}/coverage/{bed}.covstats.json"),
-        covp=out_path("{sample}/cpverage/{bed}.covstats.png")
+        covp=out_path("{sample}/coverage/{bed}.covstats.png")
     conda: "envs/covstat.yml"
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} -b {input.bam} " \
            "-d  | python {input.covpy} - --plot {output.covp} " \
