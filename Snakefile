@@ -141,6 +141,7 @@ rule seqtk_r1:
         max_bases=MAX_BASES
     output:
         fastq=temp(out_path("{sample}/pre_process/{sample}.sampled_R1.fastq.gz"))
+    conda: "envs/seqtk.yml"
     run:
         with open("{input.stats}") as handle:
             bases = json.load(handle)['bases']
@@ -163,6 +164,7 @@ rule seqtk_r2:
         max_bases = MAX_BASES
     output:
         fastq = temp(out_path("{sample}/pre_process/{sample}.sampled_R2.fastq.gz"))
+    conda: "envs/seqtk.yml"
     run:
         with open("{input.stats}") as handle:
             bases = json.load(handle)['bases']

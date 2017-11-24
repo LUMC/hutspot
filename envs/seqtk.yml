@@ -1,0 +1,9 @@
+name: hutspot-seqtk
+channels:
+- bioconda
+- conda-forge
+- defaults
+- r
+dependencies:
+- seqtk=1.2=0
+- zlib=1.2.11=0
