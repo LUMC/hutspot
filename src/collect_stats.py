@@ -104,3 +104,7 @@ def main(pre_qc_fastq, post_qc_fastq, mapped_num, mapped_basenum, unique_num,
     }
 
     json.dumps(covl)
+
+
+if __name__ == "__main__":
+    main()
