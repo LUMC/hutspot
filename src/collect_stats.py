@@ -18,7 +18,24 @@ def parse_num_file(path):
 
 def determine_gender(covstat, fthresh):
     """Determine gender from a covstat json """
-    return None
+    cv = covstat['stats']['coverage']
+    all = cv['_all']
+
+    if 'chrX' in cv:
+        x = cv['chrX']
+    elif 'X' in cv:
+        x = cv['X']
+    else:
+        return "NA"
+
+    if all != 0:
+        rat = x/all
+    else:
+        return "NA"
+
+    if rat >= fthresh:
+        return "female"
+    return "male"
 
 
 @click.command()
