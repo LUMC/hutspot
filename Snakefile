@@ -411,6 +411,6 @@ rule covstats:
         covj=out_path("{sample}/coverage/{bed}.covstats.json"),
         covp=out_path("{sample}/cpverage/{bed}.covstats.png")
     conda: "envs/covstat.yml"
-    shell: "bedtools coverage -sorted -a {input.bed} -b {input.bam} " \
+    shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} -b {input.bam} " \
            "-d  | python {input.covpy} - --plot {output.covp} " \
            "--title 'Targets coverage' --subtitle '{params.subt}' > {output.covj}"
