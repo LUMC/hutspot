@@ -28,9 +28,9 @@ def subsample(json_path, fastq_path, opath, max_bases):
         frac = max_bases / float(bases)
 
     if frac > 1:
-        shell("ln -s {0} {1}".format(fastq_path, opath))
+        snakemake.shell("ln -s {0} {1}".format(fastq_path, opath))
     else:
-        shell("seqtk sample -s100 {0} {1} | gzip -c > {2}".format(fastq_path,
+        snakemake.shell("seqtk sample -s100 {0} {1} | gzip -c > {2}".format(fastq_path,
                                                                   frac,
                                                                   opath))
 
