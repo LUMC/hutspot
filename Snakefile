@@ -142,18 +142,7 @@ rule seqtk_r1:
     output:
         fastq=temp(out_path("{sample}/pre_process/{sample}.sampled_R1.fastq.gz"))
     conda: "envs/seqtk.yml"
-    run:
-        with open("{input.stats}") as handle:
-            bases = json.load(handle)['bases']
-        if MAX_BASES == "":
-            frac = 100
-        else:
-            frac = MAX_BASES/float(bases)
-
-        if frac > 1:
-            shell("ln -s {input.fastq} {output.fastq}")
-        else:
-            shell("seqtk sample -s100 {input.fastq} " + str(frac) + " | gzip -c > {output.fastq}")
+    script: "src/seqtk.py"
 
 
 rule seqtk_r2:
@@ -165,18 +154,7 @@ rule seqtk_r2:
     output:
         fastq = temp(out_path("{sample}/pre_process/{sample}.sampled_R2.fastq.gz"))
     conda: "envs/seqtk.yml"
-    run:
-        with open("{input.stats}") as handle:
-            bases = json.load(handle)['bases']
-        if MAX_BASES == "":
-            frac = 100
-        else:
-            frac = MAX_BASES / float(bases)
-
-        if frac > 1:
-            shell("ln -s {input.fastq} {output.fastq}")
-        else:
-            shell("seqtk sample -s100 {input.fastq} " + str(frac) + " | gzip -c > {output.fastq}")
+    script: "src/seqtk.py"
 
 
 rule sickle:
