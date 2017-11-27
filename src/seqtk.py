@@ -17,6 +17,7 @@ This script assumes the following:
 This will _not_ work outside of a snakemake context.
 """
 import json
+from snakemake import shell
 
 
 def subsample(json_path, fastq_path, opath, max_bases):
@@ -28,11 +29,12 @@ def subsample(json_path, fastq_path, opath, max_bases):
         frac = max_bases / float(bases)
 
     if frac > 1:
-        snakemake.shell("ln -s {0} {1}".format(fastq_path, opath))
+        cmd = "ln -s {0} {1}".format(fastq_path, opath)
     else:
-        snakemake.shell("seqtk sample -s100 {0} {1} | gzip -c > {2}".format(fastq_path,
+        cmd = "seqtk sample -s100 {0} {1} | gzip -c > {2}".format(fastq_path,
                                                                   frac,
-                                                                  opath))
+                                                                  opath)
+    shell(cmd)
 
 
 subsample(snakemake.input[0], snakemake.input[1],
