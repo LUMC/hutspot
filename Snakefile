@@ -111,7 +111,7 @@ def metrics(do_metrics=True):
     fqcp = expand(out_path("{sample}/pre_process/postqc_fastqc/.done.txt"),
                   sample=SAMPLES)
     stats = out_path("stats.json")
-    return  fqcr + fqcm + fqcp + stats
+    return  fqcr + fqcm + fqcp + [stats]
 
 
 rule all:
