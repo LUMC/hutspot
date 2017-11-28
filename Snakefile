@@ -454,7 +454,7 @@ rule collectstats:
         cov=expand(out_path("{{sample}}/coverage/{bed}.covstats.json"), bed=BASE_BEDS),
         colpy=colpy
     params:
-        sample_name="{sample}"
+        sample_name="{sample}",
         fthresh=FEMALE_THRESHOLD
     output:
         out_path("{sample}/{sample}.stats.json")
