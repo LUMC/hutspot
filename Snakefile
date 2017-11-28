@@ -462,7 +462,7 @@ rule collectstats:
     output:
         out_path("{sample}/{sample}.stats.json")
     conda: "envs/collectstats.yml"
-    shell: "python {input.colpy} --sample-name {params.sample} " \
+    shell: "python {input.colpy} --sample-name {params.sample_name} " \
            "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postqc} " \
            "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} " \
            "--unique-num {input.unum} --unique-basenum {input.mbnum} " \
