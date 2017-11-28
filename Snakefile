@@ -453,12 +453,13 @@ rule collectstats:
         cov=expand(out_path("{{sample}}/coverage/{bed}.covstats.json"), bed=BASE_BEDS),
         colpy=colpy
     params:
+        sample_name="{sample}"
         fthresh=FEMALE_THRESHOLD
     output:
         out_path("{sample}/{sample}.stats.json")
     conda: "envs/collectstats.yml"
-    shell: "python {input.colpy} --pre-qc-fastq {input.preqc} --post-qc-fastq " \
-           "{input.postqc} --mapped-num {input.mnum} --mapped-basenum " \
-           "{input.mbnum} --unique-num {input.unum} --unique-basenum " \
-           "{input.mbnum} --female-threshold {params.fthresh} " \
-           "--covstats {input.cov} > {output}"
+    shell: "python {input.colpy} --sample-name {params.sample} " \
+           "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postqc} " \
+           "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} " \
+           "--unique-num {input.unum} --unique-basenum {input.mbnum} " \
+           "--female-threshold {params.fthresh} {input.cov} > {output}"
