@@ -159,10 +159,13 @@ rule seqtk_r2:
     script: "src/seqtk.py"
 
 
+# contains original merged fastq files as input to prevent them from being prematurely deleted
 rule sickle:
     input:
         r1 = out_path("{sample}/pre_process/{sample}.sampled_R1.fastq.gz"),
-        r2 = out_path("{sample}/pre_process/{sample}.sampled_R2.fastq.gz")
+        r2 = out_path("{sample}/pre_process/{sample}.sampled_R2.fastq.gz"),
+        rr1 = out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
+        rr2 = out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
     output:
         r1 = temp(out_path("{sample}/pre_process/{sample}.trimmed_R1.fastq")),
         r2 = temp(out_path("{sample}/pre_process/{sample}.trimmed_R2.fastq")),
