@@ -434,7 +434,7 @@ rule covstats:
 
 rule vcfstats:
     input:
-        vcf=out_path("multisample/genotyped.vcf.gz")
+        vcf=out_path("multisample/genotyped.vcf.gz"),
         vs_py=vs_py
     output:
         stats=out_path("multisample/vcfstats.json")
