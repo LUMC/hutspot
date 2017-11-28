@@ -10,7 +10,7 @@ from collections import Counter
 
 def gen_chrom_counter(vcf_reader):
     """Generate chromosome counter from VCF reader"""
-    return Counter(vcf_reader.seqnames)
+    return Counter({n: 0 for n in vcf_reader.seqnames})
 
 
 class Sample(object):
@@ -26,7 +26,7 @@ class Sample(object):
         self.insertions = 0
         self.snps = 0
 
-        self.__gq_counter = Counter(list(range(100)))
+        self.__gq_counter = Counter({i: 0 for i in range(100)})
 
     @property
     def ti_tv(self):
