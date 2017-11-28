@@ -19,12 +19,12 @@ def parse_num_file(path):
 def determine_gender(covstat, fthresh):
     """Determine gender from a covstat json """
     cv = covstat['stats']['coverage']
-    all = cv['_all']
+    all = cv['_all']['median']
 
     if 'chrX' in cv:
-        x = cv['chrX']
+        x = cv['chrX']['median']
     elif 'X' in cv:
-        x = cv['X']
+        x = cv['X']['median']
     else:
         return "NA"
 
@@ -68,7 +68,7 @@ def determine_gender(covstat, fthresh):
               required=True,
               help="Usable basenum")
 @click.option("--female-threshold",
-              type=click.INT,
+              type=click.FLOAT,
               default=0.6,
               help="Female threshold of X/all cov")
 @click.argument("covstats",
@@ -107,7 +107,7 @@ def main(sample_name, pre_qc_fastq, post_qc_fastq, mapped_num, mapped_basenum,
         "covstats": covl
     }
 
-    json.dumps(covl)
+    print(json.dumps(d))
 
 
 if __name__ == "__main__":
