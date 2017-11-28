@@ -28,6 +28,7 @@ settings_template = join(join(_this_dir, "templates"), "pipeline_settings.md.j2"
 covpy = join(join(_this_dir, "src"), "covstats.py")
 colpy = join(join(_this_dir, "src"), "collect_stats.py")
 vs_py = join(join(_this_dir, "src"), "vcfstats.py")
+mpy = join(join(_this_dir, "src"), "merge_stats.py")
 
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
@@ -109,8 +110,8 @@ def metrics(do_metrics=True):
                   sample=SAMPLES)
     fqcp = expand(out_path("{sample}/pre_process/postqc_fastqc/.done.txt"),
                   sample=SAMPLES)
-    sstats = expand(out_path("{sample}/{sample}.stats.json"), sample=SAMPLES)
-    return  fqcr + fqcm + fqcp + sstats
+    stats = out_path("stats.json")
+    return  fqcr + fqcm + fqcp + stats
 
 
 rule all:
@@ -463,3 +464,13 @@ rule collectstats:
            "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} " \
            "--unique-num {input.unum} --unique-basenum {input.mbnum} " \
            "--female-threshold {params.fthresh} {input.cov} > {output}"
+
+rule merge_stats:
+    input:
+        cols=expand(out_path("{sample}/{sample}.stats.json"), sample=SAMPLES),
+        vstat=out_path("multisample/vcfstats.json"),
+        mpy=mpy
+    output:
+        stats=out_path("stats.json")
+    conda: "envs/collectstats.yml"
+    shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} > {output.stats}"
