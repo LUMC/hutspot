@@ -25,15 +25,19 @@ def subsample(json_path, fastq_path, opath, max_bases):
         bases = json.load(handle)['bases']
     if max_bases == "":
         frac = 100
+    elif max_bases is None:
+        frac = 100
     else:
-        frac = max_bases / float(bases)
+        frac = int(max_bases) / float(bases)
 
-    if frac > 1:
+    if frac >= 1:
         cmd = "ln -s {0} {1}".format(fastq_path, opath)
     else:
         cmd = "seqtk sample -s100 {0} {1} | gzip -c > {2}".format(fastq_path,
                                                                   frac,
                                                                   opath)
+    print("executing")
+    print(cmd)
     shell(cmd)
 
 
