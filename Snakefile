@@ -27,6 +27,7 @@ main_env = join(_this_dir, "environment.yml")
 settings_template = join(join(_this_dir, "templates"), "pipeline_settings.md.j2")
 covpy = join(join(_this_dir, "src"), "covstats.py")
 colpy = join(join(_this_dir, "src"), "collect_stats.py")
+vs_py = join(join(_this_dir, "src"), "vcfstats.py")
 
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
@@ -426,6 +427,18 @@ rule covstats:
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} -b {input.bam} " \
            "-d  | python {input.covpy} - --plot {output.covp} " \
            "--title 'Targets coverage' --subtitle '{params.subt}' > {output.covj}"
+
+
+## vcfstats
+
+rule vcfstats:
+    input:
+        vcf=out_path("multisample/genotyped.vcf.gz")
+        vs_py=vs_py
+    output:
+        stats=out_path("multisample/vcfstats.json")
+    conda: "envs/vcfstats.yml"
+    shell: "python {input.vs_py} -i {input.vcf} > {output.stats}"
 
 
 ## collection
