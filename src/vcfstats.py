@@ -87,7 +87,7 @@ class Sample(object):
                 "hom_alt": self.hom_alt
             },
             "transitions": self.transitions,
-            "transverions": self.transversions,
+            "transversions": self.transversions,
             "ti_tv_ratio": self.ti_tv,
             "gq_distribution": self.gq_distr
         }
