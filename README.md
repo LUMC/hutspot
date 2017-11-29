@@ -1,5 +1,24 @@
 # hutspot
 
+This is a multisample DNA variant calling pipeline based on Snakemake, bwa and the
+GATK HaplotypeCaller.  
+
+## Features 
+* Any number of samples is supported
+* Whole-genome calling, regardless of sample protocol used.
+* Follows modern best practices
+    * Each sample is individually called as as a GVCF. 
+    * A multisample VCF is then produced by genotyping the collection of GVCFs.
+* Data parallelization for calling and genotyping steps.
+    * Using ~100 chunks, we call an entire exome in ~15 minutes!
+* Reasonably fast.
+    * 96 exomes in < 24 hours.
+* No unnecessary jobs
+* Coverage metrics for any number of bed files.
+* Separate conda environments for **every** step. No more dependency hell!
+Every job can potentially use different versions of the same package.
+* Optionally sub-sample inputs when number of bases exceeds a user-defined
+threshold.   
 
 # graph
 
