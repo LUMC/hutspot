@@ -330,7 +330,7 @@ rule mapped_basenum:
     output:
         num=out_path("{sample}/bams/{sample}.mapped.basenum")
     conda: "envs/samtools.yml"
-    shell: "samtools view -F 4 {input.bam} | wc -c > {output.num}"
+    shell: "samtools view -F 4 {input.bam} | cut -f10 | wc -c > {output.num}"
 
 
 rule unique_num:
