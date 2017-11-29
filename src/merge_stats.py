@@ -12,7 +12,7 @@ def parse_json(path):
               type=click.Path(exists=True, dir_okay=False, readable=True),
               required=True,
               help="Path to vcfstats json")
-@click.option("collectstats",
+@click.argument("collectstats",
               type=click.Path(exists=True, dir_okay=False, readable=True),
               nargs=-1,
               required=True)
