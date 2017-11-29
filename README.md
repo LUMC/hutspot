@@ -1,4 +1,4 @@
-# hutspot
+# Hutspot
 
 This is a multisample DNA variant calling pipeline based on Snakemake, bwa and the
 GATK HaplotypeCaller.  
@@ -18,9 +18,78 @@ GATK HaplotypeCaller.
 * Separate conda environments for **every** step. No more dependency hell!
 Every job can potentially use different versions of the same package.
 * Optionally sub-sample inputs when number of bases exceeds a user-defined
-threshold.   
+threshold.
 
-# graph
+# Installation
+
+We recommend the use of [conda](https://conda.io/docs/) for installing all
+dependencies. All rules have a separate conda environment, which guarantees
+every tool can use its own dependencies.
+
+To install the base environment containing snakemake itself, activate conda
+and run the following in your terminal:
+
+`conda env create -f environment.yml`
+
+Subsequently running the pipeline with `--use-conda` will make sure 
+the correct conda environments get created. This requires a working
+internet connection. If you do not want conda environment to be created for
+each pipeline run, use the `--conda-prefix` argument. See the
+[snakemake documentation](http://snakemake.readthedocs.io/en/stable/executable.html)
+for more information. 
+
+## GATK
+
+For license reasons, conda cannot fully install the GATK. The JAR 
+must be registered by running `gatk-register` after the environment is
+created, which conflicts with the automated environment creation.
+ 
+For this reason, hutspot **requires** you to manually specify the path to
+the GATK executable JAR via `--config GATK=/path/to/gatk.jar`.
+
+## Fastq-count
+
+Several steps in the pipeline collect fastq metrics via [fastq-count](https://github.com/sndrtj/fastq-count).
+This is a small tool implemented in Rust for speed reasons. As this tool
+is not yet in conda, it must be compiled on the user's system before 
+running the pipeline. When compiled, the path to the executable can be
+supplied via `--config FASTQ_COUNT=/path/to/fastq-count`.
+
+TODO: Implement drop-in replacement in python for users not wanting to
+compile fastq-count.
+
+## Operating system
+
+Hutspot was tested on Ubuntu 16.04 only.
+It should reasonably work on most modern Linux distributions. 
+   
+
+# Requirements
+
+For every sample you wish to analyze, we require one or more paired end
+readgroups in fastq format. They must be compressed with either `gzip` or
+`bgzip`.
+
+Samples must be passed to the pipeline through a config file. This is a
+simple json file listing the samples and their associated readgroups/libraries.
+An example config json can be found [here](config/example.json), and a
+json schema describing the configuration file can be found [here](config/schema.json). 
+This json schema can also be used to validate your configuration file.
+
+## Reference files
+
+The following reference files **must** be provided:
+
+1. A reference genome, in fasta format. Must be indexed with `samtools faidx`.
+2. A dbSNP VCF file
+3. A VCF file from 1000Genomes
+4. A VCF file from the HapMap project.
+
+The following reference files **may** be provided:
+
+1. Any number of BED files to calculate coverage on.
+
+# Graph
 
 ```plantuml
 digraph snakemake_dag {
