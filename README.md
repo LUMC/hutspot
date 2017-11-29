@@ -91,6 +91,24 @@ The following reference files **may** be provided:
 
 # Graph
 
+Below you can see the rulegraph of the pipeline. The main variant calling flow
+is highlighted in red. This only shows dependencies
+between rules, and not between jobs. The actual job graph is considerably
+more complex, as nearly all rules are duplicated by sample and some
+(the scatter jobs) additionally by chunk. 
+
+As a rough estimate of the total number of jobs in pipeline you can use
+the followig formula:
+
+```math
+jobs = 4+(22*n_samples)+(1*n_samples*n_beds)+(1*n_samples*n_chunks)+(1*n_chunks)
+``` 
+
+This gives about 12,000 jobs for a 96-sample run with 2 bed files and 100 chunks.
+
+NOTE: the graph will only render if your markdown viewer supports `plantuml`.
+Having trouble viewing the graph? See [this](img/rulegraph.svg) static SVG in stead.
+
 ```plantuml
 digraph snakemake_dag {
     graph[bgcolor=white, margin=0];
