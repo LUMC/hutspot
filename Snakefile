@@ -11,7 +11,6 @@ GATK = config.get("GATK")
 DBSNP = config.get("DBSNP")
 ONETHOUSAND = config.get("ONETHOUSAND")
 HAPMAP = config.get("HAPMAP")
-QUEUE = config.get("QUEUE")
 BED = config.get("BED", "")  # comma-separated list of BED files
 REFFLAT = config.get("REFFLAT", "")  # comma-separated list of refFlat files
 FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
