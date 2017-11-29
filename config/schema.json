@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "JSON schema for samples config for the hutspot pipeline",
+    "type": "object",
+    "required": ["samples"],
+    "properties": {
+        "samples": {
+            "type": "object",
+            "additionalProperties": {
+                "description": "sample object",
+                "type": "object",
+                "required": ["libraries"],
+                "properties": {
+                    "libraries": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "description": "library",
+                            "type": "object",
+                            "required": ["R1", "R2"],
+                            "properties": {
+                                "R1": {"type": "string"},
+                                "R2": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
