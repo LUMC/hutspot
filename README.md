@@ -6,6 +6,7 @@
 ```plantuml
 digraph snakemake_dag {
     graph[bgcolor=white, margin=0];
+    rankdir=LR;
     node[shape=box, style=rounded, fontname=sans,                 fontsize=10, penwidth=2];
     edge[penwidth=2, color=grey];
 	0[label = "all", color = "0.32 0.6 0.85", style="rounded"];
