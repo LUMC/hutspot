@@ -29,6 +29,11 @@ colpy = join(join(_this_dir, "src"), "collect_stats.py")
 vs_py = join(join(_this_dir, "src"), "vcfstats.py")
 mpy = join(join(_this_dir, "src"), "merge_stats.py")
 
+if FASTQ_COUNT is None:
+    fqc = "python {0}".format(join(join(_this_dir, "src"), "fastq-count.py"))
+else:
+    fqc = FASTQ_COUNT
+
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
 SAMPLES = SAMPLE_CONFIG['samples'].keys()
@@ -396,7 +401,7 @@ rule fqcount_preqc:
         r1=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
         r2=out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
     params:
-        fastqcount=FASTQ_COUNT
+        fastqcount=fqc
     output:
         out_path("{sample}/pre_process/{sample}.preqc_count.json")
     shell: "{params.fastqcount} {input.r1} {input.r2} > {output}"
@@ -407,7 +412,7 @@ rule fqcount_postqc:
         r1=out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
         r2=out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
     params:
-        fastqcount=FASTQ_COUNT
+        fastqcount=fqc
     output:
         out_path("{sample}/pre_process/{sample}.postqc_count.json")
     shell: "{params.fastqcount} {input.r1} {input.r2} > {output}"

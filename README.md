@@ -55,8 +55,9 @@ is not yet in conda, it must be compiled on the user's system before
 running the pipeline. When compiled, the path to the executable can be
 supplied via `--config FASTQ_COUNT=/path/to/fastq-count`.
 
-TODO: Implement drop-in replacement in python for users not wanting to
-compile fastq-count.
+A drop-in replacement implemented in python exists in this repository.
+Not specifing the `FASTQ_COUNT` config value will use the python replacement.
+Do note that this python replacement is an order of magnitude slower.
 
 ## Operating system
 
