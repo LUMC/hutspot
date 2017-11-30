@@ -90,6 +90,46 @@ The following reference files **may** be provided:
 
 1. Any number of BED files to calculate coverage on.
 
+
+# How to run
+
+After installing and activating the main conda environment, as described above,
+the pipeline can be started with:
+
+```bash
+snakemake -S Snakefile \
+--use-conda \
+-T \
+--config <CONFIGURATION VALUES>
+```
+
+This would start all jobs locally. Obviously this is not what one would
+regularly do for a normal pipeline run. How to submit jobs on a cluster is
+described later. Let's first move on to the necessary configuration values.
+
+## Configuration values
+
+The following configuration values are **required**:
+
+| configuration | description |
+| ------------- | ----------- |
+| `OUT_DIR` | Absolute path to output directory |
+| `REFERENCE` | Absolute path to fasta file |
+| `SAMPLE_CONFIG` | Path to config file as descrbed above |
+| `GATK` | Path to GATK jar. **Must** be version 3.7  |
+| `DBSNP` | Path to dbSNP VCF |
+| `ONETHOUSAND` | Path to 1000Genomes VCF |
+| `HAPMAP` | Path to HapMap VCF |
+
+The following configuration options are **optional**:
+
+| configuration | description |
+| ------------- | ----------- |
+| `BED` | Comma-separate list of paths to BED files of interest |
+| `FEMALE_THRESHOLD` | Float between 0 and 1 that signifies the threshold of the ratio between coverage on X/overall coverage that 'calls' a sample as female. Default = 0.6 |
+| `FASTQ_COUNT` | Path to `fastq-count` executable |
+| `MAX_BASES` | Maximum allowed number of bases per sample before subsampling |
+
 # Graph
 
 Below you can see the rulegraph of the pipeline. The main variant calling flow
