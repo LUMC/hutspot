@@ -153,6 +153,32 @@ snakemake -s Snakefile \
 --drmaa ' -pe <PE_NAME> {cluster.threads} -q all.q -l h_vmem={cluster.vmem} -cwd -V -N hutspot' \
 ```
 
+## Summing up
+
+To sum up, a full pipeline run under a cluster would be called as:
+
+```bash
+snakemake -s Snakefile \
+--use-conda \
+--cluster-config cluster.yml \
+--drmaa ' -pe <PE_NAME> {cluster.threads} -q all.q -l h_vmem={cluster.vmem} -cwd -V -N hutspot' \
+--rerun-incomplete \
+--jobs 200 \
+-w 120 \
+--max-jobs-per-second 30 \
+--restart-times 2 \
+-T \
+--config SAMPLE_CONFIG=samples.json \
+OUTPUT_DIR=/path/to/odir \
+REFERENCE=/path/to/genome.fasta \
+GATK=/path/to/GenomeAnalysisTK.jar \
+DBSNP=/path/to/dbsnp.vcf.gz \
+ONETHOUSAND=/path/to/onekg.vcf \
+HAPMAP=/path/to/hapmap.vcf \
+FASTQ_COUNT=/path/to/fastq-count \
+BED=/path/to/interesting_region.bed
+```
+
 # Graph
 
 Below you can see the rulegraph of the pipeline. The main variant calling flow
