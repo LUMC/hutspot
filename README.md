@@ -97,7 +97,7 @@ After installing and activating the main conda environment, as described above,
 the pipeline can be started with:
 
 ```bash
-snakemake -S Snakefile \
+snakemake -s Snakefile \
 --use-conda \
 -T \
 --config <CONFIGURATION VALUES>
@@ -128,7 +128,30 @@ The following configuration options are **optional**:
 | `BED` | Comma-separate list of paths to BED files of interest |
 | `FEMALE_THRESHOLD` | Float between 0 and 1 that signifies the threshold of the ratio between coverage on X/overall coverage that 'calls' a sample as female. Default = 0.6 |
 | `FASTQ_COUNT` | Path to `fastq-count` executable |
-| `MAX_BASES` | Maximum allowed number of bases per sample before subsampling |
+| `MAX_BASES` | Maximum allowed number of bases per sample before subsampling. Default = None (no subsampling) |
+
+
+## Cluster configuration
+
+To run on a cluster, snakemake needs to be called with some extra arguments.
+Additionally, it needs a cluster yaml file describing resources per job.
+
+In all cases, an environment variable named `DRMAA_LIBRARY_PATH` must be
+in the executing shell environment. This variable points to the `.so` file
+of the DRMAA library.
+
+A cluster.yml is bundled with this pipeline. It is optimized for SGE clusters,
+where the default vmem limit is 4G. If you run SLURM, or any other cluster
+system, you will have to write your own cluster yaml file. Please see the
+[snakemake documentation](http://snakemake.readthedocs.io/en/stable/snakefiles/configuration.html#cluster-configuration)
+for details on how to do so. Given the provided cluster.yml, activating the
+cluster mode can be done as follows:
+
+```bash
+snakemake -s Snakefile \
+--cluster-config cluster.yml
+--drmaa ' -pe <PE_NAME> {cluster.threads} -q all.q -l h_vmem={cluster.vmem} -cwd -V -N hutspot' \
+```
 
 # Graph
 
