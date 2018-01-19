@@ -1,0 +1,336 @@
+{
+  "definitions": {
+    "coverageMetrics": {
+      "properties": {
+        "width_nonzero": {
+          "type": "integer"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "mode": {
+          "type": "integer"
+        },
+        "median": {
+          "type": "integer"
+        },
+        "frac_min_100x": {
+          "type": "number"
+        },
+        "frac_min_10x": {
+          "type": "number"
+        },
+        "frac_min_20x": {
+          "type": "number"
+        },
+        "frac_min_30x": {
+          "type": "number"
+        },
+        "frac_min_40x": {
+          "type": "number"
+        },
+        "frac_min_50x": {
+          "type": "number"
+        },
+        "horizontal": {
+          "type": "number"
+        },
+        "mean": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "frac_min_100x",
+        "frac_min_10x",
+        "frac_min_20x",
+        "frac_min_30x",
+        "frac_min_40x",
+        "frac_min_50x",
+        "horizontal",
+        "max",
+        "mean",
+        "median",
+        "mode",
+        "total",
+        "width",
+        "width_nonzero"
+      ],
+      "type": "object"
+    },
+    "Covstats": {
+      "properties": {
+        "covstats": {
+          "properties": {
+            "stats": {
+              "properties": {
+                "coverage": {
+                  "additionalProperties": {
+                    "$ref": "#/definitions/coverageMetrics"
+                  },
+                  "properties": {
+                    "_all": {
+                      "$ref": "#/definitions/coverageMetrics"
+                    }
+                  },
+                  "required": [
+                    "_all"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "coverage"
+              ],
+              "type": "object"
+            },
+            "files": {
+              "properties": {
+                "plot_coverage": {
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "checksum_sha1": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "checksum_sha1",
+                    "path"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "plot_coverage"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "files",
+            "stats"
+          ],
+          "type": "object"
+        },
+        "gender": {
+          "enum": [
+            "male",
+            "female",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "covstats",
+        "gender",
+        "name"
+      ],
+      "type": "object"
+    },
+    "SampleStats": {
+      "properties": {
+        "covstats": {
+          "items": {
+            "#ref": "#/definitions/Covstats"
+          },
+          "type": "array"
+        },
+        "post_qc_fastq_count": {
+          "additionalProperties": false,
+          "properties": {
+            "reads": {
+              "type": "integer"
+            },
+            "bases": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "bases",
+            "reads"
+          ],
+          "type": "object"
+        },
+        "pre_qc_fastq_count": {
+          "additionalProperties": false,
+          "properties": {
+            "reads": {
+              "type": "integer"
+            },
+            "bases": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "bases",
+            "reads"
+          ],
+          "type": "object"
+        },
+        "sample_name": {
+          "type": "string"
+        },
+        "n_usable_reads": {
+          "type": "integer"
+        },
+        "n_usable_bases": {
+          "type": "integer"
+        },
+        "n_mapped_reads": {
+          "type": "integer"
+        },
+        "n_mapped_bases": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "covstats",
+        "n_mapped_bases",
+        "n_mapped_reads",
+        "n_usable_bases",
+        "n_usable_reads",
+        "post_qc_fastq_count",
+        "pre_qc_fastq_count",
+        "sample_name"
+      ],
+      "type": "object"
+    },
+    "SampleVcfStats": {
+      "properties": {
+        "variant_types": {
+          "properties": {
+            "snps": {
+              "type": "integer"
+            },
+            "insertions": {
+              "type": "integer"
+            },
+            "deletions": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "deletions",
+            "insertions",
+            "snps"
+          ],
+          "type": "object"
+        },
+        "genotypes": {
+          "additionalProperties": false,
+          "properties": {
+            "hom_ref": {
+              "type": "integer"
+            },
+            "hom_alt": {
+              "type": "integer"
+            },
+            "het": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "het",
+            "hom_alt",
+            "hom_ref"
+          ],
+          "type": "object"
+        },
+        "gq_distribution": {
+          "maxItems": 100,
+          "minItems": 100,
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string"
+        },
+        "ti_tv_ratio": {
+          "type": "number"
+        },
+        "transitions": {
+          "type": "integer"
+        },
+        "transversions": {
+          "type": "integer"
+        },
+        "total_variants": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "genotypes",
+        "gq_distribution",
+        "name",
+        "ti_tv_ratio",
+        "total_variants",
+        "transitions",
+        "transversions",
+        "variant_types"
+      ],
+      "type": "object"
+    },
+    "VcfStats": {
+      "properties": {
+        "per_chromosome_variants": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "minProperties": 1,
+          "type": "object"
+        },
+        "samples": {
+          "items": {
+            "$ref": "#/definitions/SampleVcfStats"
+          },
+          "type": "array"
+        },
+        "vcf_path": {
+          "type": "string"
+        },
+        "total_variants": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "per_chromosome_variants",
+        "samples",
+        "total_variants",
+        "vcf_path"
+      ],
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "sample_stats": {
+      "items": {
+        "$ref": "#/definitions/SampleStats"
+      },
+      "type": "array"
+    },
+    "multisample_vcfstats": {
+      "$ref": "#/definitions/VcfStats"
+    }
+  },
+  "required": [
+    "multisample_vcfstats",
+    "sample_stats"
+  ],
+  "type": "object",
+  "description": "Schema for stats json emitted by hutspot pipeline",
+  "$schema": "http://json-schema.org/draft-04/schema#"
+}
