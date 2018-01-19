@@ -191,7 +191,7 @@ As a rough estimate of the total number of jobs in pipeline you can use
 the followig formula:
 
 ```math
-jobs = 4+(22*n_{samples})+(1*n_{samples}*n_{beds})+(1*n_{samples}*n_{chunks})+(1*n_{chunks})
+jobs = 4+(21*n_{samples})+(1*n_{samples}*n_{beds})+(1*n_{samples}*n_{chunks})+(1*n_{chunks})
 ``` 
 
 This gives about 12,000 jobs for a 96-sample run with 2 bed files and 100 chunks.

@@ -208,7 +208,7 @@ rule markdup:
     params:
         tmp = out_path("tmp")
     output:
-        bam = temp(out_path("{sample}/bams/{sample}.markdup.bam")),
+        bam = out_path("{sample}/bams/{sample}.markdup.bam"),
         metrics = out_path("{sample}/bams/{sample}.markdup.metrics")
     conda: "envs/picard.yml"
     shell: "picard MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={params.tmp} " \
@@ -235,24 +235,10 @@ rule baserecal:
            "{input.dbsnp} -knownSites {input.one1kg} " \
            "-knownSites {input.hapmap}"
 
-rule printreads:
-    input:
-        grp=out_path("{sample}/bams/{sample}.baserecal.grp"),
-        bam=out_path("{sample}/bams/{sample}.markdup.bam"),
-        java=JAVA,
-        gatk=GATK,
-        ref=REFERENCE
-    output:
-        bam=out_path("{sample}/bams/{sample}.baserecal.bam"),
-        bai=out_path("{sample}/bams/{sample}.baserecal.bai")
-    conda: "envs/gatk.yml"
-    shell: "{input.java} -jar {input.gatk} -T PrintReads -I {input.bam} "\
-           "-o {output.bam} -R {input.ref} -BQSR {input.grp}"
-
-
 rule gvcf_scatter:
     input:
-        bam=out_path("{sample}/bams/{sample}.baserecal.bam"),
+        bam=out_path("{sample}/bams/{sample}.markdup.bam"),
+        bqsr=out_path("{sample}/bams/{sample}.baserecal.grp"),
         dbsnp=DBSNP,
         ref=REFERENCE,
         gatk=GATK
@@ -264,7 +250,8 @@ rule gvcf_scatter:
     shell: "java -jar -Xmx4G {input.gatk} -T HaplotypeCaller -ERC GVCF -I "\
            "{input.bam} -R {input.ref} -D {input.dbsnp} "\
            "-L {params.chunk} -o {output.gvcf} "\
-           "-variant_index_type LINEAR -variant_index_parameter 128000"
+           "-variant_index_type LINEAR -variant_index_parameter 128000 " \
+           "-BQSR {input.bqsr}"
 
 
 rule gvcf_gather:
