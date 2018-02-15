@@ -261,13 +261,13 @@ rule gvcf_gather:
         ref=REFERENCE,
         gatk=GATK
     params:
-        gvcfs=" -V ".join(expand(out_path("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz"),
+        gvcfs="' -V '".join(expand(out_path("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz"),
                                  chunk=CHUNKS))
     output:
         gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
     conda: "envs/gatk.yml"
     shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
-           "-R {input.ref} -V {params.gvcfs} -out {output.gvcf} "\
+           "-R {input.ref} -V '{params.gvcfs}' -out {output.gvcf} "\
            "-assumeSorted"
 
 
@@ -295,13 +295,13 @@ rule genotype_gather:
         ref=REFERENCE,
         gatk=GATK
     params:
-        vcfs=" -V ".join(expand(out_path("multisample/genotype.{chunk}.part.vcf.gz"),
+        vcfs="' -V '".join(expand(out_path("multisample/genotype.{chunk}.part.vcf.gz"),
                                 chunk=CHUNKS))
     output:
         combined=out_path("multisample/genotyped.vcf.gz")
     conda: "envs/gatk.yml"
     shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
-           "-R {input.ref} -V {params.vcfs} -out {output.combined} "\
+           "-R {input.ref} -V '{params.vcfs}' -out {output.combined} "\
            "-assumeSorted"
 
 
