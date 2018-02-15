@@ -249,7 +249,7 @@ rule gvcf_scatter:
     conda: "envs/gatk.yml"
     shell: "java -jar -Xmx4G {input.gatk} -T HaplotypeCaller -ERC GVCF -I "\
            "{input.bam} -R {input.ref} -D {input.dbsnp} "\
-           "-L {params.chunk} -o {output.gvcf} "\
+           "-L '{params.chunk}' -o '{output.gvcf}' "\
            "-variant_index_type LINEAR -variant_index_parameter 128000 " \
            "-BQSR {input.bqsr}"
 
@@ -285,7 +285,7 @@ rule genotype_scatter:
         vcf=out_path("multisample/genotype.{chunk}.part.vcf.gz")
     conda: "envs/gatk.yml"
     shell: "java -jar -Xmx4G {input.gatk} -T GenotypeGVCFs -R {input.ref} "\
-           "-V {params.li} -L {params.chunk} -o {output.vcf}"
+           "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
 
 
 rule genotype_gather:
