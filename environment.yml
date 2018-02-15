@@ -82,7 +82,7 @@ dependencies:
 - tk=8.5.19=2
 - tornado=4.5.2=py36_0
 - urllib3=1.22=py36_0
-- wheel=0.30.0=py_1
+- wheel=0.30.0
 - wrapt=1.10.11=py36_0
 - xorg-libxau=1.0.8=3
 - xorg-libxdmcp=1.1.2=3

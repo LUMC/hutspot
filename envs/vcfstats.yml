@@ -57,7 +57,7 @@ dependencies:
 - tk=8.5.19=2
 - tornado=4.5.2=py27_0
 - tqdm=4.19.4=py_0
-- wheel=0.30.0=py_1
+- wheel=0.30.0
 - xorg-libxau=1.0.8=3
 - xorg-libxdmcp=1.1.2=3
 - xz=5.2.3=0

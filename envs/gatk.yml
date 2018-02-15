@@ -17,7 +17,7 @@ dependencies:
 - setuptools=36.6.0=py36_1
 - sqlite=3.13.0=1
 - tk=8.5.19=2
-- wheel=0.30.0=py_1
+- wheel=0.30.0
 - xz=5.2.3=0
 - zlib=1.2.11=0
 - openjdk=8.0.121=1
