@@ -131,22 +131,26 @@ rule all:
         stats=metrics()
 
 rule genome:
+    """Create genome file as used by bedtools"""
     input: REFERENCE
     output: out_path("current.genome")
     shell: "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output}"
 
 rule merge_r1:
+    """Merge all forward fastq files into one"""
     input: get_r1
     output: temp(out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"))
     shell: "cat {input} > {output}"
 
 rule merge_r2:
+    """Merge all reverse fastq files into one"""
     input: get_r2
     output: temp(out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz"))
     shell: "cat {input} > {output}"
 
 
 rule seqtk_r1:
+    """Either subsample or link forward fastq file"""
     input:
         stats=out_path("{sample}/pre_process/{sample}.preqc_count.json"),
         fastq=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz")
@@ -159,6 +163,7 @@ rule seqtk_r1:
 
 
 rule seqtk_r2:
+    """Either subsample or link reverse fastq file"""
     input:
         stats = out_path("{sample}/pre_process/{sample}.preqc_count.json"),
         fastq = out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
@@ -172,6 +177,7 @@ rule seqtk_r2:
 
 # contains original merged fastq files as input to prevent them from being prematurely deleted
 rule sickle:
+    """Trim fastq files"""
     input:
         r1 = out_path("{sample}/pre_process/{sample}.sampled_R1.fastq.gz"),
         r2 = out_path("{sample}/pre_process/{sample}.sampled_R2.fastq.gz"),
@@ -186,6 +192,7 @@ rule sickle:
            "-p {output.r2} -s {output.s}"
 
 rule cutadapt:
+    """Clip fastq files"""
     input:
         r1 = out_path("{sample}/pre_process/{sample}.trimmed_R1.fastq"),
         r2 = out_path("{sample}/pre_process/{sample}.trimmed_R2.fastq")
@@ -197,6 +204,7 @@ rule cutadapt:
            "{input.r1} -p {output.r2} {input.r2}"
 
 rule align:
+    """Align fastq files"""
     input:
         r1 = out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
         r2 = out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq"),
@@ -210,6 +218,7 @@ rule align:
            "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate"
 
 rule markdup:
+    """Mark duplicates in BAM file"""
     input:
         bam = out_path("{sample}/bams/{sample}.sorted.bam"),
     params:
@@ -224,6 +233,7 @@ rule markdup:
            "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
 
 rule baserecal:
+    """Base recalibrated BAM files"""
     input:
         bam = out_path("{sample}/bams/{sample}.markdup.bam"),
         java = JAVA,
@@ -243,6 +253,7 @@ rule baserecal:
            "-knownSites {input.hapmap}"
 
 rule gvcf_scatter:
+    """Run HaplotypeCaller in GVCF mode by chunk"""
     input:
         bam=out_path("{sample}/bams/{sample}.markdup.bam"),
         bqsr=out_path("{sample}/bams/{sample}.baserecal.grp"),
@@ -262,6 +273,7 @@ rule gvcf_scatter:
 
 
 rule gvcf_gather:
+    """Gather all gvcf scatters"""
     input:
         gvcfs=expand(out_path("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz"),
                      chunk=CHUNKS),
@@ -279,6 +291,7 @@ rule gvcf_gather:
 
 
 rule genotype_scatter:
+    """Run GATK's GenotypeGVCFs by chunk"""
     input:
         gvcfs = expand(out_path("{sample}/vcf/{sample}.g.vcf.gz"),
                        sample=SAMPLES),
@@ -296,6 +309,7 @@ rule genotype_scatter:
 
 
 rule genotype_gather:
+    """Gather all genotyping scatters"""
     input:
         vcfs=expand(out_path("multisample/genotype.{chunk}.part.vcf.gz"),
                     chunk=CHUNKS),
@@ -315,6 +329,7 @@ rule genotype_gather:
 ## bam metrics
 
 rule mapped_num:
+    """Calculate number of mapped reads"""
     input:
         bam=out_path("{sample}/bams/{sample}.sorted.bam")
     output:
@@ -324,6 +339,7 @@ rule mapped_num:
 
 
 rule mapped_basenum:
+    """Calculate number of mapped bases"""
     input:
         bam=out_path("{sample}/bams/{sample}.sorted.bam")
     output:
@@ -333,6 +349,7 @@ rule mapped_basenum:
 
 
 rule unique_num:
+    """Calculate number of unique reads"""
     input:
         bam=out_path("{sample}/bams/{sample}.markdup.bam")
     output:
@@ -342,6 +359,7 @@ rule unique_num:
 
 
 rule usable_basenum:
+    """Calculate number of bases on unique reads"""
     input:
         bam=out_path("{sample}/bams/{sample}.markdup.bam")
     output:
@@ -353,6 +371,7 @@ rule usable_basenum:
 ## fastqc
 
 rule fastqc_raw:
+    """Run fastqc on raw fastq files"""
     input:
         r1=get_r1,
         r2=get_r2
@@ -365,6 +384,7 @@ rule fastqc_raw:
 
 
 rule fastqc_merged:
+    """Run fastqc on merged fastq files"""
     input:
         r1=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
         r2=out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
@@ -377,6 +397,7 @@ rule fastqc_merged:
 
 
 rule fastqc_postqc:
+    """Run fastqc on fastq files post pre-processing"""
     input:
         r1=out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
         r2=out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
@@ -391,6 +412,7 @@ rule fastqc_postqc:
 ## fastq-count
 
 rule fqcount_preqc:
+    """Calculate number of reads and bases before pre-processing"""
     input:
         r1=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
         r2=out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
@@ -402,6 +424,7 @@ rule fqcount_preqc:
 
 
 rule fqcount_postqc:
+    """Calculate number of reads and bases after pre-processing"""
     input:
         r1=out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
         r2=out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
@@ -415,6 +438,7 @@ rule fqcount_postqc:
 ## coverages
 
 rule covstats:
+    """Calculate coverage statistics on bam file"""
     input:
         bam=out_path("{sample}/bams/{sample}.markdup.bam"),
         genome=out_path("current.genome"),
@@ -434,6 +458,7 @@ rule covstats:
 ## vcfstats
 
 rule vcfstats:
+    """Calculate vcf statistics"""
     input:
         vcf=out_path("multisample/genotyped.vcf.gz"),
         vs_py=vs_py
@@ -445,6 +470,7 @@ rule vcfstats:
 
 ## collection
 rule collectstats:
+    """Collect all stats for a particular sample"""
     input:
         preqc=out_path("{sample}/pre_process/{sample}.preqc_count.json"),
         postq=out_path("{sample}/pre_process/{sample}.postqc_count.json"),
@@ -467,6 +493,7 @@ rule collectstats:
            "--female-threshold {params.fthresh} {input.cov} > {output}"
 
 rule merge_stats:
+    """Merge all stats of all samples"""
     input:
         cols=expand(out_path("{sample}/{sample}.stats.json"), sample=SAMPLES),
         vstat=out_path("multisample/vcfstats.json"),
