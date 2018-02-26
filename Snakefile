@@ -110,9 +110,9 @@ def metrics(do_metrics=True):
 
     fqcr = expand(out_path("{sample}/pre_process/raw_fastqc/.done.txt"),
                   sample=SAMPLES)
-    fqcm = expand(out_path("{sample}/pre_process/merged_fastqc/.done.txt"),
+    fqcm = expand(out_path("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip"),
                   sample=SAMPLES)
-    fqcp = expand(out_path("{sample}/pre_process/postqc_fastqc/.done.txt"),
+    fqcp = expand(out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip"),
                   sample=SAMPLES)
     stats = out_path("stats.json")
     return  fqcr + fqcm + fqcp + [stats]
@@ -383,9 +383,10 @@ rule fastqc_merged:
     params:
         odir=out_path("{sample}/pre_process/merged_fastqc")
     output:
-        aux=out_path("{sample}/pre_process/merged_fastqc/.done.txt")
+        r1=out_path("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip"),
+        r2=out_path("{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip")
     conda: "envs/fastqc.yml"
-    shell: "fastqc -o {params.odir} {input.r1} {input.r2} && echo 'done' > {output.aux}"
+    shell: "fastqc -o {params.odir} {input.r1} {input.r2}"
 
 
 rule fastqc_postqc:
@@ -396,9 +397,10 @@ rule fastqc_postqc:
     params:
         odir=out_path("{sample}/pre_process/postqc_fastqc")
     output:
-        aux=out_path("{sample}/pre_process/postqc_fastqc/.done.txt")
+        r1=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip"),
+        r2=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip")
     conda: "envs/fastqc.yml"
-    shell: "fastqc -o {params.odir} {input.r1} {input.r2} && echo 'done' > {output.aux}"
+    shell: "fastqc -o {params.odir} {input.r1} {input.r2}"
 
 
 ## fastq-count
