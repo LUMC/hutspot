@@ -23,9 +23,7 @@ from snakemake import shell
 def subsample(json_path, fastq_path, opath, max_bases):
     with open(json_path) as handle:
         bases = json.load(handle)['bases']
-    if max_bases == "":
-        frac = 100
-    elif max_bases is None:
+    if max_bases == "" or max_bases is None:
         frac = 100
     else:
         frac = int(max_bases) / float(bases)
