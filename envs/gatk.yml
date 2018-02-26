@@ -21,5 +21,3 @@ dependencies:
 - xz=5.2.3=0
 - zlib=1.2.11=0
 - openjdk=8.0.121=1
-prefix: /home/ahbbollen/miniconda3/envs/hutspot-gatk
-

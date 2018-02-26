@@ -23,5 +23,3 @@ dependencies:
 - zlib=1.2.8=3
 - libgcc=5.2.0=0
 - openjdk=8.0.121=1
-prefix: /home/ahbbollen/miniconda3/envs/hutspot-bwa
-

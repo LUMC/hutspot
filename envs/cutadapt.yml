@@ -20,5 +20,3 @@ dependencies:
 - wheel=0.30.0
 - xz=5.2.3=0
 - zlib=1.2.11=0
-prefix: /home/ahbbollen/miniconda3/envs/hutspot-cutadapt
-
