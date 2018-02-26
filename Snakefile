@@ -45,6 +45,14 @@ BASE_REFFLATS = [basename(x) for x in BEDS]
 
 
 def split_genome(ref, approx_n_chunks=100):
+    """
+    Split genome in chunks.
+
+    Chunks are strings in the format: `<ctg>:<start>-<end>`
+    These follow the region string format as used by htslib,
+    which uses _1_-based indexing.
+    See: http://www.htslib.org/doc/tabix.html
+    """
     fa = Fasta(ref)
     tot_size = sum([len(x) for x in fa.records.values()])
     chunk_size = tot_size//approx_n_chunks
