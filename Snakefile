@@ -26,6 +26,7 @@ def fsrc_dir(*args):
 covpy = fsrc_dir("src", "covstats.py")
 colpy = fsrc_dir("src", "collect_stats.py")
 mpy = fsrc_dir("src", "merge_stats.py")
+seq = fsrc_dir("src", "seqtk.sh")
 
 if FASTQ_COUNT is None:
     fqc = "python {0}".format(fsrc_dir("src", "fastq-count.py"))
@@ -144,26 +145,28 @@ rule seqtk_r1:
     """Either subsample or link forward fastq file"""
     input:
         stats=out_path("{sample}/pre_process/{sample}.preqc_count.json"),
-        fastq=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz")
+        fastq=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
+        seqtk=seq
     params:
         max_bases=MAX_BASES
     output:
         fastq=temp(out_path("{sample}/pre_process/{sample}.sampled_R1.fastq.gz"))
     conda: "envs/seqtk.yml"
-    script: "src/seqtk.py"
+    shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} {params.max_bases}"
 
 
 rule seqtk_r2:
     """Either subsample or link reverse fastq file"""
     input:
         stats = out_path("{sample}/pre_process/{sample}.preqc_count.json"),
-        fastq = out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
+        fastq = out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz"),
+        seqtk=seq
     params:
         max_bases = MAX_BASES
     output:
         fastq = temp(out_path("{sample}/pre_process/{sample}.sampled_R2.fastq.gz"))
     conda: "envs/seqtk.yml"
-    script: "src/seqtk.py"
+    shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} {params.max_bases}"
 
 
 # contains original merged fastq files as input to prevent them from being prematurely deleted
