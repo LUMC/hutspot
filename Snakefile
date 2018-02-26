@@ -25,7 +25,6 @@ def fsrc_dir(*args):
 
 covpy = fsrc_dir("src", "covstats.py")
 colpy = fsrc_dir("src", "collect_stats.py")
-vs_py = fsrc_dir("src", "vcfstats.py")
 mpy = fsrc_dir("src", "merge_stats.py")
 
 if FASTQ_COUNT is None:
@@ -458,7 +457,7 @@ rule vcfstats:
     output:
         stats=out_path("multisample/vcfstats.json")
     conda: "envs/vcfstats.yml"
-    shell: "python {input.vs_py} -i {input.vcf} > {output.stats}"
+    shell: "vtools-stats -i {input.vcf} > {output.stats}"
 
 
 ## collection
