@@ -76,13 +76,6 @@ CHUNKS = split_genome(REFERENCE)
 def out_path(path):
     return join(OUT_DIR, path)
 
-
-try:
-    mkdir(out_path("tmp"))
-except OSError:
-    pass
-
-
 def get_r(strand, wildcards):
     """Get fastq files on a single strand for a sample"""
     s = SAMPLE_CONFIG['samples'].get(wildcards.sample)
@@ -221,13 +214,12 @@ rule markdup:
     """Mark duplicates in BAM file"""
     input:
         bam = out_path("{sample}/bams/{sample}.sorted.bam"),
-    params:
-        tmp = out_path("tmp")
+        tmp = ancient(out_path("tmp"))
     output:
         bam = out_path("{sample}/bams/{sample}.markdup.bam"),
         metrics = out_path("{sample}/bams/{sample}.markdup.metrics")
     conda: "envs/picard.yml"
-    shell: "picard MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={params.tmp} " \
+    shell: "picard MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={input.tmp} " \
            "INPUT={input.bam} OUTPUT={output.bam} " \
            "METRICS_FILE={output.metrics} " \
            "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
