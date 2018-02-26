@@ -180,7 +180,7 @@ rule sickle:
         r2 = temp(out_path("{sample}/pre_process/{sample}.trimmed_R2.fastq")),
         s = out_path("{sample}/pre_process/{sample}.trimmed_singles.fastq"),
     conda: "envs/sickle.yml"
-    shell: "sickle pe -f {input.r1} -r {input.r2} -t sanger -o {output.r1} " \
+    shell: "sickle pe -f {input.r1} -r {input.r2} -t sanger -o {output.r1} "
            "-p {output.r2} -s {output.s}"
 
 rule cutadapt:
@@ -192,7 +192,7 @@ rule cutadapt:
         r1 = temp(out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq")),
         r2 = temp(out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq"))
     conda: "envs/cutadapt.yml"
-    shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG -m 1 -o {output.r1} " \
+    shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG -m 1 -o {output.r1} "
            "{input.r1} -p {output.r2} {input.r2}"
 
 rule align:
@@ -205,8 +205,8 @@ rule align:
         rg = "@RG\\tID:{sample}_lib1\\tSM:{sample}\\tPL:ILLUMINA"
     output: temp(out_path("{sample}/bams/{sample}.sorted.bam"))
     conda: "envs/bwa.yml"
-    shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} " \
-           "| picard SortSam CREATE_INDEX=TRUE TMP_DIR=null " \
+    shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
+           "| picard SortSam CREATE_INDEX=TRUE TMP_DIR=null "
            "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate"
 
 rule markdup:
@@ -218,9 +218,9 @@ rule markdup:
         bam = out_path("{sample}/bams/{sample}.markdup.bam"),
         metrics = out_path("{sample}/bams/{sample}.markdup.metrics")
     conda: "envs/picard.yml"
-    shell: "picard MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={input.tmp} " \
-           "INPUT={input.bam} OUTPUT={output.bam} " \
-           "METRICS_FILE={output.metrics} " \
+    shell: "picard MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
+           "INPUT={input.bam} OUTPUT={output.bam} "
+           "METRICS_FILE={output.metrics} "
            "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
 
 rule baserecal:
@@ -236,11 +236,11 @@ rule baserecal:
     output:
         grp = out_path("{sample}/bams/{sample}.baserecal.grp")
     conda: "envs/gatk.yml"
-    shell: "{input.java} -jar {input.gatk} -T BaseRecalibrator " \
-           "-I {input.bam} -o {output.grp} -nct 8 -R {input.ref} " \
-           "-cov ReadGroupCovariate -cov QualityScoreCovariate " \
-           "-cov CycleCovariate -cov ContextCovariate -knownSites " \
-           "{input.dbsnp} -knownSites {input.one1kg} " \
+    shell: "{input.java} -jar {input.gatk} -T BaseRecalibrator "
+           "-I {input.bam} -o {output.grp} -nct 8 -R {input.ref} "
+           "-cov ReadGroupCovariate -cov QualityScoreCovariate "
+           "-cov CycleCovariate -cov ContextCovariate -knownSites "
+           "{input.dbsnp} -knownSites {input.one1kg} "
            "-knownSites {input.hapmap}"
 
 rule gvcf_scatter:
@@ -256,10 +256,10 @@ rule gvcf_scatter:
     output:
         gvcf=out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -jar -Xmx4G {input.gatk} -T HaplotypeCaller -ERC GVCF -I "\
-           "{input.bam} -R {input.ref} -D {input.dbsnp} "\
-           "-L '{params.chunk}' -o '{output.gvcf}' "\
-           "-variant_index_type LINEAR -variant_index_parameter 128000 " \
+    shell: "java -jar -Xmx4G {input.gatk} -T HaplotypeCaller -ERC GVCF -I "
+           "{input.bam} -R {input.ref} -D {input.dbsnp} "
+           "-L '{params.chunk}' -o '{output.gvcf}' "
+           "-variant_index_type LINEAR -variant_index_parameter 128000 "
            "-BQSR {input.bqsr}"
 
 
@@ -276,8 +276,8 @@ rule gvcf_gather:
     output:
         gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
-           "-R {input.ref} -V '{params.gvcfs}' -out {output.gvcf} "\
+    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "
+           "-R {input.ref} -V '{params.gvcfs}' -out {output.gvcf} "
            "-assumeSorted"
 
 
@@ -295,7 +295,7 @@ rule genotype_scatter:
     output:
         vcf=out_path("multisample/genotype.{chunk}.part.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -jar -Xmx4G {input.gatk} -T GenotypeGVCFs -R {input.ref} "\
+    shell: "java -jar -Xmx4G {input.gatk} -T GenotypeGVCFs -R {input.ref} "
            "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
 
 
@@ -312,8 +312,8 @@ rule genotype_gather:
     output:
         combined=out_path("multisample/genotyped.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "\
-           "-R {input.ref} -V '{params.vcfs}' -out {output.combined} "\
+    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "
+           "-R {input.ref} -V '{params.vcfs}' -out {output.combined} "
            "-assumeSorted"
 
 
@@ -443,8 +443,8 @@ rule covstats:
         covj=out_path("{sample}/coverage/{bed}.covstats.json"),
         covp=out_path("{sample}/coverage/{bed}.covstats.png")
     conda: "envs/covstat.yml"
-    shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} -b {input.bam} " \
-           "-d  | python {input.covpy} - --plot {output.covp} " \
+    shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} -b {input.bam} "
+           "-d  | python {input.covpy} - --plot {output.covp} "
            "--title 'Targets coverage' --subtitle '{params.subt}' > {output.covj}"
 
 
@@ -479,10 +479,10 @@ rule collectstats:
     output:
         out_path("{sample}/{sample}.stats.json")
     conda: "envs/collectstats.yml"
-    shell: "python {input.colpy} --sample-name {params.sample_name} " \
-           "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} " \
-           "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} " \
-           "--unique-num {input.unum} --usable-basenum {input.ubnum} " \
+    shell: "python {input.colpy} --sample-name {params.sample_name} "
+           "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
+           "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
+           "--unique-num {input.unum} --usable-basenum {input.ubnum} "
            "--female-threshold {params.fthresh} {input.cov} > {output}"
 
 rule merge_stats:
