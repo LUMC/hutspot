@@ -17,20 +17,19 @@ FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
 FASTQ_COUNT = config.get("FASTQ_COUNT")
 MAX_BASES = config.get("MAX_BASES", "")
 
-_this_dir = workflow.current_basedir
+def fsrc_dir(*args):
+    """Wrapper around snakemake's srcdir to work like os.path.join"""
+    if len(args) == 1:
+        return srcdir(args[0])
+    return srcdir(join(*args))
 
-
-env_dir = join(_this_dir, "envs")
-main_env = join(_this_dir, "environment.yml")
-
-settings_template = join(join(_this_dir, "templates"), "pipeline_settings.md.j2")
-covpy = join(join(_this_dir, "src"), "covstats.py")
-colpy = join(join(_this_dir, "src"), "collect_stats.py")
-vs_py = join(join(_this_dir, "src"), "vcfstats.py")
-mpy = join(join(_this_dir, "src"), "merge_stats.py")
+covpy = fsrc_dir("src", "covstats.py")
+colpy = fsrc_dir("src", "collect_stats.py")
+vs_py = fsrc_dir("src", "vcfstats.py")
+mpy = fsrc_dir("src", "merge_stats.py")
 
 if FASTQ_COUNT is None:
-    fqc = "python {0}".format(join(join(_this_dir, "src"), "fastq-count.py"))
+    fqc = "python {0}".format(fsrc_dir("src", "fastq-count.py"))
 else:
     fqc = FASTQ_COUNT
 
