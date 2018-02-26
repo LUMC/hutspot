@@ -5,7 +5,7 @@ GATK HaplotypeCaller.
 
 ## Features 
 * Any number of samples is supported
-* Whole-genome calling, regardless of sample protocol used.
+* Whole-genome calling, regardless of wet-lab library preparation. 
 * Follows modern best practices
     * Each sample is individually called as as a GVCF. 
     * A multisample VCF is then produced by genotyping the collection of GVCFs.
@@ -115,7 +115,7 @@ The following configuration values are **required**:
 | ------------- | ----------- |
 | `OUT_DIR` | Absolute path to output directory |
 | `REFERENCE` | Absolute path to fasta file |
-| `SAMPLE_CONFIG` | Path to config file as descrbed above |
+| `SAMPLE_CONFIG` | Path to config file as described above |
 | `GATK` | Path to GATK jar. **Must** be version 3.7  |
 | `DBSNP` | Path to dbSNP VCF |
 | `ONETHOUSAND` | Path to 1000Genomes VCF |
@@ -188,7 +188,7 @@ more complex, as nearly all rules are duplicated by sample and some
 (the scatter jobs) additionally by chunk. 
 
 As a rough estimate of the total number of jobs in pipeline you can use
-the followig formula:
+the following formula:
 
 ```math
 jobs = 4+(21*n_{samples})+(1*n_{samples}*n_{beds})+(1*n_{samples}*n_{chunks})+(1*n_{chunks})
