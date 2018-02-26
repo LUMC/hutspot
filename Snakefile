@@ -1,4 +1,5 @@
 import json
+from functools import partial
 from os.path import join, basename
 from os import mkdir
 
@@ -82,31 +83,30 @@ except OSError:
     pass
 
 
-def get_r1(wildcards):
+def get_r(strand, wildcards):
+    """Get fastq files on a single strand for a sample"""
     s = SAMPLE_CONFIG['samples'].get(wildcards.sample)
-    r1 = []
+    rs = []
     for l in sorted(s['libraries'].keys()):
-        r1.append(s['libraries'][l]['R1'])
-    return r1
+        rs.append(s['libraries'][l][strand])
+    return rs
 
-
-def get_r2(wildcards):
-    s = SAMPLE_CONFIG['samples'].get(wildcards.sample)
-    r2 = []
-    for l in sorted(s['libraries'].keys()):
-        r2.append(s['libraries'][l]['R2'])
-    return r2
+get_r1 = partial(get_r, "R1")
+get_r2 = partial(get_r, "R2")
 
 
 def get_bedpath(wildcards):
-    return [x for x in BEDS if basename(x) == wildcards.bed][0]
+    """Get absolute path of a bed file"""
+    return next(x for x in BEDS if basename(x) == wildcards.bed)
 
 
 def get_refflatpath(wildcards):
-    return [x for x in REFFLATS if basename(x) == wildcards.refflat][0]
+    """Get absolute path of a refflat file"""
+    return next(x for x in REFFLATS if basename(x) == wildcards.refflat)
 
 
 def sample_gender(wildcards):
+    """Get sample gender"""
     sam = SAMPLE_CONFIG['samples'].get(wildcards.sample)
     return sam.get("gender", "null")
 
