@@ -122,6 +122,12 @@ rule all:
         combined=out_path("multisample/genotyped.vcf.gz"),
         stats=metrics()
 
+
+rule create_markdup_tmp:
+    """Create tmp directory for mark duplicates"""
+    output: ancient(out_path("tmp"))
+    shell: "mkdir -p {output}"
+
 rule genome:
     """Create genome file as used by bedtools"""
     input: REFERENCE
