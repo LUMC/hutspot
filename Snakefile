@@ -455,8 +455,7 @@ rule covstats:
 rule vcfstats:
     """Calculate vcf statistics"""
     input:
-        vcf=out_path("multisample/genotyped.vcf.gz"),
-        vs_py=vs_py
+        vcf=out_path("multisample/genotyped.vcf.gz")
     output:
         stats=out_path("multisample/vcfstats.json")
     conda: "envs/vcfstats.yml"
