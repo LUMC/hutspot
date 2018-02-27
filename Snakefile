@@ -399,7 +399,7 @@ rule fastqc_postqc:
         odir=out_path("{sample}/pre_process/postqc_fastqc")
     output:
         r1=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip"),
-        r2=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip")
+        r2=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip")
     conda: "envs/fastqc.yml"
     shell: "fastqc -o {params.odir} {input.r1} {input.r2}"
 
