@@ -154,7 +154,7 @@ rule seqtk_r1:
         fastq=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
         seqtk=seq
     params:
-        max_bases=MAX_BASES
+        max_bases=str(MAX_BASES)
     output:
         fastq=temp(out_path("{sample}/pre_process/{sample}.sampled_R1.fastq.gz"))
     conda: "envs/seqtk.yml"
@@ -168,7 +168,7 @@ rule seqtk_r2:
         fastq = out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz"),
         seqtk=seq
     params:
-        max_bases = MAX_BASES
+        max_bases =str(MAX_BASES)
     output:
         fastq = temp(out_path("{sample}/pre_process/{sample}.sampled_R2.fastq.gz"))
     conda: "envs/seqtk.yml"
