@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu
+set -e
 set -o pipefail
 
 count_json=${1}
@@ -8,6 +8,11 @@ output_fastq=${3}
 max_bases=${4}
 
 if [[ $max_bases -eq 'None' ]]; then
+    ln -s $input_fastq $output_fastq
+    exit 0
+fi
+
+if [[ -z $max_bases ]]; then
     ln -s $input_fastq $output_fastq
     exit 0
 fi
