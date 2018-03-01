@@ -66,4 +66,4 @@ dependencies:
 - libgfortran=3.0.0=1
 - pip:
   - backports.functools-lru-cache==1.5
-  - "--editable=git+git@git.lumc.nl:klinische-genetica/capture-lumc/vtools.git#egg=vtools"
+  - "--editable=git+https://git.lumc.nl/klinische-genetica/capture-lumc/vtools.git#egg=vtools"
