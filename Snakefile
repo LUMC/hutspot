@@ -124,6 +124,12 @@ rule all:
         combined=out_path("multisample/genotyped.vcf.gz"),
         stats=metrics()
 
+
+rule create_markdup_tmp:
+    """Create tmp directory for mark duplicates"""
+    output: ancient(out_path("tmp"))
+    shell: "mkdir -p {output}"
+
 rule genome:
     """Create genome file as used by bedtools"""
     input: REFERENCE
@@ -150,7 +156,7 @@ rule seqtk_r1:
         fastq=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
         seqtk=seq
     params:
-        max_bases=MAX_BASES
+        max_bases=str(MAX_BASES)
     output:
         fastq=temp(out_path("{sample}/pre_process/{sample}.sampled_R1.fastq.gz"))
     conda: "envs/seqtk.yml"
@@ -164,7 +170,7 @@ rule seqtk_r2:
         fastq = out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz"),
         seqtk=seq
     params:
-        max_bases = MAX_BASES
+        max_bases =str(MAX_BASES)
     output:
         fastq = temp(out_path("{sample}/pre_process/{sample}.sampled_R2.fastq.gz"))
     conda: "envs/seqtk.yml"
@@ -401,7 +407,7 @@ rule fastqc_postqc:
         odir=out_path("{sample}/pre_process/postqc_fastqc")
     output:
         r1=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip"),
-        r2=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip")
+        r2=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip")
     conda: "envs/fastqc.yml"
     shell: "fastqc -o {params.odir} {input.r1} {input.r2}"
 
@@ -468,8 +474,7 @@ rule vtools_coverage:
 rule vcfstats:
     """Calculate vcf statistics"""
     input:
-        vcf=out_path("multisample/genotyped.vcf.gz"),
-        vs_py=vs_py
+        vcf=out_path("multisample/genotyped.vcf.gz")
     output:
         stats=out_path("multisample/vcfstats.json")
     conda: "envs/vcfstats.yml"
