@@ -6,4 +6,6 @@ channels:
 - r
 dependencies:
 - seqtk=1.2=0
+- bc=1.06=0
+- sed=4.4=1
 - zlib=1.2.11=0
