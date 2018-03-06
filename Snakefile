@@ -113,8 +113,10 @@ def metrics(do_metrics=True):
                   sample=SAMPLES)
     fqcp = expand(out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip"),
                   sample=SAMPLES)
+    coverage_stats = expand(out_path("{sample}/coverage/{ref}.coverages.tsv"),
+                            sample=SAMPLES, ref=BASE_REFFLATS)
     stats = out_path("stats.json")
-    return  fqcr + fqcm + fqcp + [stats]
+    return  fqcr + fqcm + fqcp + coverage_stats + [stats]
 
 
 rule all:
@@ -454,6 +456,17 @@ rule covstats:
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} -b {input.bam} "
            "-d  | python {input.covpy} - --plot {output.covp} "
            "--title 'Targets coverage' --subtitle '{params.subt}' > {output.covj}"
+
+
+rule vtools_coverage:
+    """Calculate coverage statistics per transcript"""
+    input:
+        gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
+        ref=get_refflatpath
+    output:
+        tsv=out_path("{sample}/coverage/{ref}.coverages.tsv")
+    conda: "envs/vcfstats.yml"
+    shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
 
 
 ## vcfstats
