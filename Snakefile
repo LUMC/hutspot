@@ -113,8 +113,11 @@ def metrics(do_metrics=True):
                   sample=SAMPLES)
     fqcp = expand(out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip"),
                   sample=SAMPLES)
-    coverage_stats = expand(out_path("{sample}/coverage/{ref}.coverages.tsv"),
-                            sample=SAMPLES, ref=BASE_REFFLATS)
+    if len(REFFLATS) >= 1:
+        coverage_stats = expand(out_path("{sample}/coverage/{ref}.coverages.tsv"),
+                                sample=SAMPLES, ref=BASE_REFFLATS)
+    else:
+        coverage_stats = []
     stats = out_path("stats.json")
     return  fqcr + fqcm + fqcp + coverage_stats + [stats]
 
