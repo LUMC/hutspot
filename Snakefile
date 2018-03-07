@@ -37,8 +37,15 @@ with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
 SAMPLES = SAMPLE_CONFIG['samples'].keys()
 
-BEDS = BED.split(",")
-REFFLATS = REFFLAT.split(",")
+if BED != "":
+    BEDS = BED.split(",")
+else:
+    BEDS = []
+
+if REFFLAT != "":
+    REFFLATS = REFFLAT.split(",")
+else:
+    REFFLATS = []
 
 BASE_BEDS = [basename(x) for x in BEDS]
 BASE_REFFLATS = [basename(x) for x in REFFLATS]
