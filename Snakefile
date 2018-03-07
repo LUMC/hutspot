@@ -41,7 +41,7 @@ BEDS = BED.split(",")
 REFFLATS = REFFLAT.split(",")
 
 BASE_BEDS = [basename(x) for x in BEDS]
-BASE_REFFLATS = [basename(x) for x in BEDS]
+BASE_REFFLATS = [basename(x) for x in REFFLATS]
 
 
 def split_genome(ref, approx_n_chunks=100):
@@ -94,7 +94,7 @@ def get_bedpath(wildcards):
 
 def get_refflatpath(wildcards):
     """Get absolute path of a refflat file"""
-    return next(x for x in REFFLATS if basename(x) == wildcards.refflat)
+    return next(x for x in REFFLATS if basename(x) == wildcards.ref)
 
 
 def sample_gender(wildcards):
