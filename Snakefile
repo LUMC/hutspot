@@ -472,7 +472,7 @@ rule covstats:
 rule vtools_coverage:
     """Calculate coverage statistics per transcript"""
     input:
-        gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
+        gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz"),
         ref=get_refflatpath
     output:
         tsv=out_path("{sample}/coverage/{ref}.coverages.tsv")
