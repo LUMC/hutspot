@@ -41,7 +41,7 @@ BEDS = BED.split(",")
 REFFLATS = REFFLAT.split(",")
 
 BASE_BEDS = [basename(x) for x in BEDS]
-BASE_REFFLATS = [basename(x) for x in BEDS]
+BASE_REFFLATS = [basename(x) for x in REFFLATS]
 
 
 def split_genome(ref, approx_n_chunks=100):
@@ -94,7 +94,7 @@ def get_bedpath(wildcards):
 
 def get_refflatpath(wildcards):
     """Get absolute path of a refflat file"""
-    return next(x for x in REFFLATS if basename(x) == wildcards.refflat)
+    return next(x for x in REFFLATS if basename(x) == wildcards.ref)
 
 
 def sample_gender(wildcards):
@@ -122,6 +122,8 @@ def metrics(do_metrics=True):
 rule all:
     input:
         combined=out_path("multisample/genotyped.vcf.gz"),
+        bais=expand(out_path("{sample}/bams/{sample}.markdup.bam.bai"),
+                    sample=SAMPLES),
         stats=metrics()
 
 
@@ -226,12 +228,21 @@ rule markdup:
         tmp = ancient(out_path("tmp"))
     output:
         bam = out_path("{sample}/bams/{sample}.markdup.bam"),
+        bai = out_path("{sample}/bams/{sample}.markdup.bai"),
         metrics = out_path("{sample}/bams/{sample}.markdup.metrics")
     conda: "envs/picard.yml"
     shell: "picard MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT={input.bam} OUTPUT={output.bam} "
            "METRICS_FILE={output.metrics} "
            "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
+
+rule bai:
+    """Copy bai files as some genome browsers can only .bam.bai files"""
+    input:
+        bai = out_path("{sample}/bams/{sample}.markdup.bai")
+    output:
+        bai = out_path("{sample}/bams/{sample}.markdup.bam.bai")
+    shell: "cp {input.bai} {output.bai}"
 
 rule baserecal:
     """Base recalibrated BAM files"""
@@ -461,7 +472,7 @@ rule covstats:
 rule vtools_coverage:
     """Calculate coverage statistics per transcript"""
     input:
-        gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
+        gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz"),
         ref=get_refflatpath
     output:
         tsv=out_path("{sample}/coverage/{ref}.coverages.tsv")
