@@ -548,7 +548,7 @@ else:
                "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
                "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-               "--female-threshold {params.fthresh} {input.cov} > {output}"
+               "--female-threshold {params.fthresh}  > {output}"
 
 rule merge_stats:
     """Merge all stats of all samples"""
