@@ -522,7 +522,7 @@ if len(BASE_BEDS) >= 1:
                "--female-threshold {params.fthresh} {input.cov} > {output}"
 else:
     rule collectstats:
-    """Collect all stats for a particular sample without beds"""
+        """Collect all stats for a particular sample without beds"""
         input:
             preqc = out_path("{sample}/pre_process/{sample}.preqc_count.json"),
             postq = out_path("{sample}/pre_process/{sample}.postqc_count.json"),
