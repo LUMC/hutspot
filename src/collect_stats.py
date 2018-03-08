@@ -73,7 +73,6 @@ def determine_gender(covstat, fthresh):
               help="Female threshold of X/all cov")
 @click.argument("covstats",
                 type=click.Path(dir_okay=False, exists=True, readable=True),
-                required=True,
                 nargs=-1)
 def main(sample_name, pre_qc_fastq, post_qc_fastq, mapped_num, mapped_basenum,
          unique_num, usable_basenum, female_threshold, covstats):

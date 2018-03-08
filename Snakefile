@@ -37,8 +37,15 @@ with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
 SAMPLES = SAMPLE_CONFIG['samples'].keys()
 
-BEDS = BED.split(",")
-REFFLATS = REFFLAT.split(",")
+if BED != "":
+    BEDS = BED.split(",")
+else:
+    BEDS = []
+
+if REFFLAT != "":
+    REFFLATS = REFFLAT.split(",")
+else:
+    REFFLATS = []
 
 BASE_BEDS = [basename(x) for x in BEDS]
 BASE_REFFLATS = [basename(x) for x in REFFLATS]
@@ -113,8 +120,11 @@ def metrics(do_metrics=True):
                   sample=SAMPLES)
     fqcp = expand(out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip"),
                   sample=SAMPLES)
-    coverage_stats = expand(out_path("{sample}/coverage/{ref}.coverages.tsv"),
-                            sample=SAMPLES, ref=BASE_REFFLATS)
+    if len(REFFLATS) >= 1:
+        coverage_stats = expand(out_path("{sample}/coverage/{ref}.coverages.tsv"),
+                                sample=SAMPLES, ref=BASE_REFFLATS)
+    else:
+        coverage_stats = []
     stats = out_path("stats.json")
     return  fqcr + fqcm + fqcp + coverage_stats + [stats]
 
@@ -493,28 +503,52 @@ rule vcfstats:
 
 
 ## collection
-rule collectstats:
-    """Collect all stats for a particular sample"""
-    input:
-        preqc=out_path("{sample}/pre_process/{sample}.preqc_count.json"),
-        postq=out_path("{sample}/pre_process/{sample}.postqc_count.json"),
-        mnum=out_path("{sample}/bams/{sample}.mapped.num"),
-        mbnum=out_path("{sample}/bams/{sample}.mapped.basenum"),
-        unum=out_path("{sample}/bams/{sample}.unique.num"),
-        ubnum=out_path("{sample}/bams/{sample}.usable.basenum"),
-        cov=expand(out_path("{{sample}}/coverage/{bed}.covstats.json"), bed=BASE_BEDS),
-        colpy=colpy
-    params:
-        sample_name="{sample}",
-        fthresh=FEMALE_THRESHOLD
-    output:
-        out_path("{sample}/{sample}.stats.json")
-    conda: "envs/collectstats.yml"
-    shell: "python {input.colpy} --sample-name {params.sample_name} "
-           "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
-           "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
-           "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-           "--female-threshold {params.fthresh} {input.cov} > {output}"
+if len(BASE_BEDS) >= 1:
+    rule collectstats:
+        """Collect all stats for a particular sample with beds"""
+        input:
+            preqc=out_path("{sample}/pre_process/{sample}.preqc_count.json"),
+            postq=out_path("{sample}/pre_process/{sample}.postqc_count.json"),
+            mnum=out_path("{sample}/bams/{sample}.mapped.num"),
+            mbnum=out_path("{sample}/bams/{sample}.mapped.basenum"),
+            unum=out_path("{sample}/bams/{sample}.unique.num"),
+            ubnum=out_path("{sample}/bams/{sample}.usable.basenum"),
+            cov=expand(out_path("{{sample}}/coverage/{bed}.covstats.json"),
+                       bed=BASE_BEDS),
+            colpy=colpy
+        params:
+            sample_name="{sample}",
+            fthresh=FEMALE_THRESHOLD
+        output:
+            out_path("{sample}/{sample}.stats.json")
+        conda: "envs/collectstats.yml"
+        shell: "python {input.colpy} --sample-name {params.sample_name} "
+               "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
+               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
+               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
+               "--female-threshold {params.fthresh} {input.cov} > {output}"
+else:
+    rule collectstats:
+        """Collect all stats for a particular sample without beds"""
+        input:
+            preqc = out_path("{sample}/pre_process/{sample}.preqc_count.json"),
+            postq = out_path("{sample}/pre_process/{sample}.postqc_count.json"),
+            mnum = out_path("{sample}/bams/{sample}.mapped.num"),
+            mbnum = out_path("{sample}/bams/{sample}.mapped.basenum"),
+            unum = out_path("{sample}/bams/{sample}.unique.num"),
+            ubnum = out_path("{sample}/bams/{sample}.usable.basenum"),
+            colpy = colpy
+        params:
+            sample_name = "{sample}",
+            fthresh = FEMALE_THRESHOLD
+        output:
+            out_path("{sample}/{sample}.stats.json")
+        conda: "envs/collectstats.yml"
+        shell: "python {input.colpy} --sample-name {params.sample_name} "
+               "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
+               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
+               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
+               "--female-threshold {params.fthresh}  > {output}"
 
 rule merge_stats:
     """Merge all stats of all samples"""
