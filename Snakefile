@@ -475,7 +475,7 @@ rule fastqc_stats:
     shell: "python {input.sc} --preqc-r1 {input.preqc_r1} "
            "--preqc-r2 {input.preqc_r2} "
            "--postqc-r1 {input.postqc_r1} "
-           "--postqc-r2 {input.pqstqc_r2} > {output}"
+           "--postqc-r2 {input.postqc_r2} > {output}"
 
 ## coverages
 
