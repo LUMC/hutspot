@@ -35,7 +35,13 @@ class FastqcModule(object):
         return {k.replace(" ", "_"): try_numeric(row[i])
                 for i, k in enumerate(self.header)}
 
-    def to_dict_list(self) -> List[dict]:
+    def to_dict_list(self) -> Union[List, List[dict]]:
+        if self.header is None:
+            return []
+        if all([len(x) == 2 for x in self.rows]) and len(self.header) == 2:
+            # two-column data is returned as a single list
+            # second column is assumed to contain all the data
+            return [try_numeric(x[1]) for x in self.rows]
         return [self.row_as_dict(x) for x in self.rows]
 
 
