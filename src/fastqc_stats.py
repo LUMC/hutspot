@@ -6,6 +6,10 @@ from copy import deepcopy
 import zipfile
 
 
+DO_NOT_TWO_COLUMN = ["Sequence_Length_Distribution",
+                     "Per_sequence_quality_scores"]
+
+
 def try_numeric(val: str) -> Union[str, int, float]:
     try:
         value = int(val)
@@ -36,9 +40,13 @@ class FastqcModule(object):
                 for i, k in enumerate(self.header)}
 
     def to_dict_list(self) -> Union[List, List[dict]]:
+        # The semantics herein _ONLY_ works for fastqc version 0.11.5
+        # If the version in the pipeline changes, we MUST revisit this section
         if self.header is None:
             return []
-        if all([len(x) == 2 for x in self.rows]) and len(self.header) == 2:
+        if (all([len(x) == 2 for x in self.rows])
+            and len(self.header) == 2
+            and self.name not in DO_NOT_TWO_COLUMN):
             # two-column data is returned as a single list
             # second column is assumed to contain all the data
             return [try_numeric(x[1]) for x in self.rows]
@@ -106,7 +114,8 @@ if __name__ == "__main__":
                              "fastq file after pre-processing")
     parser.add_argument("--exclude-modules",
                         action="append",
-                        default=["Per_tile_sequence_quality"],
+                        default=["Per_tile_sequence_quality",
+                                 "Basic_Statistics"],
                         help="Fastqc modules to exclude")
     args = parser.parse_args()
 
