@@ -469,10 +469,13 @@ rule fastqc_stats:
         postqc_r1=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip"),
         postqc_r2=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip"),
         sc=fqpy
+    conda: "envs/collectstats.yml"
     output:
         out_path("{sample}/pre_process/fastq_stats.json")
-    shell: "python {input.sc} --preqc-r1 {input.preqc_r1} --preqc-r2 {input.preqc_r2} --postqc-r1 {input.postqc_r1} --postqc-r2 {input.pqstqc_r2} > {output}"
-
+    shell: "python {input.sc} --preqc-r1 {input.preqc_r1} "
+           "--preqc-r2 {input.preqc_r2} "
+           "--postqc-r1 {input.postqc_r1} "
+           "--postqc-r2 {input.pqstqc_r2} > {output}"
 
 ## coverages
 
@@ -528,6 +531,7 @@ if len(BASE_BEDS) >= 1:
             mbnum=out_path("{sample}/bams/{sample}.mapped.basenum"),
             unum=out_path("{sample}/bams/{sample}.unique.num"),
             ubnum=out_path("{sample}/bams/{sample}.usable.basenum"),
+            fastqc=out_path("{sample}/pre_process/fastq_stats.json"),
             cov=expand(out_path("{{sample}}/coverage/{bed}.covstats.json"),
                        bed=BASE_BEDS),
             colpy=colpy
@@ -541,7 +545,8 @@ if len(BASE_BEDS) >= 1:
                "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
                "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-               "--female-threshold {params.fthresh} {input.cov} > {output}"
+               "--female-threshold {params.fthresh} "
+               "--fastqc-stats {input.fastqc} {input.cov} > {output}"
 else:
     rule collectstats:
         """Collect all stats for a particular sample without beds"""
@@ -552,6 +557,7 @@ else:
             mbnum = out_path("{sample}/bams/{sample}.mapped.basenum"),
             unum = out_path("{sample}/bams/{sample}.unique.num"),
             ubnum = out_path("{sample}/bams/{sample}.usable.basenum"),
+            fastqc=out_path("{sample}/pre_process/fastq_stats.json"),
             colpy = colpy
         params:
             sample_name = "{sample}",
@@ -563,7 +569,8 @@ else:
                "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
                "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-               "--female-threshold {params.fthresh}  > {output}"
+               "--female-threshold {params.fthresh} "
+               "--fastqc-stats {input.fastqc}  > {output}"
 
 rule merge_stats:
     """Merge all stats of all samples"""
