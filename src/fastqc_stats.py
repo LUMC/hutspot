@@ -26,10 +26,10 @@ class FastqcModule(object):
         self.rows = []
 
     def add_header(self, headerstring: str):
-        self.header = headerstring.split("\t")
+        self.header = headerstring.strip().split("\t")
 
     def add_row(self, rowstring: str):
-        self.rows.append(rowstring.split("\t"))
+        self.rows.append(rowstring.strip().split("\t"))
 
     def row_as_dict(self, row) -> dict:
         return {k.replace(" ", "_"): try_numeric(row[i])
