@@ -27,6 +27,7 @@ covpy = fsrc_dir("src", "covstats.py")
 colpy = fsrc_dir("src", "collect_stats.py")
 mpy = fsrc_dir("src", "merge_stats.py")
 seq = fsrc_dir("src", "seqtk.sh")
+fqpy = fsrc_dir("src", "fastqc_stats.py")
 
 if FASTQ_COUNT is None:
     fqc = "python {0}".format(fsrc_dir("src", "fastq-count.py"))
@@ -457,6 +458,20 @@ rule fqcount_postqc:
     output:
         out_path("{sample}/pre_process/{sample}.postqc_count.json")
     shell: "{params.fastqcount} {input.r1} {input.r2} > {output}"
+
+
+# fastqc stats
+rule fastqc_stats:
+    """Collect fastq stats for a sample in json format"""
+    input:
+        preqc_r1=out_path("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip"),
+        preqc_r2=out_path("{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip"),
+        postqc_r1=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip"),
+        postqc_r2=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip"),
+        sc=fqpy
+    output:
+        out_path("{sample}/pre_process/fastq_stats.json")
+    shell: "python {input.sc} --preqc-r1 {input.preqc_r1} --preqc-r2 {input.preqc_r2} --postqc-r1 {input.postqc_r1} --postqc-r2 {input.pqstqc_r2} > {output}"
 
 
 ## coverages
