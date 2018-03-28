@@ -71,14 +71,19 @@ def determine_gender(covstat, fthresh):
               type=click.FLOAT,
               default=0.6,
               help="Female threshold of X/all cov")
+@click.option("--fastqc-stats",
+              type=click.Path(dir_okay=False, exists=True, readable=True),
+              required=True,
+              help="Path to fastqc stats json")
 @click.argument("covstats",
                 type=click.Path(dir_okay=False, exists=True, readable=True),
                 nargs=-1)
 def main(sample_name, pre_qc_fastq, post_qc_fastq, mapped_num, mapped_basenum,
-         unique_num, usable_basenum, female_threshold, covstats):
+         unique_num, usable_basenum, female_threshold, fastqc_stats, covstats):
 
     preqcd = parse_json_file(pre_qc_fastq)
     posqcd = parse_json_file(post_qc_fastq)
+    fastqc = parse_json_file(fastqc_stats)
 
     mpnum = parse_num_file(mapped_num)
     mpbnum = parse_num_file(mapped_basenum)
@@ -103,6 +108,7 @@ def main(sample_name, pre_qc_fastq, post_qc_fastq, mapped_num, mapped_basenum,
         "n_mapped_bases": mpbnum,
         "n_usable_reads": unum,
         "n_usable_bases": ubnum,
+        "fastqc": fastqc,
         "covstats": covl
     }
 
