@@ -596,4 +596,5 @@ rule multiqc:
         odir=out_path(".")
     output:
         report=out_path("multiqc_report/multiqc_report.html")
+    conda: "envs/multiqc.yml"
     shell: "multiqc -o {output.report} {params.odir}"
