@@ -560,3 +560,17 @@ rule merge_stats:
         stats=out_path("stats.json")
     conda: "envs/collectstats.yml"
     shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} > {output.stats}"
+
+
+rule multiqc:
+    """
+    Create multiQC report
+    Depends on stats.json to forcefully run at end of pipeline
+    """
+    input:
+        stats=out_path("stats.json")
+    params:
+        odir=out_path(".")
+    output:
+        report=out_path("multiqc_report/multiqc_report.html")
+    shell: "multiqc -o {output.report} {params.odir}"
