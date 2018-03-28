@@ -133,6 +133,7 @@ def metrics(do_metrics=True):
 rule all:
     input:
         combined=out_path("multisample/genotyped.vcf.gz"),
+        report=out_path("multiqc_report/multiqc_report.html"),
         bais=expand(out_path("{sample}/bams/{sample}.markdup.bam.bai"),
                     sample=SAMPLES),
         stats=metrics()
