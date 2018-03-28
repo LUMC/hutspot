@@ -593,8 +593,9 @@ rule multiqc:
     input:
         stats=out_path("stats.json")
     params:
-        odir=out_path(".")
+        odir=out_path("."),
+        rdir=out_path("multiqc_report")
     output:
         report=out_path("multiqc_report/multiqc_report.html")
     conda: "envs/multiqc.yml"
-    shell: "multiqc -o {output.report} {params.odir}"
+    shell: "multiqc -o {params.rdir} {params.odir}"
