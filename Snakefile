@@ -28,6 +28,7 @@ colpy = fsrc_dir("src", "collect_stats.py")
 mpy = fsrc_dir("src", "merge_stats.py")
 seq = fsrc_dir("src", "seqtk.sh")
 fqpy = fsrc_dir("src", "fastqc_stats.py")
+tsvpy = fsrc_dir("src", "stats_to_tsv.py")
 
 if FASTQ_COUNT is None:
     fqc = "python {0}".format(fsrc_dir("src", "fastq-count.py"))
@@ -585,13 +586,24 @@ rule merge_stats:
     shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} > {output.stats}"
 
 
+rule stats_tsv:
+    """Convert stats.json to tsv"""
+    input:
+        stats=out_path("stats.json"),
+        sc=tsvpy
+    output:
+        stats=out_path("stats.tsv")
+    conda: "envs/collectstats.yml"
+    shell: "python {input.sc} -i {input.stats} > {output.stats}"
+
+
 rule multiqc:
     """
     Create multiQC report
-    Depends on stats.json to forcefully run at end of pipeline
+    Depends on stats.tsv to forcefully run at end of pipeline
     """
     input:
-        stats=out_path("stats.json")
+        stats=out_path("stats.tsv")
     params:
         odir=out_path("."),
         rdir=out_path("multiqc_report")
