@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from typing import List, Union
 from copy import deepcopy
+from warnings import warn
 import zipfile
 
 
@@ -54,7 +55,14 @@ class FastqcModule(object):
 
 
 def extract_data_txt(zip_path: Path, encoding='utf-8') -> str:
-    """Extract text of data.txt from fastqc zip file"""
+    """
+    Extract text of data.txt from fastqc zip file
+
+    Returns emtpy string when file is completely empty
+    """
+    if zip_path.stat().st_size == 0:
+        warn(f"File {str(zip_path)} is empty")
+        return ""
     with zipfile.ZipFile(zip_path) as zp:
         iflist = zp.infolist()
         data_info = next(x for x in iflist
