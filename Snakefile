@@ -29,6 +29,7 @@ mpy = fsrc_dir("src", "merge_stats.py")
 seq = fsrc_dir("src", "seqtk.sh")
 fqpy = fsrc_dir("src", "fastqc_stats.py")
 tsvpy = fsrc_dir("src", "stats_to_tsv.py")
+fqsc = fsrc_dir("src", "safe_fastqc.sh")
 
 if FASTQ_COUNT is None:
     fqc = "python {0}".format(fsrc_dir("src", "fastq-count.py"))
@@ -412,30 +413,32 @@ rule fastqc_merged:
     """Run fastqc on merged fastq files"""
     input:
         r1=out_path("{sample}/pre_process/{sample}.merged_R1.fastq.gz"),
-        r2=out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
+        r2=out_path("{sample}/pre_process/{sample}.merged_R2.fastq.gz"),
+        fq=fqsc
     params:
         odir=out_path("{sample}/pre_process/merged_fastqc")
     output:
         r1=out_path("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip"),
         r2=out_path("{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip")
     conda: "envs/fastqc.yml"
-    shell: "fastqc --nogroup -o {params.odir} {input.r1} {input.r2} "
-           "&& touch {output.r1} && touch {output.r2}"
+    shell: "bash {input.fq} {input.r1} {input.r2} "
+           "{output.r1} {output.r2} {params.odir}"
 
 
 rule fastqc_postqc:
     """Run fastqc on fastq files post pre-processing"""
     input:
         r1=out_path("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
-        r2=out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
+        r2=out_path("{sample}/pre_process/{sample}.cutadapt_R2.fastq"),
+        fq=fqsc
     params:
         odir=out_path("{sample}/pre_process/postqc_fastqc")
     output:
         r1=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip"),
         r2=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip")
     conda: "envs/fastqc.yml"
-    shell: "fastqc --nogroup -o {params.odir} {input.r1} {input.r2} "
-           "&& touch {output.r1} && touch {output.r2}"
+    shell: "bash {input.fq} {input.r1} {input.r2} "
+           "{output.r1} {output.r2} {params.odir}"
 
 
 ## fastq-count
