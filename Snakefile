@@ -615,4 +615,4 @@ rule multiqc:
     output:
         report=out_path("multiqc_report/multiqc_report.html")
     conda: "envs/multiqc.yml"
-    shell: "multiqc -f -o {params.rdir} {params.odir}"
+    shell: "multiqc -f -o {params.rdir} {params.odir} || touch {output.report}"
