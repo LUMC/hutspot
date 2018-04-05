@@ -419,7 +419,8 @@ rule fastqc_merged:
         r1=out_path("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip"),
         r2=out_path("{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip")
     conda: "envs/fastqc.yml"
-    shell: "fastqc --nogroup -o {params.odir} {input.r1} {input.r2}"
+    shell: "fastqc --nogroup -o {params.odir} {input.r1} {input.r2} "
+           "&& touch {output.r1} && touch {output.r2}"
 
 
 rule fastqc_postqc:
@@ -433,7 +434,8 @@ rule fastqc_postqc:
         r1=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip"),
         r2=out_path("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip")
     conda: "envs/fastqc.yml"
-    shell: "fastqc --nogroup -o {params.odir} {input.r1} {input.r2}"
+    shell: "fastqc --nogroup -o {params.odir} {input.r1} {input.r2} "
+           "&& touch {output.r1} && touch {output.r2}"
 
 
 ## fastq-count
