@@ -32,7 +32,8 @@ def get_covstats(cov_d):
         'coverage_frac_min_20x': s_d['frac_min_20x'],
         'coverage_frac_min_30x': s_d['frac_min_30x'],
         'coverage_frac_min_40x': s_d['frac_min_40x'],
-        'coverage_frac_min_50x': s_d['frac_min_50x']
+        'coverage_frac_min_50x': s_d['frac_min_50x'],
+        'determined_gender': cov_d['gender']
     }
     return {"{0}_{1}".format(cov_d['name'], k): v for k, v in tmp_d.items()}
 
