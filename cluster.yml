@@ -23,3 +23,5 @@ genotype_gather:
   vmem: 10G
 covstats:
   vmem: 6G
+multiqc:
+  vmem: 20G
