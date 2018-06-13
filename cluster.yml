@@ -25,3 +25,5 @@ covstats:
   vmem: 6G
 multiqc:
   vmem: 20G
+split_vcf:
+  vmem: 10G
