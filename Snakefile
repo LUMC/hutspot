@@ -291,7 +291,8 @@ rule gvcf_scatter:
     params:
         chunk="{chunk}"
     output:
-        gvcf=temp(out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"))
+        gvcf=temp(out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz")),
+        gvcf_tbi=temp(out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz.tbi"))
     conda: "envs/gatk.yml"
     shell: "java -jar -Xmx4G {input.gatk} -T HaplotypeCaller -ERC GVCF -I "
            "{input.bam} -R {input.ref} -D {input.dbsnp} "
@@ -304,6 +305,8 @@ rule gvcf_gather:
     """Gather all gvcf scatters"""
     input:
         gvcfs=expand(out_path("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz"),
+                     chunk=CHUNKS),
+        tbis=expand(out_path("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz.tbi"),
                      chunk=CHUNKS),
         ref=REFERENCE,
         gatk=GATK
@@ -330,7 +333,8 @@ rule genotype_scatter:
                               sample=SAMPLES)),
         chunk="{chunk}"
     output:
-        vcf=temp(out_path("multisample/genotype.{chunk}.part.vcf.gz"))
+        vcf=temp(out_path("multisample/genotype.{chunk}.part.vcf.gz")),
+        vcf_tbi=temp(out_path("multisample/genotype.{chunk}.part.vcf.gz.tbi"))
     conda: "envs/gatk.yml"
     shell: "java -jar -Xmx4G {input.gatk} -T GenotypeGVCFs -R {input.ref} "
            "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
@@ -340,6 +344,8 @@ rule genotype_gather:
     """Gather all genotyping scatters"""
     input:
         vcfs=expand(out_path("multisample/genotype.{chunk}.part.vcf.gz"),
+                    chunk=CHUNKS),
+        tbis=expand(out_path("multisample/genotype.{chunk}.part.vcf.gz.tbi"),
                     chunk=CHUNKS),
         ref=REFERENCE,
         gatk=GATK
