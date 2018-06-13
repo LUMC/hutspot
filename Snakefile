@@ -138,6 +138,8 @@ rule all:
         report=out_path("multiqc_report/multiqc_report.html"),
         bais=expand(out_path("{sample}/bams/{sample}.markdup.bam.bai"),
                     sample=SAMPLES),
+        vcfs=expand(out_path("{sample}/vcf/{sample}_single.vcf.gz"),
+                    sample=SAMPLES),
         stats=metrics()
 
 
@@ -289,7 +291,7 @@ rule gvcf_scatter:
     params:
         chunk="{chunk}"
     output:
-        gvcf=out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz")
+        gvcf=temp(out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"))
     conda: "envs/gatk.yml"
     shell: "java -jar -Xmx4G {input.gatk} -T HaplotypeCaller -ERC GVCF -I "
            "{input.bam} -R {input.ref} -D {input.dbsnp} "
@@ -328,7 +330,7 @@ rule genotype_scatter:
                               sample=SAMPLES)),
         chunk="{chunk}"
     output:
-        vcf=out_path("multisample/genotype.{chunk}.part.vcf.gz")
+        vcf=temp(out_path("multisample/genotype.{chunk}.part.vcf.gz"))
     conda: "envs/gatk.yml"
     shell: "java -jar -Xmx4G {input.gatk} -T GenotypeGVCFs -R {input.ref} "
            "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
@@ -350,6 +352,21 @@ rule genotype_gather:
     shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "
            "-R {input.ref} -V '{params.vcfs}' -out {output.combined} "
            "-assumeSorted"
+
+
+rule split_vcf:
+    """Split multisample VCF in single samples"""
+    input:
+        vcf=out_path("multisample/genotyped.vcf.gz"),
+        gatk=GATK,
+        ref=REFERENCE
+    params:
+        s="{sample}"
+    output:
+        splitted=out_path("{sample}/vcf/{sample}_single.vcf.gz")
+    conda: "envs/gatk.yml"
+    shell: "java -Xmx4G -jar {input.gatk} -T SelectVariants -sn "
+           "{params.s} -R {input.ref} -V {input.vcf} -o {output.splitted}"
 
 
 ## bam metrics
