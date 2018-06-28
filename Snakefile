@@ -372,7 +372,7 @@ rule split_vcf:
         splitted=out_path("{sample}/vcf/{sample}_single.vcf.gz")
     conda: "envs/gatk.yml"
     shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar {input.gatk} -T SelectVariants -sn "
-           "{params.s} -R {input.ref} -V {input.vcf} -o {output.splitted}"
+           "{params.s} -env -R {input.ref} -V {input.vcf} -o {output.splitted}"
 
 
 ## bam metrics
