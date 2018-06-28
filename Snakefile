@@ -273,7 +273,7 @@ rule baserecal:
     output:
         grp = out_path("{sample}/bams/{sample}.baserecal.grp")
     conda: "envs/gatk.yml"
-    shell: "{input.java} -jar {input.gatk} -T BaseRecalibrator "
+    shell: "{input.java} -XX:ParallelGCThreads=1 -jar {input.gatk} -T BaseRecalibrator "
            "-I {input.bam} -o {output.grp} -nct 8 -R {input.ref} "
            "-cov ReadGroupCovariate -cov QualityScoreCovariate "
            "-cov CycleCovariate -cov ContextCovariate -knownSites "
@@ -294,7 +294,7 @@ rule gvcf_scatter:
         gvcf=temp(out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz")),
         gvcf_tbi=temp(out_path("{sample}/vcf/{sample}.{chunk}.part.vcf.gz.tbi"))
     conda: "envs/gatk.yml"
-    shell: "java -jar -Xmx4G {input.gatk} -T HaplotypeCaller -ERC GVCF -I "
+    shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 {input.gatk} -T HaplotypeCaller -ERC GVCF -I "
            "{input.bam} -R {input.ref} -D {input.dbsnp} "
            "-L '{params.chunk}' -o '{output.gvcf}' "
            "-variant_index_type LINEAR -variant_index_parameter 128000 "
@@ -316,7 +316,7 @@ rule gvcf_gather:
     output:
         gvcf=out_path("{sample}/vcf/{sample}.g.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "
+    shell: "java -Xmx4G -XX:ParallelGCThreads=1 -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "
            "-R {input.ref} -V '{params.gvcfs}' -out {output.gvcf} "
            "-assumeSorted"
 
@@ -355,7 +355,7 @@ rule genotype_gather:
     output:
         combined=out_path("multisample/genotyped.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -Xmx4G -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "
+    shell: "java -Xmx4G -XX:ParallelGCThreads=1 -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "
            "-R {input.ref} -V '{params.vcfs}' -out {output.combined} "
            "-assumeSorted"
 
