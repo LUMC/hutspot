@@ -14,7 +14,7 @@ baserecal:
 printreads:
   vmem: 10G
 gvcf_scatter:
-  vmem: 10G
+  vmem: 20G
 gvcf_gather:
   vmem: 10G
 genotype_scatter:
@@ -26,4 +26,4 @@ covstats:
 multiqc:
   vmem: 20G
 split_vcf:
-  vmem: 10G
+  vmem: 20G

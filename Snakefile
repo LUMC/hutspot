@@ -336,7 +336,7 @@ rule genotype_scatter:
         vcf=temp(out_path("multisample/genotype.{chunk}.part.vcf.gz")),
         vcf_tbi=temp(out_path("multisample/genotype.{chunk}.part.vcf.gz.tbi"))
     conda: "envs/gatk.yml"
-    shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 {input.gatk} -T GenotypeGVCFs -R {input.ref} "
+    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 {input.gatk} -T GenotypeGVCFs -R {input.ref} "
            "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
 
 
@@ -371,7 +371,7 @@ rule split_vcf:
     output:
         splitted=out_path("{sample}/vcf/{sample}_single.vcf.gz")
     conda: "envs/gatk.yml"
-    shell: "java -Xmx4G -jar {input.gatk} -T SelectVariants -sn "
+    shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar {input.gatk} -T SelectVariants -sn "
            "{params.s} -R {input.ref} -V {input.vcf} -o {output.splitted}"
 
 
