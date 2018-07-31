@@ -18,7 +18,7 @@ gvcf_scatter:
 gvcf_gather:
   vmem: 10G
 genotype_scatter:
-  vmem: 10G
+  vmem: 20G
 genotype_gather:
   vmem: 10G
 covstats:
