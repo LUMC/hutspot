@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 set -o pipefail
 
 count_json=${1}
