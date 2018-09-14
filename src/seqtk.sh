@@ -20,7 +20,7 @@ fi
 bases=$(jq '.bases' $count_json)
 frac=$(jq -n "$max_bases / $bases" | sed -e "s:e:E:g")
 echo $frac
-frac_higher_than_one=$(echo "${frac} > 1" | bc -l)
+frac_higher_than_one=$(echo "${frac} > 1" | bc )
 if [[ ${frac_higher_than_one} -eq 1 ]]; then
     ln -s ${input_fastq} ${output_fastq}
 else
