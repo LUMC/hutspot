@@ -1,0 +1,15 @@
+image: python3.6:stretch
+
+before_script:
+  - export MINICONDA=${HOME}/miniconda
+  - export PATH=${MINICONDA}/bin:${PATH}
+  - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -f -p ${MINICONDA}
+  - conda config --set always_yes yes
+  - conda env create -n my_env -f environment.yml
+  - source activate my_env
+  - pip install -r requirements-dev.txt
+
+test_sanities:
+  script:
+    - py.test
