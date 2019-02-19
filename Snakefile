@@ -72,6 +72,13 @@ if FASTQ_COUNT is None:
 else:
     fqc = FASTQ_COUNT
 
+# sample config parsing
+SCONFIG = config.get("SAMPLE_CONFIG")
+if SCONFIG is None:
+    raise ValueError("You must set --config SAMPLE_CONFIG=<path>")
+if not Path(SCONFIG).exists():
+    raise FileNotFoundError("{0} does not exist".format(SCONFIG))
+
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
 SAMPLES = SAMPLE_CONFIG['samples'].keys()
