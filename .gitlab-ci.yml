@@ -1,0 +1,13 @@
+image: python:3.6-stretch
+
+before_script:
+  - pip install -r requirements.txt
+  - pip install -r requirements-dev.txt
+
+test_sanities:
+  script:
+    - py.test --tag sanity
+
+test_dry_run:
+  script:
+    - py.test --tag dry-run

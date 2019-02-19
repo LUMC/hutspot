@@ -1,16 +1,52 @@
 import json
 from functools import partial
 from os.path import join, basename
+from pathlib import Path
 
 from pyfaidx import Fasta
 
-OUT_DIR = config.get("OUTPUT_DIR")
+OUT_DIR = config.get("OUTPUT_DIR")  # TODO: use regular snakemake option?
+if OUT_DIR is None:
+    raise ValueError("You must set --config OUT_DIR=<path>")
+
 REFERENCE = config.get("REFERENCE")
-JAVA = config.get("JAVA")
+if REFERENCE is None:
+    raise ValueError("You must set --config REFERENCE=<path>")
+if not Path(REFERENCE).exists():
+    raise FileNotFoundError("Reference file {0} "
+                            "does not exist.".format(REFERENCE))
+
+JAVA = config.get("JAVA")  # TODO: should be handled by conda?!
+if JAVA is None:
+    raise ValueError("You must set --config JAVA=<path>")
+if not Path(JAVA).exists():
+    raise FileNotFoundError("{0} does not exist".format(JAVA))
+
 GATK = config.get("GATK")
+if GATK is None:
+    raise ValueError("You must set --config GATK=<path>")
+if not Path(GATK).exists():
+    raise FileNotFoundError("{0} does not exist.".format(GATK))
+
 DBSNP = config.get("DBSNP")
+if DBSNP is None:
+    raise ValueError("You must set --config DBSNP=<path>")
+if not Path(DBSNP).exists():
+    raise FileNotFoundError("{0} does not exist".format(DBSNP))
+
 ONETHOUSAND = config.get("ONETHOUSAND")
+if ONETHOUSAND is None:
+    raise ValueError("You must set --config ONETHOUSAND=<path>")
+if not Path(ONETHOUSAND).exists():
+    raise FileNotFoundError("{0} does not exist".format(ONETHOUSAND))
+
 HAPMAP = config.get("HAPMAP")
+if HAPMAP is None:
+    raise ValueError("You must set --config HAPMAP=<path>")
+if not Path(HAPMAP).exists():
+    raise FileNotFoundError("{0} does not exist".format(HAPMAP))
+
+# these are all optional
 BED = config.get("BED", "")  # comma-separated list of BED files
 REFFLAT = config.get("REFFLAT", "")  # comma-separated list of refFlat files
 FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
@@ -35,6 +71,13 @@ if FASTQ_COUNT is None:
     fqc = "python {0}".format(fsrc_dir("src", "fastq-count.py"))
 else:
     fqc = FASTQ_COUNT
+
+# sample config parsing
+SCONFIG = config.get("SAMPLE_CONFIG")
+if SCONFIG is None:
+    raise ValueError("You must set --config SAMPLE_CONFIG=<path>")
+if not Path(SCONFIG).exists():
+    raise FileNotFoundError("{0} does not exist".format(SCONFIG))
 
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
