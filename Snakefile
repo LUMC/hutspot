@@ -1,16 +1,41 @@
 import json
 from functools import partial
 from os.path import join, basename
+from pathlib import Path
 
 from pyfaidx import Fasta
 
 OUT_DIR = config.get("OUTPUT_DIR")
+if OUT_DIR is None:
+    raise ValueError("You must set --config OUT_DIR=<path>")
+
 REFERENCE = config.get("REFERENCE")
-JAVA = config.get("JAVA")
+if REFERENCE is None:
+    raise ValueError("You must set --config REFERENCE=<path>")
+if not Path(reference).exists:
+    raise FileNotFoundError("Reference file does not exist.")
+
+JAVA = config.get("JAVA")  # TODO: should be handled by conda?!
+if JAVA is None:
+    raise ValueError("You must set --config JAVA=<path>")
+
 GATK = config.get("GATK")
+if GATK is None:
+    raise ValueError("You must set --config GATK=<path>")
+
 DBSNP = config.get("DBSNP")
+if DBSNP is None:
+    raise ValueError("You must set --config DBSNP=<path>")
+
 ONETHOUSAND = config.get("ONETHOUSAND")
+if ONETHOUSAND is None:
+    raise ValueError("You must set --config ONETHOUSAND=<path>")
+
 HAPMAP = config.get("HAPMAP")
+if HAPMAP is None:
+    raise ValueError("You must set --config HAPMAP")
+
+# these are all optional
 BED = config.get("BED", "")  # comma-separated list of BED files
 REFFLAT = config.get("REFFLAT", "")  # comma-separated list of refFlat files
 FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
