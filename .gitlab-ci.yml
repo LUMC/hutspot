@@ -6,4 +6,8 @@ before_script:
 
 test_sanities:
   script:
-    - py.test
+    - py.test --tag sanity
+
+test_dry_run:
+  script:
+    - py.test --tag dry-run
