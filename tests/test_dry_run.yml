@@ -1,7 +1,7 @@
 - name: test-dry-run
-  command: >
+  command: >-
     snakemake -n -r -p -s Snakefile --config OUTPUT_DIR=teststtest/
-    JAVA=$(which java) REFERENCE=tests/data/ref.fa GATK=README.md
+    JAVA=/usr/bin/java REFERENCE=tests/data/ref.fa GATK=README.md
     DBSNP=tests/data/database.vcf.gz ONETHOUSAND=tests/data/database.vcf.gz
     HAPMAP=tests/data/database.vcf.gz
     SAMPLE_CONFIG=tests/data/sample_config.json
