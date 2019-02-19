@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pyfaidx import Fasta
 
-OUT_DIR = config.get("OUTPUT_DIR")
+OUT_DIR = config.get("OUTPUT_DIR")  # TODO: use regular snakemake option?
 if OUT_DIR is None:
     raise ValueError("You must set --config OUT_DIR=<path>")
 
@@ -13,27 +13,38 @@ REFERENCE = config.get("REFERENCE")
 if REFERENCE is None:
     raise ValueError("You must set --config REFERENCE=<path>")
 if not Path(REFERENCE).exists():
-    raise FileNotFoundError("Reference file does not exist.")
+    raise FileNotFoundError("Reference file {0} "
+                            "does not exist.".format(REFERENCE))
 
 JAVA = config.get("JAVA")  # TODO: should be handled by conda?!
 if JAVA is None:
     raise ValueError("You must set --config JAVA=<path>")
+if not Path(JAVA).exists():
+    raise FileNotFoundError("{0} does not exist".format(JAVA))
 
 GATK = config.get("GATK")
 if GATK is None:
     raise ValueError("You must set --config GATK=<path>")
+if not Path(GATK).exists():
+    raise FileNotFoundError("{0} does not exist.".format(GATK))
 
 DBSNP = config.get("DBSNP")
 if DBSNP is None:
     raise ValueError("You must set --config DBSNP=<path>")
+if not Path(DBSNP).exists():
+    raise FileNotFoundError("{0} does not exist".format(DBSNP))
 
 ONETHOUSAND = config.get("ONETHOUSAND")
 if ONETHOUSAND is None:
     raise ValueError("You must set --config ONETHOUSAND=<path>")
+if not Path(ONETHOUSAND).exists():
+    raise FileNotFoundError("{0} does not exist".format(ONETHOUSAND))
 
 HAPMAP = config.get("HAPMAP")
 if HAPMAP is None:
-    raise ValueError("You must set --config HAPMAP")
+    raise ValueError("You must set --config HAPMAP=<path>")
+if not Path(HAPMAP).exists():
+    raise FileNotFoundError("{0} does not exist".format(HAPMAP))
 
 # these are all optional
 BED = config.get("BED", "")  # comma-separated list of BED files
