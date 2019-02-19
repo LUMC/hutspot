@@ -12,7 +12,7 @@ if OUT_DIR is None:
 REFERENCE = config.get("REFERENCE")
 if REFERENCE is None:
     raise ValueError("You must set --config REFERENCE=<path>")
-if not Path(reference).exists:
+if not Path(REFERENCE).exists():
     raise FileNotFoundError("Reference file does not exist.")
 
 JAVA = config.get("JAVA")  # TODO: should be handled by conda?!

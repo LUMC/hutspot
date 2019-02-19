@@ -1,1 +1,18 @@
-- name
+- name: test-no-output-dir
+  command: snakemake -n -r -p -s Snakefile
+  exit_code: 1
+  stdout:
+    contains:
+      - "You must set --config OUT_DIR=<path>"
+- name: test-no-reference
+  command: snakemake -n -r -p -s Snakefile --config OUTPUT_DIR=/teststtest/
+  exit_code: 1
+  stdout:
+    contains:
+      - "You must set --config REFERENCE=<path>"
+- name: test-reference-does-not-exist
+  command: snakemake -n -r -p -s Snakefile --config OUTPUT_DIR=/teststtest/ REFERENCE=/very/unlikely/to/exist
+  exit_code: 1
+  stdout:
+    contains:
+      - "Reference file does not exist"
