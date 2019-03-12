@@ -279,3 +279,8 @@ digraph snakemake_dag {
 	24 -> 28 [color="red"]
 }  
 ```
+
+LICENSE
+=======
+
+AGPL-3.0
