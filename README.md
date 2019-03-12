@@ -190,9 +190,14 @@ more complex, as nearly all rules are duplicated by sample and some
 As a rough estimate of the total number of jobs in pipeline you can use
 the following formula:
 
+<a href="https://www.codecogs.com/eqnedit.php?latex=n_{jobs}&space;=&space;4&plus;(21*n_{samples})&plus;(n_{samples}*n_{beds})&plus;(n_{samples}*n_{chunks})&plus;n_{chunks}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?n_{jobs}&space;=&space;4&plus;(21*n_{samples})&plus;(n_{samples}*n_{beds})&plus;(n_{samples}*n_{chunks})&plus;n_{chunks}" title="n_{jobs} = 4+(21*n_{samples})+(n_{samples}*n_{beds})+(n_{samples}*n_{chunks})+n_{chunks}" /></a>
+
+<!---
+Note: math doesn't work on github. The following _does_ work in gitlab
 ```math
 jobs = 4+(21*n_{samples})+(1*n_{samples}*n_{beds})+(1*n_{samples}*n_{chunks})+(1*n_{chunks})
-``` 
+```
+--->
 
 This gives about 12,000 jobs for a 96-sample run with 2 bed files and 100 chunks.
 
