@@ -113,7 +113,7 @@ The following configuration values are **required**:
 
 | configuration | description |
 | ------------- | ----------- |
-| `OUT_DIR` | Absolute path to output directory |
+| `OUTPUT_DIR` | Absolute path to output directory |
 | `REFERENCE` | Absolute path to fasta file |
 | `SAMPLE_CONFIG` | Path to config file as described above |
 | `GATK` | Path to GATK jar. **Must** be version 3.7  |
