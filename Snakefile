@@ -28,10 +28,6 @@ from pathlib import Path
 
 from pyfaidx import Fasta
 
-OUT_DIR = config.get("OUTPUT_DIR")  # TODO: use regular snakemake option?
-if OUT_DIR is None:
-    raise ValueError("You must set --config OUT_DIR=<path>")
-
 REFERENCE = config.get("REFERENCE")
 if REFERENCE is None:
     raise ValueError("You must set --config REFERENCE=<path>")

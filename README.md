@@ -113,7 +113,6 @@ The following configuration values are **required**:
 
 | configuration | description |
 | ------------- | ----------- |
-| `OUTPUT_DIR` | Absolute path to output directory |
 | `REFERENCE` | Absolute path to fasta file |
 | `SAMPLE_CONFIG` | Path to config file as described above |
 | `GATK` | Path to GATK jar. **Must** be version 3.7  |
@@ -169,7 +168,6 @@ snakemake -s Snakefile \
 --restart-times 2 \
 -T \
 --config SAMPLE_CONFIG=samples.json \
-OUTPUT_DIR=/path/to/odir \
 REFERENCE=/path/to/genome.fasta \
 GATK=/path/to/GenomeAnalysisTK.jar \
 DBSNP=/path/to/dbsnp.vcf.gz \
