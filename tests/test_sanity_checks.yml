@@ -1,11 +1,3 @@
-- name: test-no-output-dir
-  command: snakemake -n -r -p -s Snakefile
-  exit_code: 1
-  stdout:
-    contains:
-      - "You must set --config OUT_DIR=<path>"
-  tags:
-      - sanity
 - name: test-no-reference
   command: snakemake -n -r -p -s Snakefile --config OUTPUT_DIR=/teststtest/
   exit_code: 1
