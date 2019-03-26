@@ -1,17 +1,39 @@
-image: python:3.6-stretch
+.docker_before_script_anchor: &docker_before_script_anchor
+  before_script:
+    - pip install -r requirements.txt
+    - pip install -r requirements-dev.txt
 
-before_script:
-  - pip install -r requirements.txt
-  - pip install -r requirements-dev.txt
+stages:
+  - sanity
+  - dry-run
+  - integration
 
 test_sanities:
+  <<: *docker_before_script_anchor
   script:
     - py.test --tag sanity
+  image: python:3.6-stretch
   tags:
     - docker
+  stage: sanity
 
 test_dry_run:
+  <<: *docker_before_script_anchor
   script:
     - py.test --tag dry-run
+  image: python:3.6-stretch
   tags:
     - docker
+  stage: dry-run
+
+test_integration:
+  before_script:
+    - export BASETEMP=$(mktemp -p ${RUN_BASE_DIR} -d)
+  script:
+    - source ${CONDA_SH}
+    - conda activate hutspot-pipeline
+    - export PATH=${PATH}:${CONDA_EXTRA_PATH}
+    - py.test --tag integration --basetemp ${BASETEMP} --keep-workflow-wd
+  tags:
+    - slurm
+  stage: integration
