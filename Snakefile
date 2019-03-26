@@ -177,11 +177,15 @@ def metrics(do_metrics=True):
     if not do_metrics:
         return ""
 
-    fqcr = expand("{sample}/pre_process/raw_fastqc/.done.txt", sample=SAMPLES)
-    fqcm = expand("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip", sample=SAMPLES)
-    fqcp = expand("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip", sample=SAMPLES)
+    fqcr = expand("{sample}/pre_process/raw_fastqc/.done.txt",
+                  sample=SAMPLES)
+    fqcm = expand("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
+                  sample=SAMPLES)
+    fqcp = expand("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
+                  sample=SAMPLES)
     if len(REFFLATS) >= 1:
-        coverage_stats = expand("{sample}/coverage/{ref}.coverages.tsv", sample=SAMPLES, ref=BASE_REFFLATS)
+        coverage_stats = expand("{sample}/coverage/{ref}.coverages.tsv",
+                                sample=SAMPLES, ref=BASE_REFFLATS)
     else:
         coverage_stats = []
     stats = "stats.json"
@@ -232,7 +236,8 @@ rule seqtk_r1:
     output:
         fastq=temp("{sample}/pre_process/{sample}.sampled_R1.fastq.gz")
     conda: "envs/seqtk.yml"
-    shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} {params.max_bases}"
+    shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
+           "{params.max_bases}"
 
 
 rule seqtk_r2:
@@ -246,7 +251,8 @@ rule seqtk_r2:
     output:
         fastq = temp("{sample}/pre_process/{sample}.sampled_R2.fastq.gz")
     conda: "envs/seqtk.yml"
-    shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} {params.max_bases}"
+    shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
+           "{params.max_bases}"
 
 
 # contains original merged fastq files as input to prevent them from being prematurely deleted
@@ -327,9 +333,9 @@ rule baserecal:
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
     conda: "envs/gatk.yml"
-    shell: "{input.java} -XX:ParallelGCThreads=1 -jar {input.gatk} -T BaseRecalibrator "
-           "-I {input.bam} -o {output.grp} -nct 8 -R {input.ref} "
-           "-cov ReadGroupCovariate -cov QualityScoreCovariate "
+    shell: "{input.java} -XX:ParallelGCThreads=1 -jar {input.gatk} -T "
+           "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
+           "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
            "-cov CycleCovariate -cov ContextCovariate -knownSites "
            "{input.dbsnp} -knownSites {input.one1kg} "
            "-knownSites {input.hapmap}"
@@ -348,7 +354,8 @@ rule gvcf_scatter:
         gvcf=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"),
         gvcf_tbi=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz.tbi")
     conda: "envs/gatk.yml"
-    shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 {input.gatk} -T HaplotypeCaller -ERC GVCF -I "
+    shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 {input.gatk} "
+           "-T HaplotypeCaller -ERC GVCF -I "
            "{input.bam} -R {input.ref} -D {input.dbsnp} "
            "-L '{params.chunk}' -o '{output.gvcf}' "
            "-variant_index_type LINEAR -variant_index_parameter 128000 "
@@ -358,16 +365,20 @@ rule gvcf_scatter:
 rule gvcf_gather:
     """Gather all gvcf scatters"""
     input:
-        gvcfs=expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz", chunk=CHUNKS),
-        tbis=expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz.tbi", chunk=CHUNKS),
+        gvcfs=expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
+                     chunk=CHUNKS),
+        tbis=expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz.tbi",
+                    chunk=CHUNKS),
         ref=REFERENCE,
         gatk=GATK
     params:
-        gvcfs="' -V '".join(expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz", chunk=CHUNKS))
+        gvcfs="' -V '".join(expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
+                                   chunk=CHUNKS))
     output:
         gvcf="{sample}/vcf/{sample}.g.vcf.gz"
     conda: "envs/gatk.yml"
-    shell: "java -Xmx4G -XX:ParallelGCThreads=1 -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "
+    shell: "java -Xmx4G -XX:ParallelGCThreads=1 -cp {input.gatk} "
+           "org.broadinstitute.gatk.tools.CatVariants "
            "-R {input.ref} -V '{params.gvcfs}' -out {output.gvcf} "
            "-assumeSorted"
 
@@ -379,13 +390,15 @@ rule genotype_scatter:
         ref=REFERENCE,
         gatk=GATK
     params:
-        li=" -V ".join(expand("{sample}/vcf/{sample}.g.vcf.gz", sample=SAMPLES)),
+        li=" -V ".join(expand("{sample}/vcf/{sample}.g.vcf.gz",
+                              sample=SAMPLES)),
         chunk="{chunk}"
     output:
         vcf=temp("multisample/genotype.{chunk}.part.vcf.gz"),
         vcf_tbi=temp("multisample/genotype.{chunk}.part.vcf.gz.tbi")
     conda: "envs/gatk.yml"
-    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 {input.gatk} -T GenotypeGVCFs -R {input.ref} "
+    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 {input.gatk} -T "
+           "GenotypeGVCFs -R {input.ref} "
            "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
 
 
@@ -393,15 +406,18 @@ rule genotype_gather:
     """Gather all genotyping scatters"""
     input:
         vcfs=expand("multisample/genotype.{chunk}.part.vcf.gz", chunk=CHUNKS),
-        tbis=expand("multisample/genotype.{chunk}.part.vcf.gz.tbi", chunk=CHUNKS),
+        tbis=expand("multisample/genotype.{chunk}.part.vcf.gz.tbi",
+                    chunk=CHUNKS),
         ref=REFERENCE,
         gatk=GATK
     params:
-        vcfs="' -V '".join(expand("multisample/genotype.{chunk}.part.vcf.gz", chunk=CHUNKS))
+        vcfs="' -V '".join(expand("multisample/genotype.{chunk}.part.vcf.gz",
+                                  chunk=CHUNKS))
     output:
         combined="multisample/genotyped.vcf.gz"
     conda: "envs/gatk.yml"
-    shell: "java -Xmx4G -XX:ParallelGCThreads=1 -cp {input.gatk} org.broadinstitute.gatk.tools.CatVariants "
+    shell: "java -Xmx4G -XX:ParallelGCThreads=1 -cp {input.gatk} "
+           "org.broadinstitute.gatk.tools.CatVariants "
            "-R {input.ref} -V '{params.vcfs}' -out {output.combined} "
            "-assumeSorted"
 
@@ -417,8 +433,9 @@ rule split_vcf:
     output:
         splitted="{sample}/vcf/{sample}_single.vcf.gz"
     conda: "envs/gatk.yml"
-    shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar {input.gatk} -T SelectVariants -sn "
-           "{params.s} -env -R {input.ref} -V {input.vcf} -o {output.splitted}"
+    shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar {input.gatk} "
+           "-T SelectVariants -sn {params.s} -env -R {input.ref} -V "
+           "{input.vcf} -o {output.splitted}"
 
 
 ## bam metrics
@@ -460,7 +477,8 @@ rule usable_basenum:
     output:
         num="{sample}/bams/{sample}.usable.basenum"
     conda: "envs/samtools.yml"
-    shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f10 | wc -c > {output.num}"
+    shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f10 | wc -c > "
+           "{output.num}"
 
 
 ## fastqc
@@ -475,7 +493,8 @@ rule fastqc_raw:
     output:
         aux="{sample}/pre_process/raw_fastqc/.done.txt"
     conda: "envs/fastqc.yml"
-    shell: "fastqc --nogroup -o {params.odir} {input.r1} {input.r2} && echo 'done' > {output.aux}"
+    shell: "fastqc --nogroup -o {params.odir} {input.r1} {input.r2} "
+           "&& echo 'done' > {output.aux}"
 
 
 rule fastqc_merged:
@@ -568,9 +587,10 @@ rule covstats:
         covj="{sample}/coverage/{bed}.covstats.json",
         covp="{sample}/coverage/{bed}.covstats.png"
     conda: "envs/covstat.yml"
-    shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} -b {input.bam} "
-           "-d  | python {input.covpy} - --plot {output.covp} "
-           "--title 'Targets coverage' --subtitle '{params.subt}' > {output.covj}"
+    shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
+           "-b {input.bam} -d  | python {input.covpy} - --plot {output.covp} "
+           "--title 'Targets coverage' --subtitle '{params.subt}' "
+           "> {output.covj}"
 
 
 rule vtools_coverage:
@@ -608,7 +628,8 @@ if len(BASE_BEDS) >= 1:
             unum="{sample}/bams/{sample}.unique.num",
             ubnum="{sample}/bams/{sample}.usable.basenum",
             fastqc="{sample}/pre_process/fastq_stats.json",
-            cov=expand("{{sample}}/coverage/{bed}.covstats.json", bed=BASE_BEDS),
+            cov=expand("{{sample}}/coverage/{bed}.covstats.json",
+                       bed=BASE_BEDS),
             colpy=colpy
         params:
             sample_name="{sample}",
@@ -656,7 +677,8 @@ rule merge_stats:
     output:
         stats="stats.json"
     conda: "envs/collectstats.yml"
-    shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} > {output.stats}"
+    shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} "
+           "> {output.stats}"
 
 
 rule stats_tsv:
