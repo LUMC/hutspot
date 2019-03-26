@@ -177,18 +177,14 @@ def metrics(do_metrics=True):
     if not do_metrics:
         return ""
 
-    fqcr = expand("{sample}/pre_process/raw_fastqc/.done.txt",
-                  sample=SAMPLES)
-    fqcm = expand("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
-                  sample=SAMPLES)
-    fqcp = expand("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
-                  sample=SAMPLES)
+    fqcr = expand("{sample}/pre_process/raw_fastqc/.done.txt", sample=SAMPLES)
+    fqcm = expand("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip", sample=SAMPLES)
+    fqcp = expand("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip", sample=SAMPLES)
     if len(REFFLATS) >= 1:
-        coverage_stats = expand("{sample}/coverage/{ref}.coverages.tsv",
-                                sample=SAMPLES, ref=BASE_REFFLATS)
+        coverage_stats = expand("{sample}/coverage/{ref}.coverages.tsv", sample=SAMPLES, ref=BASE_REFFLATS)
     else:
         coverage_stats = []
-    stats = "stats.json")
+    stats = "stats.json"
     return  fqcr + fqcm + fqcp + coverage_stats + [stats]
 
 
@@ -196,10 +192,8 @@ rule all:
     input:
         combined="multisample/genotyped.vcf.gz",
         report="multiqc_report/multiqc_report.html",
-        bais=expand("{sample}/bams/{sample}.markdup.bam.bai",
-                    sample=SAMPLES),
-        vcfs=expand("{sample}/vcf/{sample}_single.vcf.gz",
-                    sample=SAMPLES),
+        bais=expand("{sample}/bams/{sample}.markdup.bam.bai",sample=SAMPLES),
+        vcfs=expand("{sample}/vcf/{sample}_single.vcf.gz",sample=SAMPLES),
         stats=metrics()
 
 
@@ -266,7 +260,7 @@ rule sickle:
     output:
         r1 = temp("{sample}/pre_process/{sample}.trimmed_R1.fastq"),
         r2 = temp("{sample}/pre_process/{sample}.trimmed_R2.fastq"),
-        s = "{sample}/pre_process/{sample}.trimmed_singles.fastq",
+        s = "{sample}/pre_process/{sample}.trimmed_singles.fastq"
     conda: "envs/sickle.yml"
     shell: "sickle pe -f {input.r1} -r {input.r2} -t sanger -o {output.r1} "
            "-p {output.r2} -s {output.s}"
@@ -301,7 +295,7 @@ rule markdup:
     """Mark duplicates in BAM file"""
     input:
         bam = "{sample}/bams/{sample}.sorted.bam",
-        tmp = ancient("tmp"))
+        tmp = ancient("tmp")
     output:
         bam = "{sample}/bams/{sample}.markdup.bam",
         bai = "{sample}/bams/{sample}.markdup.bai",
@@ -364,15 +358,12 @@ rule gvcf_scatter:
 rule gvcf_gather:
     """Gather all gvcf scatters"""
     input:
-        gvcfs=expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
-                     chunk=CHUNKS),
-        tbis=expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz.tbi",
-                     chunk=CHUNKS),
+        gvcfs=expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz", chunk=CHUNKS),
+        tbis=expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz.tbi", chunk=CHUNKS),
         ref=REFERENCE,
         gatk=GATK
     params:
-        gvcfs="' -V '".join(expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
-                                 chunk=CHUNKS))
+        gvcfs="' -V '".join(expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz", chunk=CHUNKS))
     output:
         gvcf="{sample}/vcf/{sample}.g.vcf.gz"
     conda: "envs/gatk.yml"
@@ -384,13 +375,11 @@ rule gvcf_gather:
 rule genotype_scatter:
     """Run GATK's GenotypeGVCFs by chunk"""
     input:
-        gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz",
-                       sample=SAMPLES),
+        gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=SAMPLES),
         ref=REFERENCE,
         gatk=GATK
     params:
-        li=" -V ".join(expand("{sample}/vcf/{sample}.g.vcf.gz",
-                              sample=SAMPLES)),
+        li=" -V ".join(expand("{sample}/vcf/{sample}.g.vcf.gz", sample=SAMPLES)),
         chunk="{chunk}"
     output:
         vcf=temp("multisample/genotype.{chunk}.part.vcf.gz"),
@@ -403,15 +392,12 @@ rule genotype_scatter:
 rule genotype_gather:
     """Gather all genotyping scatters"""
     input:
-        vcfs=expand("multisample/genotype.{chunk}.part.vcf.gz",
-                    chunk=CHUNKS),
-        tbis=expand("multisample/genotype.{chunk}.part.vcf.gz.tbi",
-                    chunk=CHUNKS),
+        vcfs=expand("multisample/genotype.{chunk}.part.vcf.gz", chunk=CHUNKS),
+        tbis=expand("multisample/genotype.{chunk}.part.vcf.gz.tbi", chunk=CHUNKS),
         ref=REFERENCE,
         gatk=GATK
     params:
-        vcfs="' -V '".join(expand("multisample/genotype.{chunk}.part.vcf.gz",
-                                chunk=CHUNKS))
+        vcfs="' -V '".join(expand("multisample/genotype.{chunk}.part.vcf.gz", chunk=CHUNKS))
     output:
         combined="multisample/genotyped.vcf.gz"
     conda: "envs/gatk.yml"
@@ -622,8 +608,7 @@ if len(BASE_BEDS) >= 1:
             unum="{sample}/bams/{sample}.unique.num",
             ubnum="{sample}/bams/{sample}.usable.basenum",
             fastqc="{sample}/pre_process/fastq_stats.json",
-            cov=expand("{{sample}}/coverage/{bed}.covstats.json",
-                       bed=BASE_BEDS),
+            cov=expand("{{sample}}/coverage/{bed}.covstats.json", bed=BASE_BEDS),
             colpy=colpy
         params:
             sample_name="{sample}",
@@ -693,7 +678,7 @@ rule multiqc:
     input:
         stats="stats.tsv"
     params:
-        odir="."),
+        odir=".",
         rdir="multiqc_report"
     output:
         report="multiqc_report/multiqc_report.html"
