@@ -45,6 +45,7 @@ test_functional:
   script:
     - source ${CONDA_SH}
     - conda activate hutspot-pipeline
+    - export PATH=${PATH}:${CONDA_EXTRA_PATH}
     - py.test --tag functional --basetemp ${BASETEMP} --keep-workflow-wd
   tags:
     - slurm
