@@ -1,0 +1,21 @@
+- name: test-integration-run
+  command: >-
+    bash -c '
+    snakemake --use-conda --conda-prefix ${CONDA_PREFIX} --jobs 100 -w 120
+    --cluster 'sbatch' -r -p -s Snakefile -T
+    --config JAVA=$(which java)
+    REFERENCE=${FUNCTIONAL_REF} GATK=${GATK_JAR}
+    DBSNP=${FUNCTIONAL_DBSNP}
+    ONETHOUSAND=${FUNCTIONAL_ONETHOUSAND}
+    HAPMAP=${FUNCTIONAL_HAPMAP}
+    SAMPLE_CONFIG=${FUNCTIONAL_SAMPLE_CONFIG}'
+  exit_code: 0
+  stderr:
+    contains:
+      - "Job counts"
+      - "localrule all:"
+      - "(100%) done"
+    must_not_contain:
+      - "rror"
+  tags:
+    - functional

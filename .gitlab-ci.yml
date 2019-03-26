@@ -37,3 +37,16 @@ test_integration:
   tags:
     - slurm
   stage: integration
+
+test_functional:
+  before_script:
+    - export BASETEMP=$(mktemp -p ${RUN_BASE_DIR} -d)
+  script:
+    - source ${CONDA_SH}
+    - conda activate hutspot-pipeline
+    - py.test --tag functional --basetemp ${BASETEMP} --keep-workflow-wd
+  tags:
+    - slurm
+  stage: functional
+  only:
+    - schedules
