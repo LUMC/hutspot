@@ -1,0 +1,3 @@
+[submodule "cluster/slurm-cluster-status"]
+	path = cluster/slurm-cluster-status
+	url = https://github.com/LUMC/slurm-cluster-status.git
