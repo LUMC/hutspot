@@ -2,7 +2,9 @@
   command: >-
     bash -c '
     snakemake --use-conda --conda-prefix ${CONDA_PREFIX} --jobs 100 -w 120
-    --cluster "sbatch --parsable" -r -p -s Snakefile -T
+    --cluster "sbatch --parsable"
+    --cluster-status "{PWD}/cluster/slurm-cluster-status/slurm-cluster-status.py"
+    -r -p -s Snakefile -T
     --config JAVA=$(which java)
     REFERENCE=${FUNCTIONAL_REF} GATK=${GATK_JAR}
     DBSNP=${FUNCTIONAL_DBSNP}
