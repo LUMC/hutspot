@@ -1,4 +1,4 @@
-- name: test-integration-run
+- name: test-functional-run
   command: >-
     bash -c '
     snakemake --use-conda --conda-prefix ${CONDA_PREFIX} --jobs 100 -w 120

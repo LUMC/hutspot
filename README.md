@@ -135,20 +135,20 @@ The following configuration options are **optional**:
 To run on a cluster, snakemake needs to be called with some extra arguments.
 Additionally, it needs a cluster yaml file describing resources per job.
 
-In all cases, an environment variable named `DRMAA_LIBRARY_PATH` must be
-in the executing shell environment. This variable points to the `.so` file
-of the DRMAA library.
+If you run on a cluster with drmaa support,an environment variable named 
+`DRMAA_LIBRARY_PATH` must be in the executing shell environment. This variable 
+points to the `.so` file of the DRMAA library.
 
-A cluster.yml is bundled with this pipeline. It is optimized for SGE clusters,
-where the default vmem limit is 4G. If you run SLURM, or any other cluster
-system, you will have to write your own cluster yaml file. Please see the
-[snakemake documentation](http://snakemake.readthedocs.io/en/stable/snakefiles/configuration.html#cluster-configuration)
-for details on how to do so. Given the provided cluster.yml, activating the
+An sge-cluster.yml is bundled with this pipeline in the cluster directory. 
+It is optimized for SGE clusters, where the default vmem limit is 4G. 
+If you run SLURM, or any other cluster system, you will have to write your own
+cluster yaml file. Please see the [snakemake documentation](http://snakemake.readthedocs.io/en/stable/snakefiles/configuration.html#cluster-configuration)
+for details on how to do so. Given the provided sge-cluster.yml, activating the
 cluster mode can be done as follows:
 
 ```bash
 snakemake -s Snakefile \
---cluster-config cluster.yml
+--cluster-config cluster/sge-cluster.yml
 --drmaa ' -pe <PE_NAME> {cluster.threads} -q all.q -l h_vmem={cluster.vmem} -cwd -V -N hutspot' \
 ```
 
@@ -159,7 +159,7 @@ To sum up, a full pipeline run under a cluster would be called as:
 ```bash
 snakemake -s Snakefile \
 --use-conda \
---cluster-config cluster.yml \
+--cluster-config cluster/sge-cluster.yml \
 --drmaa ' -pe <PE_NAME> {cluster.threads} -q all.q -l h_vmem={cluster.vmem} -cwd -V -N hutspot' \
 --rerun-incomplete \
 --jobs 200 \
