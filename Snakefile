@@ -35,12 +35,6 @@ if not Path(REFERENCE).exists():
     raise FileNotFoundError("Reference file {0} "
                             "does not exist.".format(REFERENCE))
 
-JAVA = config.get("JAVA")  # TODO: should be handled by conda?!
-if JAVA is None:
-    raise ValueError("You must set --config JAVA=<path>")
-if not Path(JAVA).exists():
-    raise FileNotFoundError("{0} does not exist".format(JAVA))
-
 GATK = config.get("GATK")
 if GATK is None:
     raise ValueError("You must set --config GATK=<path>")
@@ -324,7 +318,6 @@ rule baserecal:
     """Base recalibrated BAM files"""
     input:
         bam = "{sample}/bams/{sample}.markdup.bam",
-        java = JAVA,
         gatk = GATK,
         ref = REFERENCE,
         dbsnp = DBSNP,
@@ -333,7 +326,7 @@ rule baserecal:
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
     conda: "envs/gatk.yml"
-    shell: "{input.java} -XX:ParallelGCThreads=1 -jar {input.gatk} -T "
+    shell: "java -XX:ParallelGCThreads=1 -jar {input.gatk} -T "
            "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
            "-cov CycleCovariate -cov ContextCovariate -knownSites "
