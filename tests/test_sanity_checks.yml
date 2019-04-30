@@ -16,26 +16,6 @@
       - "Reference file /very/unlikely/to/exist does not exist"
   tags:
     - sanity
-- name: test-no-java
-  command: >
-    snakemake -n -r -p -s Snakefile --config OUTPUT_DIR=/test/
-    REFERENCE=Snakefile
-  exit_code: 1
-  stdout:
-    contains:
-      - "You must set --config JAVA=<path>"
-  tags:
-    - sanity
-- name: test-java-does-not-exist
-  command: >
-    snakemake -n -r -p -s Snakefile --config OUTPUT_DIR=/test/
-    REFERENCE=Snakefile JAVA=/very/unlikely/to/exist
-  exit_code: 1
-  stdout:
-    contains:
-      - "/very/unlikely/to/exist does not exist"
-  tags:
-    - sanity
 - name: test-no-gatk
   command: >
     snakemake -n -r -p -s Snakefile --config OUTPUT_DIR=/test/
