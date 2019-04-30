@@ -99,7 +99,6 @@ the pipeline can be started with:
 ```bash
 snakemake -s Snakefile \
 --use-conda \
--T \
 --config <CONFIGURATION VALUES>
 ```
 
@@ -166,7 +165,6 @@ snakemake -s Snakefile \
 -w 120 \
 --max-jobs-per-second 30 \
 --restart-times 2 \
--T \
 --config SAMPLE_CONFIG=samples.json \
 REFERENCE=/path/to/genome.fasta \
 GATK=/path/to/GenomeAnalysisTK.jar \
