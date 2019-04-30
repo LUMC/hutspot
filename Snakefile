@@ -197,7 +197,7 @@ rule all:
 
 rule create_markdup_tmp:
     """Create tmp directory for mark duplicates"""
-    output: ancient("tmp")
+    output: directory("tmp")
     shell: "mkdir -p {output}"
 
 rule genome:
