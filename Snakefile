@@ -263,7 +263,7 @@ rule sickle:
         r1 = temp("{sample}/pre_process/{sample}.trimmed_R1.fastq"),
         r2 = temp("{sample}/pre_process/{sample}.trimmed_R2.fastq"),
         s = "{sample}/pre_process/{sample}.trimmed_singles.fastq"
-    singularity: "docker://quay.io/biocontainers/sickle-trim:1.33--ha92aebf_4 "
+    singularity: "docker://quay.io/biocontainers/sickle-trim:1.33--ha92aebf_4"
     conda: "envs/sickle.yml"
     shell: "sickle pe -f {input.r1} -r {input.r2} -t sanger -o {output.r1} "
            "-p {output.r2} -s {output.s}"
@@ -276,7 +276,7 @@ rule cutadapt:
     output:
         r1 = temp("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
         r2 = temp("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
-    singularity: "docker://quay.io/biocontainers/cutadapt:1.14--py36_0 "
+    singularity: "docker://quay.io/biocontainers/cutadapt:1.14--py36_0"
     conda: "envs/cutadapt.yml"
     shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG -m 1 -o {output.r1} "
            "{input.r1} -p {output.r2} {input.r2}"
@@ -715,6 +715,6 @@ rule multiqc:
         rdir="multiqc_report"
     output:
         report="multiqc_report/multiqc_report.html"
-    singularity: "docker://quay.io/biocontainers/multiqc:1.5--py36_0 "
+    singularity: "docker://quay.io/biocontainers/multiqc:1.5--py36_0"
     conda: "envs/multiqc.yml"
     shell: "multiqc -f -o {params.rdir} {params.odir} || touch {output.report}"
