@@ -290,6 +290,7 @@ rule align:
     params:
         rg = "@RG\\tID:{sample}_lib1\\tSM:{sample}\\tPL:ILLUMINA"
     output: temp("{sample}/bams/{sample}.sorted.bam")
+    singularity: "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:43ec6124f9f4f875515f9548733b8b4e5fed9aa6-0"
     conda: "envs/bwa.yml"
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
            "| picard SortSam CREATE_INDEX=TRUE TMP_DIR=null "
