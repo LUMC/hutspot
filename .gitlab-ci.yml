@@ -32,9 +32,11 @@ test_dry_run:
 
 
 test_integration_singularity:
-  <<: *docker_before_script_anchor
+  before_script:
+    - apt-get install python python-dev singularity-container
+    - pip install -r requirements.txt
+    - pip install -r requirements-dev.txt
   script:
-    - apt-get install singularity-container
     - py.test --tag singularity-integration
   image: debian:buster
   tags:
