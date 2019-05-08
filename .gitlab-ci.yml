@@ -33,6 +33,7 @@ test_dry_run:
 
 test_integration_singularity:
   before_script:
+    - apt-get update
     - apt-get install python python-dev singularity-container
     - pip install -r requirements.txt
     - pip install -r requirements-dev.txt
