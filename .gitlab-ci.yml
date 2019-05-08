@@ -39,6 +39,7 @@ test_integration_singularity:
   image: debian:buster
   tags:
     - docker
+  stage: integration
 
 test_integration:
   before_script:
