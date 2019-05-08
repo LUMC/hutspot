@@ -30,6 +30,16 @@ test_dry_run:
     - docker
   stage: dry-run
 
+
+test_integration_singularity:
+  <<: *docker_before_script_anchor
+  script:
+    - apt-get install singularity-container
+    - py.test --tag singularity-integration
+  image: debian:buster
+  tags:
+    - docker
+
 test_integration:
   before_script:
     - export BASETEMP=$(mktemp -p ${RUN_BASE_DIR} -d)

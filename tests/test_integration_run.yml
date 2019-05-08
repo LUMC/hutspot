@@ -18,3 +18,23 @@
       - "rror"
   tags:
     - integration
+- name: test-singularity-integration-no-cluster
+  command: >-
+    bash -c '
+    snakemake --singularity --jobs 100 -w 120
+    -r -p -s Snakefile
+    --config REFERENCE=tests/data/ref.fa GATK=tests/data/ref.fa
+    DBSNP=tests/data/database.vcf.gz
+    ONETHOUSAND=tests/data/database.vcf.gz
+    HAPMAP=tests/data/database.vcf.gz
+    SAMPLE_CONFIG=tests/data/sample_config.json'
+  exit_code: 0
+  stderr:
+    contains:
+      - "Job counts"
+      - "localrule all:"
+      - "(100%) done"
+    must_not_contain:
+      - "rror"
+  tags:
+    - singularity-integration
