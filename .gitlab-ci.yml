@@ -31,6 +31,8 @@ test_dry_run:
   stage: dry-run
 
 
+# this requires a priviliged docker container.
+# most docker runners will not do this
 test_integration_singularity:
   before_script:
     - apt-get update && apt-get install -y python3-pip
