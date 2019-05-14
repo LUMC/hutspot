@@ -301,7 +301,7 @@ rule markdup:
         bai = "{sample}/bams/{sample}.markdup.bai",
         metrics = "{sample}/bams/{sample}.markdup.metrics"
     conda: "envs/picard.yml"
-    shell: "picard MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
+    shell: "picard -Xmx4G MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT={input.bam} OUTPUT={output.bam} "
            "METRICS_FILE={output.metrics} "
            "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
