@@ -47,18 +47,6 @@ created, which conflicts with the automated environment creation.
 For this reason, hutspot **requires** you to manually specify the path to
 the GATK executable JAR via `--config GATK=/path/to/gatk.jar`.
 
-## Fastq-count
-
-Several steps in the pipeline collect fastq metrics via [fastq-count](https://github.com/sndrtj/fastq-count).
-This is a small tool implemented in Rust for speed reasons. As this tool
-is not yet in conda, it must be compiled on the user's system before 
-running the pipeline. When compiled, the path to the executable can be
-supplied via `--config FASTQ_COUNT=/path/to/fastq-count`.
-
-A drop-in replacement implemented in python exists in this repository.
-Not specifing the `FASTQ_COUNT` config value will use the python replacement.
-Do note that this python replacement is an order of magnitude slower.
-
 ## Operating system
 
 Hutspot was tested on Ubuntu 16.04 only.
