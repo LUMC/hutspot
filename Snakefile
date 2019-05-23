@@ -598,6 +598,7 @@ rule covstats:
     output:
         covj="{sample}/coverage/{bed}.covstats.json",
         covp="{sample}/coverage/{bed}.covstats.png"
+    singularity: "docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0"
     conda: "envs/covstat.yml"
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
            "-b {input.bam} -d  | python {input.covpy} - --plot {output.covp} "
