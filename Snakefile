@@ -317,6 +317,7 @@ rule bai:
         bai = "{sample}/bams/{sample}.markdup.bai"
     output:
         bai = "{sample}/bams/{sample}.markdup.bam.bai"
+    singularity: "docker://alpine:3.9.4"
     shell: "cp {input.bai} {output.bai}"
 
 rule baserecal:
@@ -330,7 +331,7 @@ rule baserecal:
         hapmap = HAPMAP
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
-    singularity: "docker://quay.io/biocontainers/gatk:3.8--py36_4"
+    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
     conda: "envs/gatk.yml"
     shell: "java -XX:ParallelGCThreads=1 -jar {input.gatk} -T "
            "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
@@ -352,7 +353,7 @@ rule gvcf_scatter:
     output:
         gvcf=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"),
         gvcf_tbi=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz.tbi")
-    singularity: "docker://quay.io/biocontainers/gatk:3.8--py36_4"
+    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
     conda: "envs/gatk.yml"
     shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 {input.gatk} "
            "-T HaplotypeCaller -ERC GVCF -I "
@@ -376,7 +377,7 @@ rule gvcf_gather:
                                    chunk=CHUNKS))
     output:
         gvcf="{sample}/vcf/{sample}.g.vcf.gz"
-    singularity: "docker://quay.io/biocontainers/gatk:3.8--py36_4"
+    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
     conda: "envs/gatk.yml"
     shell: "java -Xmx4G -XX:ParallelGCThreads=1 -cp {input.gatk} "
            "org.broadinstitute.gatk.tools.CatVariants "
@@ -397,7 +398,7 @@ rule genotype_scatter:
     output:
         vcf=temp("multisample/genotype.{chunk}.part.vcf.gz"),
         vcf_tbi=temp("multisample/genotype.{chunk}.part.vcf.gz.tbi")
-    singularity: "docker://quay.io/biocontainers/gatk:3.8--py36_4"
+    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
     conda: "envs/gatk.yml"
     shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 {input.gatk} -T "
            "GenotypeGVCFs -R {input.ref} "
@@ -418,7 +419,7 @@ rule genotype_gather:
     output:
         combined="multisample/genotyped.vcf.gz"
     conda: "envs/gatk.yml"
-    singularity: "docker://quay.io/biocontainers/gatk:3.8--py36_4"
+    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
     shell: "java -Xmx4G -XX:ParallelGCThreads=1 -cp {input.gatk} "
            "org.broadinstitute.gatk.tools.CatVariants "
            "-R {input.ref} -V '{params.vcfs}' -out {output.combined} "
@@ -435,7 +436,7 @@ rule split_vcf:
         s="{sample}"
     output:
         splitted="{sample}/vcf/{sample}_single.vcf.gz"
-    singularity: "docker://quay.io/biocontainers/gatk:3.8--py36_4"
+    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
     conda: "envs/gatk.yml"
     shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar {input.gatk} "
            "-T SelectVariants -sn {params.s} -env -R {input.ref} -V "
