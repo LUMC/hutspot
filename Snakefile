@@ -571,6 +571,7 @@ rule fastqc_stats:
         postqc_r1="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
         postqc_r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip",
         sc=fqpy
+    singularity: "docker://python:3.6-slim"
     conda: "envs/collectstats.yml"
     output:
         "{sample}/pre_process/fastq_stats.json"
@@ -645,6 +646,7 @@ if len(BASE_BEDS) >= 1:
             fthresh=FEMALE_THRESHOLD
         output:
             "{sample}/{sample}.stats.json"
+        singularity: "docker://python:3.6-slim"
         conda: "envs/collectstats.yml"
         shell: "python {input.colpy} --sample-name {params.sample_name} "
                "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
@@ -669,6 +671,7 @@ else:
             fthresh = FEMALE_THRESHOLD
         output:
             "{sample}/{sample}.stats.json"
+        singularity: "docker://python:3.6-slim"
         conda: "envs/collectstats.yml"
         shell: "python {input.colpy} --sample-name {params.sample_name} "
                "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
@@ -685,6 +688,7 @@ rule merge_stats:
         mpy=mpy
     output:
         stats="stats.json"
+    singularity: "docker://python:3.6-slim"
     conda: "envs/collectstats.yml"
     shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} "
            "> {output.stats}"
@@ -697,6 +701,7 @@ rule stats_tsv:
         sc=tsvpy
     output:
         stats="stats.tsv"
+    singularity: "docker://python:3.6-slim"
     conda: "envs/collectstats.yml"
     shell: "python {input.sc} -i {input.stats} > {output.stats}"
 
