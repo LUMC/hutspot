@@ -229,7 +229,7 @@ rule seqtk_r1:
     output:
         fastq=temp("{sample}/pre_process/{sample}.sampled_R1.fastq.gz")
     conda: "envs/seqtk.yml"
-    singularity: "docker://quay.io/biocontainers/seqtk:1.3--h84994c4_1"  # becomes a mulled container
+    singularity: "docker://quay.io/biocontainers/mulled-v2-13686261ac0aa5682c680670ff8cda7b09637943:d143450dec169186731bb4df6f045a3c9ee08eb6-0"
     shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
            "{params.max_bases}"
 
@@ -245,7 +245,7 @@ rule seqtk_r2:
     output:
         fastq = temp("{sample}/pre_process/{sample}.sampled_R2.fastq.gz")
     conda: "envs/seqtk.yml"
-    singularity: "docker://quay.io/biocontainers/seqtk:1.3--h84994c4_1"  # becomes a mulled container
+    singularity: "docker://quay.io/biocontainers/mulled-v2-13686261ac0aa5682c680670ff8cda7b09637943:d143450dec169186731bb4df6f045a3c9ee08eb6-0"
     shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
            "{params.max_bases}"
 
