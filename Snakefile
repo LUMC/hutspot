@@ -612,6 +612,7 @@ rule vtools_coverage:
         ref=get_refflatpath
     output:
         tsv="{sample}/coverage/{ref}.coverages.tsv"
+    singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
     conda: "envs/vcfstats.yml"
     shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
 
@@ -624,6 +625,7 @@ rule vcfstats:
         vcf="multisample/genotyped.vcf.gz"
     output:
         stats="multisample/vcfstats.json"
+    singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
     conda: "envs/vcfstats.yml"
     shell: "vtools-stats -i {input.vcf} > {output.stats}"
 
