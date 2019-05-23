@@ -501,7 +501,7 @@ rule fastqc_raw:
         odir="{sample}/pre_process/raw_fastqc"
     output:
         aux="{sample}/pre_process/raw_fastqc/.done.txt"
-    singularity: "docker://quay.io/biocontainers/fastqc:0.11.8--1"
+    singularity: "docker://quay.io/biocontainers/fastqc:0.11.5--1"
     conda: "envs/fastqc.yml"
     shell: "fastqc --nogroup -o {params.odir} {input.r1} {input.r2} "
            "&& echo 'done' > {output.aux}"
@@ -518,7 +518,7 @@ rule fastqc_merged:
     output:
         r1="{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
         r2="{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip"
-    singularity: "docker://quay.io/biocontainers/fastqc:0.11.8--1"
+    singularity: "docker://quay.io/biocontainers/fastqc:0.11.5--1"
     conda: "envs/fastqc.yml"
     shell: "bash {input.fq} {input.r1} {input.r2} "
            "{output.r1} {output.r2} {params.odir}"
@@ -535,7 +535,7 @@ rule fastqc_postqc:
     output:
         r1="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
         r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip"
-    singularity: "docker://quay.io/biocontainers/fastqc:0.11.8--1"
+    singularity: "docker://quay.io/biocontainers/fastqc:0.11.5--1"
     conda: "envs/fastqc.yml"
     shell: "bash {input.fq} {input.r1} {input.r2} "
            "{output.r1} {output.r2} {params.odir}"
