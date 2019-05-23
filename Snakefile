@@ -229,7 +229,7 @@ rule seqtk_r1:
     output:
         fastq=temp("{sample}/pre_process/{sample}.sampled_R1.fastq.gz")
     conda: "envs/seqtk.yml"
-    singularity: "docker://quay.io/biocontainers/seqtk:1.3--h84994c4_1"
+    singularity: "docker://quay.io/biocontainers/seqtk:1.3--h84994c4_1"  # becomes a mulled container
     shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
            "{params.max_bases}"
 
@@ -245,7 +245,7 @@ rule seqtk_r2:
     output:
         fastq = temp("{sample}/pre_process/{sample}.sampled_R2.fastq.gz")
     conda: "envs/seqtk.yml"
-    singularity: "docker://quay.io/biocontainers/seqtk:1.3--h84994c4_1"
+    singularity: "docker://quay.io/biocontainers/seqtk:1.3--h84994c4_1"  # becomes a mulled container
     shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
            "{params.max_bases}"
 
@@ -304,7 +304,7 @@ rule markdup:
         bam = "{sample}/bams/{sample}.markdup.bam",
         bai = "{sample}/bams/{sample}.markdup.bai",
         metrics = "{sample}/bams/{sample}.markdup.metrics"
-    singularity: "docker://quay.io/biocontainers/picard:2.19.2--0"
+    singularity: "docker://quay.io/biocontainers/picard:2.14--py36_0"
     conda: "envs/picard.yml"
     shell: "picard -Xmx4G MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT={input.bam} OUTPUT={output.bam} "
