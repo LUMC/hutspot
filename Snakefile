@@ -552,6 +552,7 @@ rule fqcount_preqc:
         fastqcount=fqc
     output:
         "{sample}/pre_process/{sample}.preqc_count.json"
+    singularity: "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0"
     shell: "{params.fastqcount} {input.r1} {input.r2} > {output}"
 
 
@@ -564,6 +565,7 @@ rule fqcount_postqc:
         fastqcount=fqc
     output:
         "{sample}/pre_process/{sample}.postqc_count.json"
+    singularity: "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0"
     shell: "{params.fastqcount} {input.r1} {input.r2} > {output}"
 
 
