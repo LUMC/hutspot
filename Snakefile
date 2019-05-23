@@ -80,11 +80,6 @@ fqpy = fsrc_dir("src", "fastqc_stats.py")
 tsvpy = fsrc_dir("src", "stats_to_tsv.py")
 fqsc = fsrc_dir("src", "safe_fastqc.sh")
 
-if FASTQ_COUNT is None:
-    fqc = "python {0}".format(fsrc_dir("src", "fastq-count.py"))
-else:
-    fqc = FASTQ_COUNT
-
 # sample config parsing
 SCONFIG = config.get("SAMPLE_CONFIG")
 if SCONFIG is None:
@@ -307,7 +302,7 @@ rule markdup:
         metrics = "{sample}/bams/{sample}.markdup.metrics"
     singularity: "docker://quay.io/biocontainers/picard:2.19.2--0"
     conda: "envs/picard.yml"
-    shell: "picard MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
+    shell: "picard -Xmx4G MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT={input.bam} OUTPUT={output.bam} "
            "METRICS_FILE={output.metrics} "
            "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
@@ -548,12 +543,11 @@ rule fqcount_preqc:
     input:
         r1="{sample}/pre_process/{sample}.merged_R1.fastq.gz",
         r2="{sample}/pre_process/{sample}.merged_R2.fastq.gz"
-    params:
-        fastqcount=fqc
     output:
         "{sample}/pre_process/{sample}.preqc_count.json"
     singularity: "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0"
-    shell: "{params.fastqcount} {input.r1} {input.r2} > {output}"
+    conda: "envs/fastq-count.yml"
+    shell: "fastq-count {input.r1} {input.r2} > {output}"
 
 
 rule fqcount_postqc:
@@ -561,12 +555,11 @@ rule fqcount_postqc:
     input:
         r1="{sample}/pre_process/{sample}.cutadapt_R1.fastq",
         r2="{sample}/pre_process/{sample}.cutadapt_R2.fastq"
-    params:
-        fastqcount=fqc
     output:
         "{sample}/pre_process/{sample}.postqc_count.json"
     singularity: "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0"
-    shell: "{params.fastqcount} {input.r1} {input.r2} > {output}"
+    conda: "envs/fastq-count.yml"
+    shell: "fastq-count {input.r1} {input.r2} > {output}"
 
 
 # fastqc stats
