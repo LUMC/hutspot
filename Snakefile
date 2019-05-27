@@ -719,7 +719,7 @@ rule stats_tsv:
         sc=tsvpy
     output:
         stats="stats.tsv"
-    singularity: "docker://python:3.6-slim"
+    singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
     conda: "envs/collectstats.yml"
     shell: "python {input.sc} -i {input.stats} > {output.stats}"
 
