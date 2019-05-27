@@ -588,7 +588,7 @@ rule fastqc_stats:
         postqc_r1="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
         postqc_r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip",
         sc=fqpy
-    singularity: "docker://python:3.6-slim"
+    singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
     conda: "envs/collectstats.yml"
     output:
         "{sample}/pre_process/fastq_stats.json"
