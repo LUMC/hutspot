@@ -193,28 +193,28 @@ rule all:
 rule create_markdup_tmp:
     """Create tmp directory for mark duplicates"""
     output: directory("tmp")
-    singularity: "docker://alpine:3.9.4"
+    singularity: "docker://debian:buster-slim"
     shell: "mkdir -p {output}"
 
 rule genome:
     """Create genome file as used by bedtools"""
     input: REFERENCE
     output: "current.genome"
-    singularity: "docker://alpine:3.9.4"
+    singularity: "docker://debian:buster-slim"
     shell: "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output}"
 
 rule merge_r1:
     """Merge all forward fastq files into one"""
     input: get_r1
     output: temp("{sample}/pre_process/{sample}.merged_R1.fastq.gz")
-    singularity: "docker://alpine:3.9.4"
+    singularity: "docker://debian:buster-slim"
     shell: "cat {input} > {output}"
 
 rule merge_r2:
     """Merge all reverse fastq files into one"""
     input: get_r2
     output: temp("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
-    singularity: "docker://alpine:3.9.4"
+    singularity: "docker://debian:buster-slim"
     shell: "cat {input} > {output}"
 
 
@@ -317,7 +317,7 @@ rule bai:
         bai = "{sample}/bams/{sample}.markdup.bai"
     output:
         bai = "{sample}/bams/{sample}.markdup.bam.bai"
-    singularity: "docker://alpine:3.9.4"
+    singularity: "docker://debian:buster-slim"
     shell: "cp {input.bai} {output.bai}"
 
 rule baserecal:
