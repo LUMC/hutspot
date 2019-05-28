@@ -15,28 +15,69 @@ GATK HaplotypeCaller.
     * 96 exomes in < 24 hours.
 * No unnecessary jobs
 * Coverage metrics for any number of bed files.
-* Separate conda environments for **every** step. No more dependency hell!
-Every job can potentially use different versions of the same package.
+* Fully containerized rules through singularity and biocontainers. Legacy 
+conda environments are available as well.  
 * Optionally sub-sample inputs when number of bases exceeds a user-defined
 threshold.
 
 # Installation
 
-We recommend the use of [conda](https://conda.io/docs/) for installing all
-dependencies. All rules have a separate conda environment, which guarantees
-every tool can use its own dependencies.
+To run this pipeline you will need the following at minimum:
 
-To install the base environment containing snakemake itself, activate conda
-and run the following in your terminal:
+* python 3.6
+* snakemake 5.2.0 or newer
+* pyfaidx 
 
-`conda env create -f environment.yml`
+This repository contains a [conda](https://conda.io/docs/) 
+environment file that you can use to install all minimum dependencies in a 
+conda environment:
 
-Subsequently running the pipeline with `--use-conda` will make sure 
-the correct conda environments get created. This requires a working
-internet connection. If you do not want conda environment to be created for
-each pipeline run, use the `--conda-prefix` argument. See the
-[snakemake documentation](http://snakemake.readthedocs.io/en/stable/executable.html)
-for more information. 
+```bash
+conda env create -f environment.yml
+``` 
+
+Alternatively, you can set up a python virtualenv and run
+
+```bash
+pip install -r requirements.txt
+```
+
+## Singularity 
+
+We highly recommend the user of the containerized rules through 
+[singularity](https://www.sylabs.io/singularity/).
+
+This option does, however,
+require you to install singularity on your system. As this usually requires 
+administrative privileges, singularity is not contained within our provided
+conda environment file.
+
+If you want to use singularity, make sure you install version 3 or higher. 
+
+### Debian
+If you happen to use Debian buster, singularity 3.0.3 comes straight out
+of the box with a simple:
+
+```bash
+sudo apt install singularity-container 
+```
+
+### Docker
+
+You can run singularity within a docker container. Please note that 
+the container **MUST** run in privileged mode for this to work. 
+
+We have provided our own container that includes singularity and snakemake
+[here](https://hub.docker.com/r/lumc/singularity-snakemake). 
+
+### Manual install
+
+If you don't use Debian buster and cannot run a privileged docker container,
+you - unfortunately :-( - will have to install singularity manually. 
+Please see the installation instructions 
+[here](https://github.com/sylabs/singularity/blob/master/INSTALL.md) on how
+to do that. 
+
 
 ## GATK
 
