@@ -5,6 +5,12 @@ channels:
   - defaults
 dependencies:
   - bc=1.06
+  - flex=2.6.4
+  - jq=1.6
+  - libgcc-ng=8.2.0
+  - libstdcxx-ng=8.2.0
+  - m4=1.4.18
+  - oniguruma=6.9.2
   - sed=4.4
   - seqtk=1.2
   - zlib=1.2.11

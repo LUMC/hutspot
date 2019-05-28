@@ -30,6 +30,21 @@ test_dry_run:
     - docker
   stage: dry-run
 
+
+# this requires a priviliged docker container.
+# most docker runners will not do this
+test_integration_singularity:
+  before_script:
+    - apt-get update && apt-get install -y python3-pip
+    - pip3 install pyfaidx
+    - pip3 install -r requirements-dev.txt
+  script:
+    - py.test --tag singularity-integration
+  image: lumc/singularity-snakemake:3.0.3-5.4.0
+  tags:
+    - docker
+  stage: integration
+
 test_integration:
   before_script:
     - export BASETEMP=$(mktemp -p ${RUN_BASE_DIR} -d)
