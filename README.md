@@ -81,9 +81,9 @@ to do that.
 
 ## GATK
 
-For license reasons, conda cannot fully install the GATK. The JAR 
+For license reasons, conda and singularity cannot fully install the GATK. The JAR 
 must be registered by running `gatk-register` after the environment is
-created, which conflicts with the automated environment creation.
+created, which conflicts with the automated environment/container creation.
  
 For this reason, hutspot **requires** you to manually specify the path to
 the GATK executable JAR via `--config GATK=/path/to/gatk.jar`.
@@ -127,7 +127,7 @@ the pipeline can be started with:
 
 ```bash
 snakemake -s Snakefile \
---use-conda \
+--use-singularity \
 --config <CONFIGURATION VALUES>
 ```
 
@@ -180,13 +180,34 @@ snakemake -s Snakefile \
 --drmaa ' -pe <PE_NAME> {cluster.threads} -q all.q -l h_vmem={cluster.vmem} -cwd -V -N hutspot' \
 ```
 
+## Binding additional directories under singularity
+
+In singularity mode, snakemake binds the location of itself in the container. 
+The current working directory is also visible directly in the container. 
+
+In many cases, this is not enough, and will result in `FileNotFoundError`s.
+E.g., suppose you run your pipeline in `/runs`, but your fastq files live in 
+`/fastq` and your reference genome lives in `/genomes`. We would have to bind
+`/fastq` and `/genomes` in the container. 
+
+This can be accomplished with `--singularity-args`, which accepts a simple 
+string of arguments passed to singularity. E.g. in the above example,
+we could do:
+
+```bash
+snakemake -S Snakefile \
+--use-singularity  \ 
+--singularity-args ' --bind /fastq:/fastq --bind /genomes:/genomes '
+```
+
 ## Summing up
 
 To sum up, a full pipeline run under a cluster would be called as:
 
 ```bash
 snakemake -s Snakefile \
---use-conda \
+--use-singularity \
+--singularity-args ' --bind /some_path:/some_path ' \
 --cluster-config cluster/sge-cluster.yml \
 --drmaa ' -pe <PE_NAME> {cluster.threads} -q all.q -l h_vmem={cluster.vmem} -cwd -V -N hutspot' \
 --rerun-incomplete \
@@ -203,6 +224,21 @@ HAPMAP=/path/to/hapmap.vcf \
 FASTQ_COUNT=/path/to/fastq-count \
 BED=/path/to/interesting_region.bed
 ```
+
+## Using conda in stead of singularity
+
+Legacy conda environments are also available for each and every rule. 
+Simply use `--use-conda` in stead of `--use-singularity` to enable conda
+environments.
+
+As dependency conflicts can and do arise with conda, it is recommended to 
+combine this flag with `--conda-prefix`, such that you only have to 
+build the environments once.
+
+The conda environments use the same versions of tools as the singularity
+containers, bar one:
+
+* `fastqc` uses version 0.11.5 on conda, but 0.11.7 on singularity.    
 
 # Graph
 
