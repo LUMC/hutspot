@@ -225,10 +225,10 @@ FASTQ_COUNT=/path/to/fastq-count \
 BED=/path/to/interesting_region.bed
 ```
 
-## Using conda in stead of singularity
+## Using conda instead of singularity
 
 Legacy conda environments are also available for each and every rule. 
-Simply use `--use-conda` in stead of `--use-singularity` to enable conda
+Simply use `--use-conda` instead of `--use-singularity` to enable conda
 environments.
 
 As dependency conflicts can and do arise with conda, it is recommended to 
@@ -263,7 +263,7 @@ jobs = 4+(21*n_{samples})+(1*n_{samples}*n_{beds})+(1*n_{samples}*n_{chunks})+(1
 This gives about 12,000 jobs for a 96-sample run with 2 bed files and 100 chunks.
 
 NOTE: the graph will only render if your markdown viewer supports `plantuml`.
-Having trouble viewing the graph? See [this](img/rulegraph.svg) static SVG in stead.
+Having trouble viewing the graph? See [this](img/rulegraph.svg) static SVG instead.
 
 ```plantuml
 digraph snakemake_dag {
