@@ -412,7 +412,7 @@ rule genotype_scatter:
     input:
         gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=SAMPLES),
         tbis = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",
-                      samples=SAMPLES),
+                      sample=SAMPLES),
         ref=REFERENCE,
         gatk=GATK
     params:
@@ -442,7 +442,8 @@ rule genotype_chunkfile:
     executed in snakemake's own environment. 
     """
     params:
-        vcfs = expand("multisample/genotype.{chunk}.part.vcf.gz")
+        vcfs = expand("multisample/genotype.{chunk}.part.vcf.gz",
+                      chunk=CHUNKS)
     output:
         file = "multisample/chunkfile.txt"
     run:
