@@ -469,7 +469,7 @@ rule genotype_gather_tbi:
     input:
         vcf = "multisample/genotyped.vcf.gz"
     output:
-        tbi = "mulitsample/genotyped.vcf.gz.tbi"
+        tbi = "multisample/genotyped.vcf.gz.tbi"
     singularity: "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0"
     shell: "tabix -pvcf {input.vcf}"
 
@@ -672,6 +672,7 @@ rule vtools_coverage:
     """Calculate coverage statistics per transcript"""
     input:
         gvcf="{sample}/vcf/{sample}.g.vcf.gz",
+        tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi",
         ref=get_refflatpath
     output:
         tsv="{sample}/coverage/{ref}.coverages.tsv"
@@ -685,7 +686,8 @@ rule vtools_coverage:
 rule vcfstats:
     """Calculate vcf statistics"""
     input:
-        vcf="multisample/genotyped.vcf.gz"
+        vcf="multisample/genotyped.vcf.gz",
+        tbi = "multisample/genotyped.vcf.gz.tbi"
     output:
         stats="multisample/vcfstats.json"
     singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
