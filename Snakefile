@@ -363,32 +363,56 @@ rule gvcf_scatter:
            "-BQSR {input.bqsr}"
 
 
-rule gvcf_gather:
-    """Gather all gvcf scatters"""
-    input:
-        gvcfs=expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
-                     chunk=CHUNKS),
-        tbis=expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz.tbi",
-                    chunk=CHUNKS),
-        ref=REFERENCE,
-        gatk=GATK
+rule gvcf_chunkfile:
+    """
+    Create simple text file with paths to chunks for GVCF.
+    
+    This uses a run directive in stead of a shell directive because
+    the amount of chunks may be so large the shell would error out with
+    an "argument list too long" error. 
+    See https://unix.stackexchange.com/a/120842 for more info
+    
+    This also means this rule lives outside of singularity/conda and is
+    executed in snakemake's own environment. 
+    """
     params:
-        gvcfs="' -V '".join(expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
-                                   chunk=CHUNKS))
+        chunkfiles = expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
+                            chunk=CHUNKS)
     output:
-        gvcf="{sample}/vcf/{sample}.g.vcf.gz"
-    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
-    conda: "envs/gatk.yml"
-    shell: "java -Xmx4G -XX:ParallelGCThreads=1 -cp {input.gatk} "
-           "org.broadinstitute.gatk.tools.CatVariants "
-           "-R {input.ref} -V '{params.gvcfs}' -out {output.gvcf} "
-           "-assumeSorted"
+        file = "{sample}/vcf/chunkfile.txt"
+    run:
+        with open(output.file) as ohandle:
+            for filename in params.chunkfiles:
+                ohandle.write(filename + "\n")
+
+rule gvcf_gather:
+    """Gather all GVCF scatters"""
+    input:
+        gvcfs = expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
+                       chunk=CHUNKS),
+        chunkfile = "{sample}/vcf/chunkfile.txt"
+    output:
+        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
+    singularity: "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4"
+    shell: "bcftools concat -f {input.chunkfile} -n > {output.gvcf}"
+
+
+rule gvcf_gather_tbi:
+    """Index GVCF"""
+    input:
+        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
+    output:
+        tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
+    singularity: "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0"
+    shell: "tabix -pvcf {input.gvcf}"
 
 
 rule genotype_scatter:
     """Run GATK's GenotypeGVCFs by chunk"""
     input:
         gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=SAMPLES),
+        tbis = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",
+                      samples=SAMPLES),
         ref=REFERENCE,
         gatk=GATK
     params:
