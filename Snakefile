@@ -393,6 +393,7 @@ rule gvcf_gather:
         chunkfile = "{sample}/vcf/chunkfile.txt"
     output:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
+    conda: "envs/bcftools.yml"
     singularity: "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4"
     shell: "bcftools concat -f {input.chunkfile} -n > {output.gvcf}"
 
@@ -403,6 +404,7 @@ rule gvcf_gather_tbi:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
     output:
         tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
+    conda: "envs/tabix.yml"
     singularity: "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0"
     shell: "tabix -pvcf {input.gvcf}"
 
@@ -460,6 +462,7 @@ rule genotype_gather:
         chunkfile = "multisample/chunkfile.txt"
     output:
         vcf = "multisample/genotyped.vcf.gz"
+    conda: "envs/bcftools.yml"
     singularity: "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4"
     shell: "bcftools concat -f {input.chunkfile} -n > {output.vcf}"
 
@@ -470,6 +473,7 @@ rule genotype_gather_tbi:
         vcf = "multisample/genotyped.vcf.gz"
     output:
         tbi = "multisample/genotyped.vcf.gz.tbi"
+    conda: "envs/tabix.yml"
     singularity: "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0"
     shell: "tabix -pvcf {input.vcf}"
 
