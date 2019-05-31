@@ -381,7 +381,7 @@ rule gvcf_chunkfile:
     output:
         file = "{sample}/vcf/chunkfile.txt"
     run:
-        with open(output.file) as ohandle:
+        with open(output.file, "w") as ohandle:
             for filename in params.chunkfiles:
                 ohandle.write(filename + "\n")
 
@@ -429,31 +429,55 @@ rule genotype_scatter:
            "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
 
 
-rule genotype_gather:
-    """Gather all genotyping scatters"""
-    input:
-        vcfs=expand("multisample/genotype.{chunk}.part.vcf.gz", chunk=CHUNKS),
-        tbis=expand("multisample/genotype.{chunk}.part.vcf.gz.tbi",
-                    chunk=CHUNKS),
-        ref=REFERENCE,
-        gatk=GATK
+rule genotype_chunkfile:
+    """
+    Create simple text file with paths to chunks for genotyping
+    
+    This uses a run directive in stead of a shell directive because
+    the amount of chunks may be so large the shell would error out with
+    an "argument list too long" error. 
+    See https://unix.stackexchange.com/a/120842 for more info
+    
+    This also means this rule lives outside of singularity/conda and is
+    executed in snakemake's own environment. 
+    """
     params:
-        vcfs="' -V '".join(expand("multisample/genotype.{chunk}.part.vcf.gz",
-                                  chunk=CHUNKS))
+        vcfs = expand("multisample/genotype.{chunk}.part.vcf.gz")
     output:
-        combined="multisample/genotyped.vcf.gz"
-    conda: "envs/gatk.yml"
-    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
-    shell: "java -Xmx4G -XX:ParallelGCThreads=1 -cp {input.gatk} "
-           "org.broadinstitute.gatk.tools.CatVariants "
-           "-R {input.ref} -V '{params.vcfs}' -out {output.combined} "
-           "-assumeSorted"
+        file = "multisample/chunkfile.txt"
+    run:
+        with open(output.file, "w") as ohandle:
+            for filename in params.vcfs:
+                ohandle.write(filename + "\n")
+
+
+rule genotype_gather:
+    """Gather all genotyping VCFs"""
+    input:
+        vcfs = expand("multisample/genotype.{chunk}.part.vcf.gz",
+                      chunk=CHUNKS),
+        chunkfile = "multisample/chunkfile.txt"
+    output:
+        vcf = "multisample/genotyped.vcf.gz"
+    singularity: "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4"
+    shell: "bcftools concat -f {input.chunkfile} -n > {output.vcf}"
+
+
+rule genotype_gather_tbi:
+    """Index genotyped vcf file"""
+    input:
+        vcf = "multisample/genotyped.vcf.gz"
+    output:
+        tbi = "mulitsample/genotyped.vcf.gz.tbi"
+    singularity: "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0"
+    shell: "tabix -pvcf {input.vcf}"
 
 
 rule split_vcf:
     """Split multisample VCF in single samples"""
     input:
         vcf="multisample/genotyped.vcf.gz",
+        tbi = "multisample/genotyped.vcf.gz.tbi",
         gatk=GATK,
         ref=REFERENCE
     params:
