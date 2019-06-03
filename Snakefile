@@ -181,6 +181,9 @@ def metrics(do_metrics=True):
     return  fqcr + fqcm + fqcp + coverage_stats + [stats]
 
 
+localrules: gvcf_chunkfile, genotype_chunkfile
+
+
 rule all:
     input:
         combined="multisample/genotyped.vcf.gz",
