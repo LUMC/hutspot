@@ -383,7 +383,8 @@ rule gvcf_chunkfile:
     run:
         with open(output.file, "w") as ohandle:
             for filename in params.chunkfiles:
-                ohandle.write(filename + "\n")
+                corrected = filename.format(sample=wildcards.sample)
+                ohandle.write(corrected + "\n")
 
 rule gvcf_gather:
     """Gather all GVCF scatters"""
