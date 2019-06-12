@@ -1,0 +1,9 @@
+name: hutspot-tabix
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - libgcc-ng=8.2.0
+  - tabix=0.2.6
+  - zlib=1.2.11
