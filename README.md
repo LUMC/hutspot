@@ -1,3 +1,6 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3251553.svg)](https://doi.org/10.5281/zenodo.3251553)
+
+
 # Hutspot
 
 This is a multisample DNA variant calling pipeline based on Snakemake, bwa and the
