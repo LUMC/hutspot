@@ -296,7 +296,7 @@ rule align:
     singularity: "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:43ec6124f9f4f875515f9548733b8b4e5fed9aa6-0"
     conda: "envs/bwa.yml"
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
-           "| picard SortSam CREATE_INDEX=TRUE TMP_DIR={input.temp} "
+           "| picard -Xmx4G SortSam CREATE_INDEX=TRUE TMP_DIR={input.temp} "
            "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate"
 
 rule markdup:
