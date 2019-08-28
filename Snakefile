@@ -14,7 +14,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-Main Snakefile for the pipeline. 
+Main Snakefile for the pipeline.
 
 :copyright: (c) 2017-2019 Sander Bollen
 :copyright: (c) 2017-2019 Leiden University Medical Center
@@ -41,30 +41,23 @@ if GATK is None:
 if not Path(GATK).exists():
     raise FileNotFoundError("{0} does not exist.".format(GATK))
 
-DBSNP = config.get("DBSNP")
-if DBSNP is None:
-    raise ValueError("You must set --config DBSNP=<path>")
-if not Path(DBSNP).exists():
-    raise FileNotFoundError("{0} does not exist".format(DBSNP))
-
-ONETHOUSAND = config.get("ONETHOUSAND")
-if ONETHOUSAND is None:
-    raise ValueError("You must set --config ONETHOUSAND=<path>")
-if not Path(ONETHOUSAND).exists():
-    raise FileNotFoundError("{0} does not exist".format(ONETHOUSAND))
-
-HAPMAP = config.get("HAPMAP")
-if HAPMAP is None:
-    raise ValueError("You must set --config HAPMAP=<path>")
-if not Path(HAPMAP).exists():
-    raise FileNotFoundError("{0} does not exist".format(HAPMAP))
-
 # these are all optional
 BED = config.get("BED", "")  # comma-separated list of BED files
 REFFLAT = config.get("REFFLAT", "")  # comma-separated list of refFlat files
 FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
 FASTQ_COUNT = config.get("FASTQ_COUNT")
 MAX_BASES = config.get("MAX_BASES", "")
+
+# Make sure all files with known sites exist
+known_sites = config.get("KNOWN_SITES").split(',')
+for filename in known_sites:
+    if not Path(filename).exists():
+        raise FileNotFoundError("{0} does not exist".format(DBSNP))
+
+# Generate the input string for basrecalibration
+known_sites_argument = ''
+for argument, filename in zip(repeat('-knownSites'), known_sites):
+    known_sites_argument +=' {argument} {filename}'.format(argument, filename)
 
 def fsrc_dir(*args):
     """Wrapper around snakemake's srcdir to work like os.path.join"""
@@ -335,14 +328,14 @@ rule baserecal:
         hapmap = HAPMAP
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
+    params:
+        knownsites = known_sites_argument
     singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
     conda: "envs/gatk.yml"
     shell: "java -XX:ParallelGCThreads=1 -jar {input.gatk} -T "
            "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
-           "-cov CycleCovariate -cov ContextCovariate -knownSites "
-           "{input.dbsnp} -knownSites {input.one1kg} "
-           "-knownSites {input.hapmap}"
+           "-cov CycleCovariate -cov ContextCovariate {params.knownsites}"
 
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""

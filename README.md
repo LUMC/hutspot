@@ -144,9 +144,6 @@ The following configuration values are **required**:
 | `REFERENCE` | Absolute path to fasta file |
 | `SAMPLE_CONFIG` | Path to config file as described above |
 | `GATK` | Path to GATK jar. **Must** be version 3.7  |
-| `DBSNP` | Path to dbSNP VCF |
-| `ONETHOUSAND` | Path to 1000Genomes VCF |
-| `HAPMAP` | Path to HapMap VCF |
 
 The following configuration options are **optional**:
 
@@ -156,6 +153,7 @@ The following configuration options are **optional**:
 | `FEMALE_THRESHOLD` | Float between 0 and 1 that signifies the threshold of the ratio between coverage on X/overall coverage that 'calls' a sample as female. Default = 0.6 |
 | `FASTQ_COUNT` | Path to `fastq-count` executable |
 | `MAX_BASES` | Maximum allowed number of bases per sample before subsampling. Default = None (no subsampling) |
+| `KNOWN_SITES` | Path to one or more VCF files of known variants, to be used with baserecalibration |
 
 
 ## Cluster configuration
@@ -218,9 +216,7 @@ snakemake -s Snakefile \
 --config SAMPLE_CONFIG=samples.json \
 REFERENCE=/path/to/genome.fasta \
 GATK=/path/to/GenomeAnalysisTK.jar \
-DBSNP=/path/to/dbsnp.vcf.gz \
-ONETHOUSAND=/path/to/onekg.vcf \
-HAPMAP=/path/to/hapmap.vcf \
+KNOWN_SITES=/path/to/dbsnp.vcf.gz,/path/to/onekg.vcf,/path/to/hapmap.vcf \
 FASTQ_COUNT=/path/to/fastq-count \
 BED=/path/to/interesting_region.bed
 ```
