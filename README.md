@@ -16,7 +16,7 @@ GATK HaplotypeCaller.
 * No unnecessary jobs
 * Coverage metrics for any number of bed files.
 * Fully containerized rules through singularity and biocontainers. Legacy 
-conda environments are available as well.  
+conda environments are no long available.
 * Optionally sub-sample inputs when number of bases exceeds a user-defined
 threshold.
 
@@ -47,10 +47,9 @@ pip install -r requirements.txt
 We highly recommend the user of the containerized rules through 
 [singularity](https://www.sylabs.io/singularity/).
 
-This option does, however,
-require you to install singularity on your system. As this usually requires 
-administrative privileges, singularity is not contained within our provided
-conda environment file.
+This option does require you to install singularity on your system. As this
+usually requires administrative privileges, singularity is not contained
+within our provided conda environment file.
 
 If you want to use singularity, make sure you install version 3 or higher. 
 
@@ -224,21 +223,6 @@ HAPMAP=/path/to/hapmap.vcf \
 FASTQ_COUNT=/path/to/fastq-count \
 BED=/path/to/interesting_region.bed
 ```
-
-## Using conda instead of singularity
-
-Legacy conda environments are also available for each and every rule. 
-Simply use `--use-conda` instead of `--use-singularity` to enable conda
-environments.
-
-As dependency conflicts can and do arise with conda, it is recommended to 
-combine this flag with `--conda-prefix`, such that you only have to 
-build the environments once.
-
-The conda environments use the same versions of tools as the singularity
-containers, bar one:
-
-* `fastqc` uses version 0.11.5 on conda, but 0.11.7 on singularity.    
 
 # Graph
 
