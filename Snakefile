@@ -14,7 +14,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-Main Snakefile for the pipeline. 
+Main Snakefile for the pipeline.
 
 :copyright: (c) 2017-2019 Sander Bollen
 :copyright: (c) 2017-2019 Leiden University Medical Center
@@ -34,12 +34,6 @@ if REFERENCE is None:
 if not Path(REFERENCE).exists():
     raise FileNotFoundError("Reference file {0} "
                             "does not exist.".format(REFERENCE))
-
-GATK = config.get("GATK")
-if GATK is None:
-    raise ValueError("You must set --config GATK=<path>")
-if not Path(GATK).exists():
-    raise FileNotFoundError("{0} does not exist.".format(GATK))
 
 DBSNP = config.get("DBSNP")
 if DBSNP is None:
@@ -322,15 +316,14 @@ rule baserecal:
     """Base recalibrated BAM files"""
     input:
         bam = "{sample}/bams/{sample}.markdup.bam",
-        gatk = GATK,
         ref = REFERENCE,
         dbsnp = DBSNP,
         one1kg = ONETHOUSAND,
         hapmap = HAPMAP
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
-    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
-    shell: "java -XX:ParallelGCThreads=1 -jar {input.gatk} -T "
+    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
            "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
            "-cov CycleCovariate -cov ContextCovariate -knownSites "
@@ -344,14 +337,13 @@ rule gvcf_scatter:
         bqsr="{sample}/bams/{sample}.baserecal.grp",
         dbsnp=DBSNP,
         ref=REFERENCE,
-        gatk=GATK
     params:
         chunk="{chunk}"
     output:
         gvcf=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"),
         gvcf_tbi=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz.tbi")
-    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
-    shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 {input.gatk} "
+    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar "
            "-T HaplotypeCaller -ERC GVCF -I "
            "{input.bam} -R {input.ref} -D {input.dbsnp} "
            "-L '{params.chunk}' -o '{output.gvcf}' "
@@ -362,14 +354,14 @@ rule gvcf_scatter:
 rule gvcf_chunkfile:
     """
     Create simple text file with paths to chunks for GVCF.
-    
+
     This uses a run directive in stead of a shell directive because
     the amount of chunks may be so large the shell would error out with
-    an "argument list too long" error. 
+    an "argument list too long" error.
     See https://unix.stackexchange.com/a/120842 for more info
-    
+
     This also means this rule lives outside of singularity and is
-    executed in snakemake's own environment. 
+    executed in snakemake's own environment.
     """
     params:
         chunkfiles = expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
@@ -410,8 +402,7 @@ rule genotype_scatter:
         gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=SAMPLES),
         tbis = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",
                       sample=SAMPLES),
-        ref=REFERENCE,
-        gatk=GATK
+        ref=REFERENCE
     params:
         li=" -V ".join(expand("{sample}/vcf/{sample}.g.vcf.gz",
                               sample=SAMPLES)),
@@ -419,8 +410,8 @@ rule genotype_scatter:
     output:
         vcf=temp("multisample/genotype.{chunk}.part.vcf.gz"),
         vcf_tbi=temp("multisample/genotype.{chunk}.part.vcf.gz.tbi")
-    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
-    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 {input.gatk} -T "
+    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
            "GenotypeGVCFs -R {input.ref} "
            "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
 
@@ -428,14 +419,14 @@ rule genotype_scatter:
 rule genotype_chunkfile:
     """
     Create simple text file with paths to chunks for genotyping
-    
+
     This uses a run directive in stead of a shell directive because
     the amount of chunks may be so large the shell would error out with
-    an "argument list too long" error. 
+    an "argument list too long" error.
     See https://unix.stackexchange.com/a/120842 for more info
-    
+
     This also means this rule lives outside of singularity and is
-    executed in snakemake's own environment. 
+    executed in snakemake's own environment.
     """
     params:
         vcfs = expand("multisample/genotype.{chunk}.part.vcf.gz",
@@ -475,14 +466,13 @@ rule split_vcf:
     input:
         vcf="multisample/genotyped.vcf.gz",
         tbi = "multisample/genotyped.vcf.gz.tbi",
-        gatk=GATK,
         ref=REFERENCE
     params:
         s="{sample}"
     output:
         splitted="{sample}/vcf/{sample}_single.vcf.gz"
-    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
-    shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar {input.gatk} "
+    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar "
            "-T SelectVariants -sn {params.s} -env -R {input.ref} -V "
            "{input.vcf} -o {output.splitted}"
 
@@ -535,7 +525,7 @@ rule usable_basenum:
 rule fastqc_raw:
     """
     Run fastqc on raw fastq files
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to 
+    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
     perl missing in the container of 0.11.5
     """
     input:
@@ -552,8 +542,8 @@ rule fastqc_raw:
 
 rule fastqc_merged:
     """
-    Run fastqc on merged fastq files    
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to 
+    Run fastqc on merged fastq files
+    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
     perl missing in the container of 0.11.5
     """
     input:
@@ -573,8 +563,8 @@ rule fastqc_merged:
 rule fastqc_postqc:
     """
     Run fastqc on fastq files post pre-processing
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to 
-    perl missing in the container of 0.11.5     
+    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
+    perl missing in the container of 0.11.5
     """
     input:
         r1="{sample}/pre_process/{sample}.cutadapt_R1.fastq",

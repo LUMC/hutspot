@@ -1,7 +1,7 @@
 # Hutspot
 
 This is a multisample DNA variant calling pipeline based on Snakemake, bwa and the
-GATK HaplotypeCaller.  
+GATK HaplotypeCaller.
 
 ## Features 
 * Any number of samples is supported
@@ -78,15 +78,6 @@ Please see the installation instructions
 to do that. 
 
 
-## GATK
-
-For license reasons, conda and singularity cannot fully install the GATK. The JAR 
-must be registered by running `gatk-register` after the environment is
-created, which conflicts with the automated environment/container creation.
- 
-For this reason, hutspot **requires** you to manually specify the path to
-the GATK executable JAR via `--config GATK=/path/to/gatk.jar`.
-
 ## Operating system
 
 Hutspot was tested on Ubuntu 16.04 only.
@@ -142,7 +133,6 @@ The following configuration values are **required**:
 | ------------- | ----------- |
 | `REFERENCE` | Absolute path to fasta file |
 | `SAMPLE_CONFIG` | Path to config file as described above |
-| `GATK` | Path to GATK jar. **Must** be version 3.7  |
 | `DBSNP` | Path to dbSNP VCF |
 | `ONETHOUSAND` | Path to 1000Genomes VCF |
 | `HAPMAP` | Path to HapMap VCF |
@@ -216,7 +206,6 @@ snakemake -s Snakefile \
 --restart-times 2 \
 --config SAMPLE_CONFIG=samples.json \
 REFERENCE=/path/to/genome.fasta \
-GATK=/path/to/GenomeAnalysisTK.jar \
 DBSNP=/path/to/dbsnp.vcf.gz \
 ONETHOUSAND=/path/to/onekg.vcf \
 HAPMAP=/path/to/hapmap.vcf \
