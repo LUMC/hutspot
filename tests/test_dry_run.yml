@@ -1,9 +1,11 @@
 - name: test-dry-run
-  command: >-
-    snakemake -n -r -p -s Snakefile --config OUTPUT_DIR=teststtest/
-    JAVA=README.md REFERENCE=tests/data/ref.fa GATK=README.md
-    DBSNP=tests/data/database.vcf.gz ONETHOUSAND=tests/data/database.vcf.gz
-    HAPMAP=tests/data/database.vcf.gz
+  command: >
+    snakemake
+    -n -r -p -s Snakefile
+    --config
+    OUTPUT_DIR=teststtest
+    REFERENCE=tests/data/ref.fa
+    DBSNP=tests/data/database.vcf.gz
     KNOWN_SITES=tests/data/database.vcf.gz
     SAMPLE_CONFIG=tests/data/sample_config.json
   exit_code: 0

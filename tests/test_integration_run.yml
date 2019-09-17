@@ -1,5 +1,5 @@
 - name: test-integration-no-cluster
-  command: >-
+  command: >
     snakemake
     --use-singularity
     --singularity-prefix /tmp/singularity
