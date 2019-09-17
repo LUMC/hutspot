@@ -41,6 +41,22 @@ if DBSNP is None:
 if not Path(DBSNP).exists():
     raise FileNotFoundError("{0} does not exist".format(DBSNP))
 
+SCONFIG = config.get("SAMPLE_CONFIG")
+if SCONFIG is None:
+    raise ValueError("You must set --config SAMPLE_CONFIG=<path>")
+if not Path(SCONFIG).exists():
+    raise FileNotFoundError("{0} does not exist".format(SCONFIG))
+
+KNOWN_SITES = config.get("KNOWN_SITES")
+if KNOWN_SITES is None:
+    raise ValueError("You must set --config KNOWN_SITES=<path>")
+
+# The user can specify multiple known sites
+KNOWN_SITES = KNOWN_SITES.split(',')
+for filename in KNOWN_SITES:
+    if not Path(filename).exists():
+        raise FileNotFoundError("{0} does not exist".format(filename))
+
 
 # these are all optional
 BED = config.get("BED", "")  # comma-separated list of BED files
@@ -49,19 +65,10 @@ FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
 FASTQ_COUNT = config.get("FASTQ_COUNT")
 MAX_BASES = config.get("MAX_BASES", "")
 
-# Make sure all files with known sites exist
-known_sites = config.get("KNOWN_SITES","")
-
-# Did we get multiple KNOWN SITES?
-known_sites = known_sites.split(',')
-for filename in known_sites:
-    if not Path(filename).exists():
-        raise FileNotFoundError("{0} does not exist".format(filename))
-
 # Generate the input string for basrecalibration
-known_sites_argument = ''
-for argument, filename in zip(itertools.repeat('-knownSites'), known_sites):
-    known_sites_argument +=' {} {}'.format(argument, filename)
+BSQR_known_sites = ''
+for argument, filename in zip(itertools.repeat('-knownSites'), KNOWN_SITES):
+    BSQR_known_sites +=' {} {}'.format(argument, filename)
 
 def fsrc_dir(*args):
     """Wrapper around snakemake's srcdir to work like os.path.join"""
@@ -78,12 +85,6 @@ tsvpy = fsrc_dir("src", "stats_to_tsv.py")
 fqsc = fsrc_dir("src", "safe_fastqc.sh")
 
 # sample config parsing
-SCONFIG = config.get("SAMPLE_CONFIG")
-if SCONFIG is None:
-    raise ValueError("You must set --config SAMPLE_CONFIG=<path>")
-if not Path(SCONFIG).exists():
-    raise FileNotFoundError("{0} does not exist".format(SCONFIG))
-
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
 SAMPLES = SAMPLE_CONFIG['samples'].keys()
@@ -323,12 +324,12 @@ rule baserecal:
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
     params:
-        knownsites = known_sites_argument
+        known_sites = BSQR_known_sites
     singularity: "docker://broadinstitute/gatk3:3.7-0"
     shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
            "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
-           "-cov CycleCovariate -cov ContextCovariate {params.knownsites}"
+           "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
 
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
