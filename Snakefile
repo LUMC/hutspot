@@ -103,7 +103,7 @@ BASE_BEDS = [basename(x) for x in BEDS]
 BASE_REFFLATS = [basename(x) for x in REFFLATS]
 
 
-def split_genome(ref, approx_n_chunks=100):
+def split_genome(ref, approx_n_chunks=2):
     """
     Split genome in chunks.
 

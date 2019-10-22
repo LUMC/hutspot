@@ -3,8 +3,8 @@
     snakemake
     --use-singularity
     --singularity-prefix /tmp/singularity
-    --singularity-args ' --bind /tmp'
-    --jobs 10 -w 120
+    --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120
     -r -p -s Snakefile
     --config
     REFERENCE=tests/data/ref.fa
