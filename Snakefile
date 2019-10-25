@@ -83,6 +83,7 @@ seq = fsrc_dir("src", "seqtk.sh")
 fqpy = fsrc_dir("src", "fastqc_stats.py")
 tsvpy = fsrc_dir("src", "stats_to_tsv.py")
 fqsc = fsrc_dir("src", "safe_fastqc.sh")
+pywc = fsrc_dir("src", "pywc.py")
 
 # sample config parsing
 with open(config.get("SAMPLE_CONFIG")) as handle:
@@ -479,46 +480,30 @@ rule split_vcf:
 
 
 ## bam metrics
-
-rule mapped_num:
+rule mapped_reads_bases:
     """Calculate number of mapped reads"""
     input:
-        bam="{sample}/bams/{sample}.sorted.bam"
+        bam="{sample}/bams/{sample}.sorted.bam",
+        pywc=pywc
     output:
-        num="{sample}/bams/{sample}.mapped.num"
-    singularity: "docker://quay.io/biocontainers/samtools:1.6--he673b24_3"
-    shell: "samtools view -F 4 {input.bam} | wc -l > {output.num}"
+        reads="{sample}/bams/{sample}.mapped.num",
+        bases="{sample}/bams/{sample}.mapped.basenum"
+    singularity: "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0"
+    shell: "samtools view -F 4 {input.bam} | cut -f 10 | python {input.pywc} "
+           "--reads {output.reads} --bases {output.bases}"
 
 
-rule mapped_basenum:
-    """Calculate number of mapped bases"""
-    input:
-        bam="{sample}/bams/{sample}.sorted.bam"
-    output:
-        num="{sample}/bams/{sample}.mapped.basenum"
-    singularity: "docker://quay.io/biocontainers/samtools:1.6--he673b24_3"
-    shell: "samtools view -F 4 {input.bam} | cut -f10 | wc -c > {output.num}"
-
-
-rule unique_num:
+rule unique_reads_bases:
     """Calculate number of unique reads"""
     input:
-        bam="{sample}/bams/{sample}.markdup.bam"
+        bam="{sample}/bams/{sample}.markdup.bam",
+        pywc=pywc
     output:
-        num="{sample}/bams/{sample}.unique.num"
-    singularity: "docker://quay.io/biocontainers/samtools:1.6--he673b24_3"
-    shell: "samtools view -F 4 -F 1024 {input.bam} | wc -l > {output.num}"
-
-
-rule usable_basenum:
-    """Calculate number of bases on unique reads"""
-    input:
-        bam="{sample}/bams/{sample}.markdup.bam"
-    output:
-        num="{sample}/bams/{sample}.usable.basenum"
-    singularity: "docker://quay.io/biocontainers/samtools:1.6--he673b24_3"
-    shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f10 | wc -c > "
-           "{output.num}"
+        reads="{sample}/bams/{sample}.unique.num",
+        bases="{sample}/bams/{sample}.usable.basenum"
+    singularity: "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0"
+    shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f 10 | python {input.pywc} "
+           "--reads {output.reads} --bases {output.bases}"
 
 
 ## fastqc
