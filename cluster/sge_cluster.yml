@@ -7,7 +7,7 @@ align:
   threads: 8
   vmem: 4G
 markdup:
-  vmem: 10G
+  vmem: 20G
 baserecal:
   threads: 8
   vmem: 6G
