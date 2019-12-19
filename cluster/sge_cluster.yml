@@ -31,3 +31,5 @@ fastqc_raw:
   threads: 4
 fastqc_merged:
   threads: 4
+fastqc_merged:
+  threads: 4
