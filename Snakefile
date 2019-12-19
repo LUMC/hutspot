@@ -565,7 +565,7 @@ rule fastqc_raw:
         aux="{sample}/pre_process/raw_fastqc/.done.txt"
     singularity: "docker://quay.io/biocontainers/fastqc:0.11.7--4"
     conda: "envs/fastqc.yml"
-    shell: "fastqc --nogroup -o {params.odir} {input.r1} {input.r2} "
+    shell: "fastqc --threads 4 --nogroup -o {params.odir} {input.r1} {input.r2} "
            "&& echo 'done' > {output.aux}"
 
 

@@ -27,3 +27,7 @@ multiqc:
   vmem: 30G
 split_vcf:
   vmem: 20G
+fastqc_raw:
+  threads: 4
+fastqc_merged:
+  threads: 4
