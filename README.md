@@ -1,7 +1,7 @@
 # Hutspot
 
 This is a multisample DNA variant calling pipeline based on Snakemake, bwa and the
-GATK HaplotypeCaller.  
+GATK HaplotypeCaller.
 
 ## Features 
 * Any number of samples is supported
@@ -16,7 +16,7 @@ GATK HaplotypeCaller.
 * No unnecessary jobs
 * Coverage metrics for any number of bed files.
 * Fully containerized rules through singularity and biocontainers. Legacy 
-conda environments are available as well.  
+conda environments are no long available.
 * Optionally sub-sample inputs when number of bases exceeds a user-defined
 threshold.
 
@@ -47,10 +47,9 @@ pip install -r requirements.txt
 We highly recommend the user of the containerized rules through 
 [singularity](https://www.sylabs.io/singularity/).
 
-This option does, however,
-require you to install singularity on your system. As this usually requires 
-administrative privileges, singularity is not contained within our provided
-conda environment file.
+This option does require you to install singularity on your system. As this
+usually requires administrative privileges, singularity is not contained
+within our provided conda environment file.
 
 If you want to use singularity, make sure you install version 3 or higher. 
 
@@ -78,15 +77,6 @@ Please see the installation instructions
 [here](https://github.com/sylabs/singularity/blob/master/INSTALL.md) on how
 to do that. 
 
-
-## GATK
-
-For license reasons, conda and singularity cannot fully install the GATK. The JAR 
-must be registered by running `gatk-register` after the environment is
-created, which conflicts with the automated environment/container creation.
- 
-For this reason, hutspot **requires** you to manually specify the path to
-the GATK executable JAR via `--config GATK=/path/to/gatk.jar`.
 
 ## Operating system
 
@@ -143,10 +133,8 @@ The following configuration values are **required**:
 | ------------- | ----------- |
 | `REFERENCE` | Absolute path to fasta file |
 | `SAMPLE_CONFIG` | Path to config file as described above |
-| `GATK` | Path to GATK jar. **Must** be version 3.7  |
 | `DBSNP` | Path to dbSNP VCF |
-| `ONETHOUSAND` | Path to 1000Genomes VCF |
-| `HAPMAP` | Path to HapMap VCF |
+
 
 The following configuration options are **optional**:
 
@@ -156,6 +144,7 @@ The following configuration options are **optional**:
 | `FEMALE_THRESHOLD` | Float between 0 and 1 that signifies the threshold of the ratio between coverage on X/overall coverage that 'calls' a sample as female. Default = 0.6 |
 | `FASTQ_COUNT` | Path to `fastq-count` executable |
 | `MAX_BASES` | Maximum allowed number of bases per sample before subsampling. Default = None (no subsampling) |
+| `KNOWN_SITES` | Path to one or more VCF files of known variants, to be used with baserecalibration |
 
 
 ## Cluster configuration
@@ -217,28 +206,11 @@ snakemake -s Snakefile \
 --restart-times 2 \
 --config SAMPLE_CONFIG=samples.json \
 REFERENCE=/path/to/genome.fasta \
-GATK=/path/to/GenomeAnalysisTK.jar \
+KNOWN_SITES=/path/to/dbsnp.vcf.gz,/path/to/onekg.vcf,/path/to/hapmap.vcf \
 DBSNP=/path/to/dbsnp.vcf.gz \
-ONETHOUSAND=/path/to/onekg.vcf \
-HAPMAP=/path/to/hapmap.vcf \
 FASTQ_COUNT=/path/to/fastq-count \
 BED=/path/to/interesting_region.bed
 ```
-
-## Using conda instead of singularity
-
-Legacy conda environments are also available for each and every rule. 
-Simply use `--use-conda` instead of `--use-singularity` to enable conda
-environments.
-
-As dependency conflicts can and do arise with conda, it is recommended to 
-combine this flag with `--conda-prefix`, such that you only have to 
-build the environments once.
-
-The conda environments use the same versions of tools as the singularity
-containers, bar one:
-
-* `fastqc` uses version 0.11.5 on conda, but 0.11.7 on singularity.    
 
 # Graph
 

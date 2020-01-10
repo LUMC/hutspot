@@ -1,8 +1,0 @@
-name: hutspot-sickle
-channels:
-  - conda-forge
-  - bioconda
-  - defaults
-dependencies:
-  - sickle-trim=1.33
-  - zlib=1.2.8

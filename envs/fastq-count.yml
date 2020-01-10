@@ -1,8 +1,0 @@
-name: hutspot-fastq-count
-channels:
-  - conda-forge
-  - bioconda
-  - defaults
-dependencies:
-  - fastq-count=0.1.0
-  - libgcc-ng=8.2.0

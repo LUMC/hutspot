@@ -14,7 +14,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-Main Snakefile for the pipeline. 
+Main Snakefile for the pipeline.
 
 :copyright: (c) 2017-2019 Sander Bollen
 :copyright: (c) 2017-2019 Leiden University Medical Center
@@ -25,6 +25,7 @@ import json
 from functools import partial
 from os.path import join, basename
 from pathlib import Path
+import itertools
 
 from pyfaidx import Fasta
 
@@ -34,30 +35,28 @@ if REFERENCE is None:
 if not Path(REFERENCE).exists():
     raise FileNotFoundError("Reference file {0} "
                             "does not exist.".format(REFERENCE))
-
-GATK = config.get("GATK")
-if GATK is None:
-    raise ValueError("You must set --config GATK=<path>")
-if not Path(GATK).exists():
-    raise FileNotFoundError("{0} does not exist.".format(GATK))
-
 DBSNP = config.get("DBSNP")
 if DBSNP is None:
     raise ValueError("You must set --config DBSNP=<path>")
 if not Path(DBSNP).exists():
     raise FileNotFoundError("{0} does not exist".format(DBSNP))
 
-ONETHOUSAND = config.get("ONETHOUSAND")
-if ONETHOUSAND is None:
-    raise ValueError("You must set --config ONETHOUSAND=<path>")
-if not Path(ONETHOUSAND).exists():
-    raise FileNotFoundError("{0} does not exist".format(ONETHOUSAND))
+SCONFIG = config.get("SAMPLE_CONFIG")
+if SCONFIG is None:
+    raise ValueError("You must set --config SAMPLE_CONFIG=<path>")
+if not Path(SCONFIG).exists():
+    raise FileNotFoundError("{0} does not exist".format(SCONFIG))
 
-HAPMAP = config.get("HAPMAP")
-if HAPMAP is None:
-    raise ValueError("You must set --config HAPMAP=<path>")
-if not Path(HAPMAP).exists():
-    raise FileNotFoundError("{0} does not exist".format(HAPMAP))
+KNOWN_SITES = config.get("KNOWN_SITES")
+if KNOWN_SITES is None:
+    raise ValueError("You must set --config KNOWN_SITES=<path>")
+
+# The user can specify multiple known sites
+KNOWN_SITES = KNOWN_SITES.split(',')
+for filename in KNOWN_SITES:
+    if not Path(filename).exists():
+        raise FileNotFoundError("{0} does not exist".format(filename))
+
 
 # these are all optional
 BED = config.get("BED", "")  # comma-separated list of BED files
@@ -65,6 +64,11 @@ REFFLAT = config.get("REFFLAT", "")  # comma-separated list of refFlat files
 FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
 FASTQ_COUNT = config.get("FASTQ_COUNT")
 MAX_BASES = config.get("MAX_BASES", "")
+
+# Generate the input string for basrecalibration
+BSQR_known_sites = ''
+for argument, filename in zip(itertools.repeat('-knownSites'), KNOWN_SITES):
+    BSQR_known_sites +=' {} {}'.format(argument, filename)
 
 def fsrc_dir(*args):
     """Wrapper around snakemake's srcdir to work like os.path.join"""
@@ -79,14 +83,9 @@ seq = fsrc_dir("src", "seqtk.sh")
 fqpy = fsrc_dir("src", "fastqc_stats.py")
 tsvpy = fsrc_dir("src", "stats_to_tsv.py")
 fqsc = fsrc_dir("src", "safe_fastqc.sh")
+pywc = fsrc_dir("src", "pywc.py")
 
 # sample config parsing
-SCONFIG = config.get("SAMPLE_CONFIG")
-if SCONFIG is None:
-    raise ValueError("You must set --config SAMPLE_CONFIG=<path>")
-if not Path(SCONFIG).exists():
-    raise FileNotFoundError("{0} does not exist".format(SCONFIG))
-
 with open(config.get("SAMPLE_CONFIG")) as handle:
     SAMPLE_CONFIG = json.load(handle)
 SAMPLES = SAMPLE_CONFIG['samples'].keys()
@@ -231,7 +230,6 @@ rule seqtk_r1:
         max_bases=str(MAX_BASES)
     output:
         fastq=temp("{sample}/pre_process/{sample}.sampled_R1.fastq.gz")
-    conda: "envs/seqtk.yml"
     singularity: "docker://quay.io/biocontainers/mulled-v2-13686261ac0aa5682c680670ff8cda7b09637943:d143450dec169186731bb4df6f045a3c9ee08eb6-0"
     shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
            "{params.max_bases}"
@@ -247,7 +245,6 @@ rule seqtk_r2:
         max_bases =str(MAX_BASES)
     output:
         fastq = temp("{sample}/pre_process/{sample}.sampled_R2.fastq.gz")
-    conda: "envs/seqtk.yml"
     singularity: "docker://quay.io/biocontainers/mulled-v2-13686261ac0aa5682c680670ff8cda7b09637943:d143450dec169186731bb4df6f045a3c9ee08eb6-0"
     shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
            "{params.max_bases}"
@@ -266,7 +263,6 @@ rule sickle:
         r2 = temp("{sample}/pre_process/{sample}.trimmed_R2.fastq"),
         s = "{sample}/pre_process/{sample}.trimmed_singles.fastq"
     singularity: "docker://quay.io/biocontainers/sickle-trim:1.33--ha92aebf_4"
-    conda: "envs/sickle.yml"
     shell: "sickle pe -f {input.r1} -r {input.r2} -t sanger -o {output.r1} "
            "-p {output.r2} -s {output.s}"
 
@@ -279,7 +275,6 @@ rule cutadapt:
         r1 = temp("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
         r2 = temp("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
     singularity: "docker://quay.io/biocontainers/cutadapt:1.14--py36_0"
-    conda: "envs/cutadapt.yml"
     shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG -m 1 -o {output.r1} "
            "{input.r1} -p {output.r2} {input.r2}"
 
@@ -294,7 +289,6 @@ rule align:
         rg = "@RG\\tID:{sample}_lib1\\tSM:{sample}\\tPL:ILLUMINA"
     output: temp("{sample}/bams/{sample}.sorted.bam")
     singularity: "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:43ec6124f9f4f875515f9548733b8b4e5fed9aa6-0"
-    conda: "envs/bwa.yml"
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
            "| picard -Xmx4G SortSam CREATE_INDEX=TRUE TMP_DIR={input.temp} "
            "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate"
@@ -309,7 +303,6 @@ rule markdup:
         bai = "{sample}/bams/{sample}.markdup.bai",
         metrics = "{sample}/bams/{sample}.markdup.metrics"
     singularity: "docker://quay.io/biocontainers/picard:2.14--py36_0"
-    conda: "envs/picard.yml"
     shell: "picard -Xmx4G MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT={input.bam} OUTPUT={output.bam} "
            "METRICS_FILE={output.metrics} "
@@ -328,21 +321,16 @@ rule baserecal:
     """Base recalibrated BAM files"""
     input:
         bam = "{sample}/bams/{sample}.markdup.bam",
-        gatk = GATK,
         ref = REFERENCE,
-        dbsnp = DBSNP,
-        one1kg = ONETHOUSAND,
-        hapmap = HAPMAP
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
-    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
-    conda: "envs/gatk.yml"
-    shell: "java -XX:ParallelGCThreads=1 -jar {input.gatk} -T "
+    params:
+        known_sites = BSQR_known_sites
+    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
            "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
-           "-cov CycleCovariate -cov ContextCovariate -knownSites "
-           "{input.dbsnp} -knownSites {input.one1kg} "
-           "-knownSites {input.hapmap}"
+           "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
 
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
@@ -351,15 +339,13 @@ rule gvcf_scatter:
         bqsr="{sample}/bams/{sample}.baserecal.grp",
         dbsnp=DBSNP,
         ref=REFERENCE,
-        gatk=GATK
     params:
         chunk="{chunk}"
     output:
         gvcf=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"),
         gvcf_tbi=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz.tbi")
-    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
-    conda: "envs/gatk.yml"
-    shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 {input.gatk} "
+    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar "
            "-T HaplotypeCaller -ERC GVCF -I "
            "{input.bam} -R {input.ref} -D {input.dbsnp} "
            "-L '{params.chunk}' -o '{output.gvcf}' "
@@ -370,14 +356,14 @@ rule gvcf_scatter:
 rule gvcf_chunkfile:
     """
     Create simple text file with paths to chunks for GVCF.
-    
+
     This uses a run directive in stead of a shell directive because
     the amount of chunks may be so large the shell would error out with
-    an "argument list too long" error. 
+    an "argument list too long" error.
     See https://unix.stackexchange.com/a/120842 for more info
-    
-    This also means this rule lives outside of singularity/conda and is
-    executed in snakemake's own environment. 
+
+    This also means this rule lives outside of singularity and is
+    executed in snakemake's own environment.
     """
     params:
         chunkfiles = expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
@@ -398,7 +384,6 @@ rule gvcf_gather:
         chunkfile = "{sample}/vcf/chunkfile.txt"
     output:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
-    conda: "envs/bcftools.yml"
     singularity: "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4"
     shell: "bcftools concat -f {input.chunkfile} -n > {output.gvcf}"
 
@@ -409,7 +394,6 @@ rule gvcf_gather_tbi:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
     output:
         tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
-    conda: "envs/tabix.yml"
     singularity: "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0"
     shell: "tabix -pvcf {input.gvcf}"
 
@@ -420,8 +404,7 @@ rule genotype_scatter:
         gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=SAMPLES),
         tbis = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",
                       sample=SAMPLES),
-        ref=REFERENCE,
-        gatk=GATK
+        ref=REFERENCE
     params:
         li=" -V ".join(expand("{sample}/vcf/{sample}.g.vcf.gz",
                               sample=SAMPLES)),
@@ -429,9 +412,8 @@ rule genotype_scatter:
     output:
         vcf=temp("multisample/genotype.{chunk}.part.vcf.gz"),
         vcf_tbi=temp("multisample/genotype.{chunk}.part.vcf.gz.tbi")
-    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
-    conda: "envs/gatk.yml"
-    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 {input.gatk} -T "
+    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
            "GenotypeGVCFs -R {input.ref} "
            "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
 
@@ -439,14 +421,14 @@ rule genotype_scatter:
 rule genotype_chunkfile:
     """
     Create simple text file with paths to chunks for genotyping
-    
+
     This uses a run directive in stead of a shell directive because
     the amount of chunks may be so large the shell would error out with
-    an "argument list too long" error. 
+    an "argument list too long" error.
     See https://unix.stackexchange.com/a/120842 for more info
-    
-    This also means this rule lives outside of singularity/conda and is
-    executed in snakemake's own environment. 
+
+    This also means this rule lives outside of singularity and is
+    executed in snakemake's own environment.
     """
     params:
         vcfs = expand("multisample/genotype.{chunk}.part.vcf.gz",
@@ -467,7 +449,6 @@ rule genotype_gather:
         chunkfile = "multisample/chunkfile.txt"
     output:
         vcf = "multisample/genotyped.vcf.gz"
-    conda: "envs/bcftools.yml"
     singularity: "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4"
     shell: "bcftools concat -f {input.chunkfile} -n > {output.vcf}"
 
@@ -478,7 +459,6 @@ rule genotype_gather_tbi:
         vcf = "multisample/genotyped.vcf.gz"
     output:
         tbi = "multisample/genotyped.vcf.gz.tbi"
-    conda: "envs/tabix.yml"
     singularity: "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0"
     shell: "tabix -pvcf {input.vcf}"
 
@@ -488,64 +468,42 @@ rule split_vcf:
     input:
         vcf="multisample/genotyped.vcf.gz",
         tbi = "multisample/genotyped.vcf.gz.tbi",
-        gatk=GATK,
         ref=REFERENCE
     params:
         s="{sample}"
     output:
         splitted="{sample}/vcf/{sample}_single.vcf.gz"
-    singularity: "docker://quay.io/biocontainers/gatk:3.7--py36_1"
-    conda: "envs/gatk.yml"
-    shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar {input.gatk} "
+    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar "
            "-T SelectVariants -sn {params.s} -env -R {input.ref} -V "
            "{input.vcf} -o {output.splitted}"
 
 
 ## bam metrics
-
-rule mapped_num:
+rule mapped_reads_bases:
     """Calculate number of mapped reads"""
     input:
-        bam="{sample}/bams/{sample}.sorted.bam"
+        bam="{sample}/bams/{sample}.sorted.bam",
+        pywc=pywc
     output:
-        num="{sample}/bams/{sample}.mapped.num"
-    singularity: "docker://quay.io/biocontainers/samtools:1.6--he673b24_3"
-    conda: "envs/samtools.yml"
-    shell: "samtools view -F 4 {input.bam} | wc -l > {output.num}"
+        reads="{sample}/bams/{sample}.mapped.num",
+        bases="{sample}/bams/{sample}.mapped.basenum"
+    singularity: "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0"
+    shell: "samtools view -F 4 {input.bam} | cut -f 10 | python {input.pywc} "
+           "--reads {output.reads} --bases {output.bases}"
 
 
-rule mapped_basenum:
-    """Calculate number of mapped bases"""
-    input:
-        bam="{sample}/bams/{sample}.sorted.bam"
-    output:
-        num="{sample}/bams/{sample}.mapped.basenum"
-    singularity: "docker://quay.io/biocontainers/samtools:1.6--he673b24_3"
-    conda: "envs/samtools.yml"
-    shell: "samtools view -F 4 {input.bam} | cut -f10 | wc -c > {output.num}"
-
-
-rule unique_num:
+rule unique_reads_bases:
     """Calculate number of unique reads"""
     input:
-        bam="{sample}/bams/{sample}.markdup.bam"
+        bam="{sample}/bams/{sample}.markdup.bam",
+        pywc=pywc
     output:
-        num="{sample}/bams/{sample}.unique.num"
-    singularity: "docker://quay.io/biocontainers/samtools:1.6--he673b24_3"
-    conda: "envs/samtools.yml"
-    shell: "samtools view -F 4 -F 1024 {input.bam} | wc -l > {output.num}"
-
-
-rule usable_basenum:
-    """Calculate number of bases on unique reads"""
-    input:
-        bam="{sample}/bams/{sample}.markdup.bam"
-    output:
-        num="{sample}/bams/{sample}.usable.basenum"
-    singularity: "docker://quay.io/biocontainers/samtools:1.6--he673b24_3"
-    conda: "envs/samtools.yml"
-    shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f10 | wc -c > "
-           "{output.num}"
+        reads="{sample}/bams/{sample}.unique.num",
+        bases="{sample}/bams/{sample}.usable.basenum"
+    singularity: "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0"
+    shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f 10 | python {input.pywc} "
+           "--reads {output.reads} --bases {output.bases}"
 
 
 ## fastqc
@@ -553,7 +511,7 @@ rule usable_basenum:
 rule fastqc_raw:
     """
     Run fastqc on raw fastq files
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to 
+    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
     perl missing in the container of 0.11.5
     """
     input:
@@ -564,15 +522,14 @@ rule fastqc_raw:
     output:
         aux="{sample}/pre_process/raw_fastqc/.done.txt"
     singularity: "docker://quay.io/biocontainers/fastqc:0.11.7--4"
-    conda: "envs/fastqc.yml"
     shell: "fastqc --threads 4 --nogroup -o {params.odir} {input.r1} {input.r2} "
            "&& echo 'done' > {output.aux}"
 
 
 rule fastqc_merged:
     """
-    Run fastqc on merged fastq files    
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to 
+    Run fastqc on merged fastq files
+    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
     perl missing in the container of 0.11.5
     """
     input:
@@ -585,7 +542,6 @@ rule fastqc_merged:
         r1="{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
         r2="{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip"
     singularity: "docker://quay.io/biocontainers/fastqc:0.11.7--4"
-    conda: "envs/fastqc.yml"
     shell: "bash {input.fq} {input.r1} {input.r2} "
            "{output.r1} {output.r2} {params.odir}"
 
@@ -593,8 +549,8 @@ rule fastqc_merged:
 rule fastqc_postqc:
     """
     Run fastqc on fastq files post pre-processing
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to 
-    perl missing in the container of 0.11.5     
+    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
+    perl missing in the container of 0.11.5
     """
     input:
         r1="{sample}/pre_process/{sample}.cutadapt_R1.fastq",
@@ -606,7 +562,6 @@ rule fastqc_postqc:
         r1="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
         r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip"
     singularity: "docker://quay.io/biocontainers/fastqc:0.11.7--4"
-    conda: "envs/fastqc.yml"
     shell: "bash {input.fq} {input.r1} {input.r2} "
            "{output.r1} {output.r2} {params.odir}"
 
@@ -621,7 +576,6 @@ rule fqcount_preqc:
     output:
         "{sample}/pre_process/{sample}.preqc_count.json"
     singularity: "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0"
-    conda: "envs/fastq-count.yml"
     shell: "fastq-count {input.r1} {input.r2} > {output}"
 
 
@@ -633,7 +587,6 @@ rule fqcount_postqc:
     output:
         "{sample}/pre_process/{sample}.postqc_count.json"
     singularity: "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0"
-    conda: "envs/fastq-count.yml"
     shell: "fastq-count {input.r1} {input.r2} > {output}"
 
 
@@ -647,7 +600,6 @@ rule fastqc_stats:
         postqc_r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip",
         sc=fqpy
     singularity: "docker://python:3.6-slim"
-    conda: "envs/collectstats.yml"
     output:
         "{sample}/pre_process/fastq_stats.json"
     shell: "python {input.sc} --preqc-r1 {input.preqc_r1} "
@@ -670,7 +622,6 @@ rule covstats:
         covj="{sample}/coverage/{bed}.covstats.json",
         covp="{sample}/coverage/{bed}.covstats.png"
     singularity: "docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0"
-    conda: "envs/covstat.yml"
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
            "-b {input.bam} -d  | python {input.covpy} - --plot {output.covp} "
            "--title 'Targets coverage' --subtitle '{params.subt}' "
@@ -686,7 +637,6 @@ rule vtools_coverage:
     output:
         tsv="{sample}/coverage/{ref}.coverages.tsv"
     singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
-    conda: "envs/vcfstats.yml"
     shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
 
 
@@ -700,7 +650,6 @@ rule vcfstats:
     output:
         stats="multisample/vcfstats.json"
     singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
-    conda: "envs/vcfstats.yml"
     shell: "vtools-stats -i {input.vcf} > {output.stats}"
 
 
@@ -725,7 +674,6 @@ if len(BASE_BEDS) >= 1:
         output:
             "{sample}/{sample}.stats.json"
         singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
-        conda: "envs/collectstats.yml"
         shell: "python {input.colpy} --sample-name {params.sample_name} "
                "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
@@ -750,7 +698,6 @@ else:
         output:
             "{sample}/{sample}.stats.json"
         singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
-        conda: "envs/collectstats.yml"
         shell: "python {input.colpy} --sample-name {params.sample_name} "
                "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
@@ -767,7 +714,6 @@ rule merge_stats:
     output:
         stats="stats.json"
     singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
-    conda: "envs/collectstats.yml"
     shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} "
            "> {output.stats}"
 
@@ -780,7 +726,6 @@ rule stats_tsv:
     output:
         stats="stats.tsv"
     singularity: "docker://python:3.6-slim"
-    conda: "envs/collectstats.yml"
     shell: "python {input.sc} -i {input.stats} > {output.stats}"
 
 
@@ -797,5 +742,4 @@ rule multiqc:
     output:
         report="multiqc_report/multiqc_report.html"
     singularity: "docker://quay.io/biocontainers/multiqc:1.5--py36_0"
-    conda: "envs/multiqc.yml"
     shell: "multiqc -f -o {params.rdir} {params.odir} || touch {output.report}"
