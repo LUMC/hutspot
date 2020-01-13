@@ -62,7 +62,6 @@ for filename in KNOWN_SITES:
 BED = config.get("BED", "")  # comma-separated list of BED files
 REFFLAT = config.get("REFFLAT", "")  # comma-separated list of refFlat files
 FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
-FASTQ_COUNT = config.get("FASTQ_COUNT")
 MAX_BASES = config.get("MAX_BASES", "")
 
 # Generate the input string for basrecalibration

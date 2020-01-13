@@ -142,7 +142,6 @@ The following configuration options are **optional**:
 | ------------- | ----------- |
 | `BED` | Comma-separate list of paths to BED files of interest |
 | `FEMALE_THRESHOLD` | Float between 0 and 1 that signifies the threshold of the ratio between coverage on X/overall coverage that 'calls' a sample as female. Default = 0.6 |
-| `FASTQ_COUNT` | Path to `fastq-count` executable |
 | `MAX_BASES` | Maximum allowed number of bases per sample before subsampling. Default = None (no subsampling) |
 | `KNOWN_SITES` | Path to one or more VCF files of known variants, to be used with baserecalibration |
 
@@ -208,7 +207,6 @@ snakemake -s Snakefile \
 REFERENCE=/path/to/genome.fasta \
 KNOWN_SITES=/path/to/dbsnp.vcf.gz,/path/to/onekg.vcf,/path/to/hapmap.vcf \
 DBSNP=/path/to/dbsnp.vcf.gz \
-FASTQ_COUNT=/path/to/fastq-count \
 BED=/path/to/interesting_region.bed
 ```
 
