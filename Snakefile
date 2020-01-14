@@ -283,13 +283,14 @@ rule align:
         r1 = "{sample}/pre_process/{sample}.cutadapt_R1.fastq",
         r2 = "{sample}/pre_process/{sample}.cutadapt_R2.fastq",
         ref = REFERENCE,
-        temp = ancient("tmp")
+        tmp = ancient("tmp")
     params:
         rg = "@RG\\tID:{sample}_lib1\\tSM:{sample}\\tPL:ILLUMINA"
     output: temp("{sample}/bams/{sample}.sorted.bam")
     singularity: "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:43ec6124f9f4f875515f9548733b8b4e5fed9aa6-0"
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
-           "| picard -Xmx4G SortSam CREATE_INDEX=TRUE TMP_DIR={input.temp} "
+           "| picard -Xmx4G -Djava.io.tmpdir={input.tmp} SortSam "
+           "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate"
 
 rule markdup:
@@ -302,7 +303,8 @@ rule markdup:
         bai = "{sample}/bams/{sample}.markdup.bai",
         metrics = "{sample}/bams/{sample}.markdup.metrics"
     singularity: "docker://quay.io/biocontainers/picard:2.14--py36_0"
-    shell: "picard -Xmx4G MarkDuplicates CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
+    shell: "picard -Xmx4G -Djava.io.tmpdir={input.tmp} MarkDuplicates "
+           "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT={input.bam} OUTPUT={output.bam} "
            "METRICS_FILE={output.metrics} "
            "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
