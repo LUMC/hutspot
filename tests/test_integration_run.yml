@@ -1,4 +1,6 @@
 - name: test-integration-no-cluster
+  tags:
+    - integration
   command: >
     snakemake
     --use-singularity
@@ -11,7 +13,6 @@
     DBSNP=tests/data/database.vcf.gz
     KNOWN_SITES=tests/data/database.vcf.gz
     SAMPLE_CONFIG=tests/data/sample_config.json
-  exit_code: 0
   stderr:
     contains:
       - "Job counts"
@@ -19,5 +20,19 @@
       - "(100%) done"
     must_not_contain:
       - "rror"
-  tags:
-    - integration
+  files:
+   - path: "micro/vcf/micro_single.vcf.gz"
+     contains:
+             - "chrM\t152\t.\tT\tC\t3960.77\t."
+             - "GT:AD:DP:GQ:PL\t1/1:0,130:130:99:3989,388,0"
+
+             - "chrM\t263\t.\tA\tG\t3233.06\t."
+             - "GT:AD:DP:GQ:PL\t1/1:0,108:108:99:3263,323,0"
+
+             - "chrM\t4745\t.\tA\tG\t5655.77\t."
+             - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,133:134:99:1|1:4745_A_G:5684,404,0"
+             - "chrM\t4769\t.\tA\tG\t5182.77\t."
+             - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,120:121:99:1|1:4745_A_G:5211,363,0"
+
+             - "chrM\t16023\t.\tG\tA\t1878.77\t."
+             - "GT:AD:DP:GQ:PL\t0/1:73,73:146:99:1907,0,1879"
