@@ -102,6 +102,24 @@ else:
 BASE_BEDS = [basename(x) for x in BEDS]
 BASE_REFFLATS = [basename(x) for x in REFFLATS]
 
+containers = {
+    "bcftools": "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4",
+    "bedtools-2.26-python-2.7": "docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0",
+    "bwa-0.7.17-picard-2.18.7": "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:43ec6124f9f4f875515f9548733b8b4e5fed9aa6-0",
+    "cutadapt": "docker://quay.io/biocontainers/cutadapt:1.14--py36_0",
+    "debian": "docker://debian:buster-slim",
+    "fastq-count": "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0",
+    "fastqc": "docker://quay.io/biocontainers/fastqc:0.11.7--4",
+    "gatk": "docker://broadinstitute/gatk3:3.7-0",
+    "multiqc": "docker://quay.io/biocontainers/multiqc:1.5--py36_0",
+    "picard-2.14": "docker://quay.io/biocontainers/picard:2.14--py36_0",
+    "python3": "docker://python:3.6-slim",
+    "samtools-1.7-python-3.6": "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0",
+    "seqtk-1.2-jq-1.6": "docker://quay.io/biocontainers/mulled-v2-13686261ac0aa5682c680670ff8cda7b09637943:d143450dec169186731bb4df6f045a3c9ee08eb6-0",
+    "sickle": "docker://quay.io/biocontainers/sickle-trim:1.33--ha92aebf_4",
+    "tabix": "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0",
+    "vtools": "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
+}
 
 def split_genome(ref, approx_n_chunks=100):
     """
@@ -194,28 +212,28 @@ rule all:
 rule create_markdup_tmp:
     """Create tmp directory for mark duplicates"""
     output: directory("tmp")
-    singularity: "docker://debian:buster-slim"
+    singularity: containers["debian"]
     shell: "mkdir -p {output}"
 
 rule genome:
     """Create genome file as used by bedtools"""
     input: REFERENCE
     output: "current.genome"
-    singularity: "docker://debian:buster-slim"
+    singularity: containers["debian"]
     shell: "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output}"
 
 rule merge_r1:
     """Merge all forward fastq files into one"""
     input: get_r1
     output: temp("{sample}/pre_process/{sample}.merged_R1.fastq.gz")
-    singularity: "docker://debian:buster-slim"
+    singularity: containers["debian"]
     shell: "cat {input} > {output}"
 
 rule merge_r2:
     """Merge all reverse fastq files into one"""
     input: get_r2
     output: temp("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
-    singularity: "docker://debian:buster-slim"
+    singularity: containers["debian"]
     shell: "cat {input} > {output}"
 
 
@@ -229,7 +247,7 @@ rule seqtk_r1:
         max_bases=str(MAX_BASES)
     output:
         fastq=temp("{sample}/pre_process/{sample}.sampled_R1.fastq.gz")
-    singularity: "docker://quay.io/biocontainers/mulled-v2-13686261ac0aa5682c680670ff8cda7b09637943:d143450dec169186731bb4df6f045a3c9ee08eb6-0"
+    singularity: containers["seqtk-1.2-jq-1.6"]
     shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
            "{params.max_bases}"
 
@@ -244,7 +262,7 @@ rule seqtk_r2:
         max_bases =str(MAX_BASES)
     output:
         fastq = temp("{sample}/pre_process/{sample}.sampled_R2.fastq.gz")
-    singularity: "docker://quay.io/biocontainers/mulled-v2-13686261ac0aa5682c680670ff8cda7b09637943:d143450dec169186731bb4df6f045a3c9ee08eb6-0"
+    singularity: containers["seqtk-1.2-jq-1.6"]
     shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
            "{params.max_bases}"
 
@@ -261,7 +279,7 @@ rule sickle:
         r1 = temp("{sample}/pre_process/{sample}.trimmed_R1.fastq"),
         r2 = temp("{sample}/pre_process/{sample}.trimmed_R2.fastq"),
         s = "{sample}/pre_process/{sample}.trimmed_singles.fastq"
-    singularity: "docker://quay.io/biocontainers/sickle-trim:1.33--ha92aebf_4"
+    singularity: containers["sickle"]
     shell: "sickle pe -f {input.r1} -r {input.r2} -t sanger -o {output.r1} "
            "-p {output.r2} -s {output.s}"
 
@@ -273,7 +291,7 @@ rule cutadapt:
     output:
         r1 = temp("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
         r2 = temp("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
-    singularity: "docker://quay.io/biocontainers/cutadapt:1.14--py36_0"
+    singularity: containers["cutadapt"]
     shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG -m 1 -o {output.r1} "
            "{input.r1} -p {output.r2} {input.r2}"
 
@@ -287,7 +305,7 @@ rule align:
     params:
         rg = "@RG\\tID:{sample}_lib1\\tSM:{sample}\\tPL:ILLUMINA"
     output: temp("{sample}/bams/{sample}.sorted.bam")
-    singularity: "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:43ec6124f9f4f875515f9548733b8b4e5fed9aa6-0"
+    singularity: containers["bwa-0.7.17-picard-2.18.7"]
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
            "| picard -Xmx4G -Djava.io.tmpdir={input.tmp} SortSam "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
@@ -302,7 +320,7 @@ rule markdup:
         bam = "{sample}/bams/{sample}.markdup.bam",
         bai = "{sample}/bams/{sample}.markdup.bai",
         metrics = "{sample}/bams/{sample}.markdup.metrics"
-    singularity: "docker://quay.io/biocontainers/picard:2.14--py36_0"
+    singularity: containers["picard-2.14"]
     shell: "picard -Xmx4G -Djava.io.tmpdir={input.tmp} MarkDuplicates "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT={input.bam} OUTPUT={output.bam} "
@@ -315,7 +333,7 @@ rule bai:
         bai = "{sample}/bams/{sample}.markdup.bai"
     output:
         bai = "{sample}/bams/{sample}.markdup.bam.bai"
-    singularity: "docker://debian:buster-slim"
+    singularity: containers["debian"]
     shell: "cp {input.bai} {output.bai}"
 
 rule baserecal:
@@ -327,7 +345,7 @@ rule baserecal:
         grp = "{sample}/bams/{sample}.baserecal.grp"
     params:
         known_sites = BSQR_known_sites
-    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    singularity: containers["gatk"]
     shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
            "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
@@ -345,7 +363,7 @@ rule gvcf_scatter:
     output:
         gvcf=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"),
         gvcf_tbi=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz.tbi")
-    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    singularity: containers["gatk"]
     shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar "
            "-T HaplotypeCaller -ERC GVCF -I "
            "{input.bam} -R {input.ref} -D {input.dbsnp} "
@@ -385,7 +403,7 @@ rule gvcf_gather:
         chunkfile = "{sample}/vcf/chunkfile.txt"
     output:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
-    singularity: "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4"
+    singularity: containers["bcftools"]
     shell: "bcftools concat -f {input.chunkfile} -n > {output.gvcf}"
 
 
@@ -395,7 +413,7 @@ rule gvcf_gather_tbi:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
     output:
         tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
-    singularity: "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0"
+    singularity: containers["tabix"]
     shell: "tabix -pvcf {input.gvcf}"
 
 
@@ -413,7 +431,7 @@ rule genotype_scatter:
     output:
         vcf=temp("multisample/genotype.{chunk}.part.vcf.gz"),
         vcf_tbi=temp("multisample/genotype.{chunk}.part.vcf.gz.tbi")
-    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    singularity: containers["gatk"]
     shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
            "GenotypeGVCFs -R {input.ref} "
            "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
@@ -450,7 +468,7 @@ rule genotype_gather:
         chunkfile = "multisample/chunkfile.txt"
     output:
         vcf = "multisample/genotyped.vcf.gz"
-    singularity: "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4"
+    singularity: containers["bcftools"]
     shell: "bcftools concat -f {input.chunkfile} -n > {output.vcf}"
 
 
@@ -460,7 +478,7 @@ rule genotype_gather_tbi:
         vcf = "multisample/genotyped.vcf.gz"
     output:
         tbi = "multisample/genotyped.vcf.gz.tbi"
-    singularity: "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0"
+    singularity: containers["tabix"]
     shell: "tabix -pvcf {input.vcf}"
 
 
@@ -474,7 +492,7 @@ rule split_vcf:
         s="{sample}"
     output:
         splitted="{sample}/vcf/{sample}_single.vcf.gz"
-    singularity: "docker://broadinstitute/gatk3:3.7-0"
+    singularity: containers["gatk"]
     shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar "
            "-T SelectVariants -sn {params.s} -env -R {input.ref} -V "
            "{input.vcf} -o {output.splitted}"
@@ -489,7 +507,7 @@ rule mapped_reads_bases:
     output:
         reads="{sample}/bams/{sample}.mapped.num",
         bases="{sample}/bams/{sample}.mapped.basenum"
-    singularity: "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0"
+    singularity: containers["samtools-1.7-python-3.6"]
     shell: "samtools view -F 4 {input.bam} | cut -f 10 | python {input.pywc} "
            "--reads {output.reads} --bases {output.bases}"
 
@@ -502,7 +520,7 @@ rule unique_reads_bases:
     output:
         reads="{sample}/bams/{sample}.unique.num",
         bases="{sample}/bams/{sample}.usable.basenum"
-    singularity: "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0"
+    singularity: containers["samtools-1.7-python-3.6"]
     shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f 10 | python {input.pywc} "
            "--reads {output.reads} --bases {output.bases}"
 
@@ -522,7 +540,7 @@ rule fastqc_raw:
         odir="{sample}/pre_process/raw_fastqc"
     output:
         aux="{sample}/pre_process/raw_fastqc/.done.txt"
-    singularity: "docker://quay.io/biocontainers/fastqc:0.11.7--4"
+    singularity: containers["fastqc"]
     shell: "fastqc --threads 4 --nogroup -o {params.odir} {input.r1} {input.r2} "
            "&& echo 'done' > {output.aux}"
 
@@ -542,7 +560,7 @@ rule fastqc_merged:
     output:
         r1="{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
         r2="{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip"
-    singularity: "docker://quay.io/biocontainers/fastqc:0.11.7--4"
+    singularity: containers["fastqc"]
     shell: "bash {input.fq} {input.r1} {input.r2} "
            "{output.r1} {output.r2} {params.odir}"
 
@@ -562,7 +580,7 @@ rule fastqc_postqc:
     output:
         r1="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
         r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip"
-    singularity: "docker://quay.io/biocontainers/fastqc:0.11.7--4"
+    singularity: containers["fastqc"]
     shell: "bash {input.fq} {input.r1} {input.r2} "
            "{output.r1} {output.r2} {params.odir}"
 
@@ -576,7 +594,7 @@ rule fqcount_preqc:
         r2="{sample}/pre_process/{sample}.merged_R2.fastq.gz"
     output:
         "{sample}/pre_process/{sample}.preqc_count.json"
-    singularity: "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0"
+    singularity: containers["fastq-count"]
     shell: "fastq-count {input.r1} {input.r2} > {output}"
 
 
@@ -587,7 +605,7 @@ rule fqcount_postqc:
         r2="{sample}/pre_process/{sample}.cutadapt_R2.fastq"
     output:
         "{sample}/pre_process/{sample}.postqc_count.json"
-    singularity: "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0"
+    singularity: containers["fastq-count"]
     shell: "fastq-count {input.r1} {input.r2} > {output}"
 
 
@@ -600,7 +618,7 @@ rule fastqc_stats:
         postqc_r1="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
         postqc_r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip",
         sc=fqpy
-    singularity: "docker://python:3.6-slim"
+    singularity: containers["python3"]
     output:
         "{sample}/pre_process/fastq_stats.json"
     shell: "python {input.sc} --preqc-r1 {input.preqc_r1} "
@@ -622,7 +640,7 @@ rule covstats:
     output:
         covj="{sample}/coverage/{bed}.covstats.json",
         covp="{sample}/coverage/{bed}.covstats.png"
-    singularity: "docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0"
+    singularity: containers["bedtools-2.26-python-2.7"]
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
            "-b {input.bam} -d  | python {input.covpy} - --plot {output.covp} "
            "--title 'Targets coverage' --subtitle '{params.subt}' "
@@ -637,7 +655,7 @@ rule vtools_coverage:
         ref=get_refflatpath
     output:
         tsv="{sample}/coverage/{ref}.coverages.tsv"
-    singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
+    singularity: containers["vtools"]
     shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
 
 
@@ -650,7 +668,7 @@ rule vcfstats:
         tbi = "multisample/genotyped.vcf.gz.tbi"
     output:
         stats="multisample/vcfstats.json"
-    singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
+    singularity: containers["vtools"]
     shell: "vtools-stats -i {input.vcf} > {output.stats}"
 
 
@@ -674,7 +692,7 @@ if len(BASE_BEDS) >= 1:
             fthresh=FEMALE_THRESHOLD
         output:
             "{sample}/{sample}.stats.json"
-        singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
+        singularity: containers["vtools"]
         shell: "python {input.colpy} --sample-name {params.sample_name} "
                "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
@@ -698,7 +716,7 @@ else:
             fthresh = FEMALE_THRESHOLD
         output:
             "{sample}/{sample}.stats.json"
-        singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
+        singularity: containers["vtools"]
         shell: "python {input.colpy} --sample-name {params.sample_name} "
                "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
@@ -714,7 +732,7 @@ rule merge_stats:
         mpy=mpy
     output:
         stats="stats.json"
-    singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
+    singularity: containers["vtools"]
     shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} "
            "> {output.stats}"
 
@@ -726,7 +744,7 @@ rule stats_tsv:
         sc=tsvpy
     output:
         stats="stats.tsv"
-    singularity: "docker://python:3.6-slim"
+    singularity: containers["python3"]
     shell: "python {input.sc} -i {input.stats} > {output.stats}"
 
 
@@ -742,5 +760,5 @@ rule multiqc:
         rdir="multiqc_report"
     output:
         report="multiqc_report/multiqc_report.html"
-    singularity: "docker://quay.io/biocontainers/multiqc:1.5--py36_0"
+    singularity: containers["multiqc"]
     shell: "multiqc -f -o {params.rdir} {params.odir} || touch {output.report}"
