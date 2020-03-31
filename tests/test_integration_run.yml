@@ -60,3 +60,23 @@
    - path: "micro/vcf/micro.13.part.vcf.gz"
    - path: "scatter/scatter-1.bed"
    - path: "scatter/scatter-13.bed"
+
+- name: test-new-scatter-gvcf
+  tags:
+    - integration
+    - scatter
+  command: >
+    snakemake
+    --use-singularity
+    --singularity-prefix /tmp/singularity
+    --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120
+    -r -p -s Snakefile
+    micro/vcf/micro.g.vcf.gz
+    --config
+    REFERENCE=tests/data/ref.fa
+    DBSNP=tests/data/database.vcf.gz
+    KNOWN_SITES=tests/data/database.vcf.gz
+    SAMPLE_CONFIG=tests/data/sample_config.json
+  files:
+   - path: "micro/vcf/micro.g.vcf.gz"

@@ -325,7 +325,7 @@ rule scatterregions:
     input:
         ref = REFERENCE,
     output:
-        regions = "scatter/scatter-{chunk}.bed"
+        regions = dynamic("scatter/scatter-{chunk}.bed")
     singularity: containers["biopet-scatterregions"]
     shell: "mkdir -p scatter && "
            "biopet-scatterregions "
@@ -354,7 +354,7 @@ rule gvcf_scatter:
 rule gvcf_gather:
     """Gather all GVCF scatters"""
     input:
-        gvcfs = "{sample}/vcf/{sample}.{chunk}.part.vcf.gz",
+        gvcfs = dynamic("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"),
     output:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
     singularity: containers["bcftools"]
