@@ -343,6 +343,8 @@ rule gvcf_scatter:
     output:
         gvcf=temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz"),
         gvcf_tbi=temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi")
+    wildcard_constraints:
+        chunk="[0-9]+"
     singularity: containers["gatk"]
     shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar "
            "-T HaplotypeCaller -ERC GVCF -I "
@@ -378,8 +380,10 @@ rule genotype_scatter:
         tbi = "{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi",
         ref=REFERENCE
     output:
-        vcf="{sample}/vcf/{sample}.genotype.{chunk}.vcf.gz",
-        vcf_tbi="{sample}/vcf/{sample}.genotype.{chunk}.vcf.gz.tbi"
+        vcf="{sample}/vcf/{sample}.{chunk}.vcf.gz",
+        vcf_tbi="{sample}/vcf/{sample}.{chunk}.vcf.gz.tbi"
+    wildcard_constraints:
+        chunk="[0-9]+"
     singularity: containers["gatk"]
     shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
            "GenotypeGVCFs -R {input.ref} "
@@ -389,7 +393,7 @@ rule genotype_scatter:
 rule genotype_gather:
     """Gather all genotyping VCFs"""
     input:
-        vcfs = "{sample}/vcf/{sample}.genotype.{chunk}.vcf.gz",
+        vcfs = "{sample}/vcf/{sample}.{chunk}.vcf.gz",
     output:
         vcf = "{sample}/vcf/{sample}.vcf.gz"
     singularity: containers["bcftools"]
