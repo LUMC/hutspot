@@ -171,11 +171,11 @@ def metrics(do_metrics=True):
 
 rule all:
     input:
-        combined="multisample/genotyped.vcf.gz",
-        report="multiqc_report/multiqc_report.html",
+        #combined="multisample/genotyped.vcf.gz",
+        #report="multiqc_report/multiqc_report.html",
         bais=expand("{sample}/bams/{sample}.markdup.bam.bai",sample=SAMPLES),
-        vcfs=expand("{sample}/vcf/{sample}_single.vcf.gz",sample=SAMPLES),
-        stats=metrics()
+        vcfs=expand("{sample}/vcf/{sample}.vcf.gz",sample=SAMPLES),
+        #stats=metrics()
 
 
 rule create_markdup_tmp:
@@ -374,17 +374,15 @@ rule gvcf_gather_tbi:
 rule genotype_scatter:
     """Run GATK's GenotypeGVCFs by chunk"""
     input:
-        gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=SAMPLES),
-        tbis = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",
-                      sample=SAMPLES),
+        gvcf = "{sample}/vcf/{sample}.g.vcf.gz",
+        tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi",
         ref=REFERENCE,
-        region="scatter/scatter-{chunk}.bed"
+        region=dynamic("scatter/scatter-{chunk}.bed")
     params:
-        li=" -V ".join(expand("{sample}/vcf/{sample}.g.vcf.gz",
-                              sample=SAMPLES)),
+        li=" -V ".join("{sample}/vcf/{sample}.g.vcf.gz")
     output:
-        vcf=temp("multisample/genotype.{chunk}.part.vcf.gz"),
-        vcf_tbi=temp("multisample/genotype.{chunk}.part.vcf.gz.tbi")
+        vcf=dynamic("{sample}/vcf/{sample}.genotype.{chunk}.part.vcf.gz"),
+        vcf_tbi=dynamic("{sample}/vcf/{sample}.genotype.{chunk}.part.vcf.gz.tbi")
     singularity: containers["gatk"]
     shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
            "GenotypeGVCFs -R {input.ref} "
@@ -394,9 +392,9 @@ rule genotype_scatter:
 rule genotype_gather:
     """Gather all genotyping VCFs"""
     input:
-        vcfs = "multisample/genotype.{chunk}.part.vcf.gz",
+        vcfs = dynamic("{sample}/vcf/{sample}.genotype.{chunk}.part.vcf.gz"),
     output:
-        vcf = "multisample/genotyped.vcf.gz"
+        vcf = "{sample}/vcf/{sample}.vcf.gz"
     singularity: containers["bcftools"]
     shell: "bcftools concat {input.vcfs} -n > {output.vcf}"
 
@@ -404,27 +402,11 @@ rule genotype_gather:
 rule genotype_gather_tbi:
     """Index genotyped vcf file"""
     input:
-        vcf = "multisample/genotyped.vcf.gz"
+        vcf = "{sample}/vcf/{sample}.vcf.gz"
     output:
-        tbi = "multisample/genotyped.vcf.gz.tbi"
+        tbi = "{sample}/vcf/{sample}.vcf.gz.tbi"
     singularity: containers["tabix"]
     shell: "tabix -pvcf {input.vcf}"
-
-
-rule split_vcf:
-    """Split multisample VCF in single samples"""
-    input:
-        vcf="multisample/genotyped.vcf.gz",
-        tbi = "multisample/genotyped.vcf.gz.tbi",
-        ref=REFERENCE
-    params:
-        s="{sample}"
-    output:
-        splitted="{sample}/vcf/{sample}_single.vcf.gz"
-    singularity: containers["gatk"]
-    shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar "
-           "-T SelectVariants -sn {params.s} -env -R {input.ref} -V "
-           "{input.vcf} -o {output.splitted}"
 
 
 ## bam metrics
@@ -593,10 +575,10 @@ rule vtools_coverage:
 rule vcfstats:
     """Calculate vcf statistics"""
     input:
-        vcf="multisample/genotyped.vcf.gz",
-        tbi = "multisample/genotyped.vcf.gz.tbi"
+        vcf="{sample}/vcf/{sample}.vcf.gz",
+        tbi = "{sample}/vcf{sample}.vcf.gz.tbi"
     output:
-        stats="multisample/vcfstats.json"
+        stats="{sampel}/vcf/{sample}.vcfstats.json"
     singularity: containers["vtools"]
     shell: "vtools-stats -i {input.vcf} > {output.stats}"
 
@@ -657,7 +639,7 @@ rule merge_stats:
     """Merge all stats of all samples"""
     input:
         cols=expand("{sample}/{sample}.stats.json", sample=SAMPLES),
-        vstat="multisample/vcfstats.json",
+        vstat="{sample}/vcf/{sample}.vcfstats.json",
         mpy=mpy
     output:
         stats="stats.json"
