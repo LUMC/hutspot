@@ -320,12 +320,12 @@ rule baserecal:
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
            "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
 
-rule scatterregions:
+checkpoint scatterregions:
     """Scatter the reference genome"""
     input:
         ref = REFERENCE,
     output:
-        regions = dynamic("scatter/scatter-{chunk}.bed")
+        regions = "scatter/scatter-{chunk}.bed"
     singularity: containers["biopet-scatterregions"]
     shell: "mkdir -p scatter && "
            "biopet-scatterregions "
@@ -341,8 +341,8 @@ rule gvcf_scatter:
         ref=REFERENCE,
         region="scatter/scatter-{chunk}.bed"
     output:
-        gvcf=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"),
-        gvcf_tbi=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz.tbi")
+        gvcf=temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz"),
+        gvcf_tbi=temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi")
     singularity: containers["gatk"]
     shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar "
            "-T HaplotypeCaller -ERC GVCF -I "
@@ -351,48 +351,45 @@ rule gvcf_scatter:
            "-variant_index_type LINEAR -variant_index_parameter 128000 "
            "-BQSR {input.bqsr}"
 
-rule gvcf_gather:
-    """Gather all GVCF scatters"""
-    input:
-        gvcfs = dynamic("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"),
-    output:
-        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
-    singularity: containers["bcftools"]
-    shell: "bcftools concat {input.gvcfs} -n > {output.gvcf}"
+#rule gvcf_gather:
+#    """Gather all GVCF scatters"""
+#    input:
+#        gvcfs = "{sample}/vcf/{sample}.{chunk}.part.vcf.gz",
+#    output:
+#        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
+#    singularity: containers["bcftools"]
+#    shell: "bcftools concat {input.gvcfs} -n > {output.gvcf}"
 
 
-rule gvcf_gather_tbi:
-    """Index GVCF"""
-    input:
-        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
-    output:
-        tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
-    singularity: containers["tabix"]
-    shell: "tabix -pvcf {input.gvcf}"
+#rule gvcf_gather_tbi:
+#    """Index GVCF"""
+#    input:
+#        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
+#    output:
+#        tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
+#    singularity: containers["tabix"]
+#    shell: "tabix -pvcf {input.gvcf}"
 
 
 rule genotype_scatter:
     """Run GATK's GenotypeGVCFs by chunk"""
     input:
-        gvcf = "{sample}/vcf/{sample}.g.vcf.gz",
-        tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi",
-        ref=REFERENCE,
-        region=dynamic("scatter/scatter-{chunk}.bed")
-    params:
-        li=" -V ".join("{sample}/vcf/{sample}.g.vcf.gz")
+        gvcf = "{sample}/vcf/{sample}.{chunk}.g.vcf.gz",
+        tbi = "{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi",
+        ref=REFERENCE
     output:
-        vcf=dynamic("{sample}/vcf/{sample}.genotype.{chunk}.part.vcf.gz"),
-        vcf_tbi=dynamic("{sample}/vcf/{sample}.genotype.{chunk}.part.vcf.gz.tbi")
+        vcf="{sample}/vcf/{sample}.genotype.{chunk}.vcf.gz",
+        vcf_tbi="{sample}/vcf/{sample}.genotype.{chunk}.vcf.gz.tbi"
     singularity: containers["gatk"]
     shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
            "GenotypeGVCFs -R {input.ref} "
-           "-V {params.li} -L '{input.region}' -o '{output.vcf}'"
+           "-V {input.gvcf} -o '{output.vcf}'"
 
 
 rule genotype_gather:
     """Gather all genotyping VCFs"""
     input:
-        vcfs = dynamic("{sample}/vcf/{sample}.genotype.{chunk}.part.vcf.gz"),
+        vcfs = "{sample}/vcf/{sample}.genotype.{chunk}.vcf.gz",
     output:
         vcf = "{sample}/vcf/{sample}.vcf.gz"
     singularity: containers["bcftools"]
