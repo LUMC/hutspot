@@ -105,6 +105,7 @@ BASE_REFFLATS = [basename(x) for x in REFFLATS]
 containers = {
     "bcftools": "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4",
     "bedtools-2.26-python-2.7": "docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0",
+    "biopet-scatterregions": "docker://quay.io/biocontainers/biopet-scatterregions:0.2--0",
     "bwa-0.7.17-picard-2.18.7": "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:43ec6124f9f4f875515f9548733b8b4e5fed9aa6-0",
     "cutadapt": "docker://quay.io/biocontainers/cutadapt:1.14--py36_0",
     "debian": "docker://debian:buster-slim",
@@ -120,35 +121,6 @@ containers = {
     "tabix": "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0",
     "vtools": "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
 }
-
-def split_genome(ref, approx_n_chunks=100):
-    """
-    Split genome in chunks.
-
-    Chunks are strings in the format: `<ctg>:<start>-<end>`
-    These follow the region string format as used by htslib,
-    which uses _1_-based indexing.
-    See: http://www.htslib.org/doc/tabix.html
-    """
-    fa = Fasta(ref)
-    tot_size = sum([len(x) for x in fa.records.values()])
-    chunk_size = tot_size//approx_n_chunks
-    chunks = []
-    for chrom_name, chrom_value in fa.records.items():
-        pos = 1
-        while pos <= len(chrom_value):
-            end = pos+chunk_size
-            if end <= len(chrom_value):
-                chunk = "{0}:{1}-{2}".format(chrom_name, pos, end)
-            else:
-                chunk = "{0}:{1}-{2}".format(chrom_name, pos, len(chrom_value))
-            chunks.append(chunk)
-            pos = end
-    return chunks
-
-CHUNKS = split_genome(REFERENCE)
-
-
 
 def get_r(strand, wildcards):
     """Get fastq files on a single strand for a sample"""
@@ -195,9 +167,6 @@ def metrics(do_metrics=True):
         coverage_stats = []
     stats = "stats.json"
     return  fqcr + fqcm + fqcp + coverage_stats + [stats]
-
-
-localrules: gvcf_chunkfile, genotype_chunkfile
 
 
 rule all:
@@ -351,6 +320,18 @@ rule baserecal:
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
            "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
 
+rule scatterregions:
+    """Scatter the reference genome"""
+    input:
+        ref = REFERENCE,
+    output:
+        regions = "scatter/scatter-{chunk}.bed"
+    singularity: containers["biopet-scatterregions"]
+    shell: "mkdir -p scatter && "
+           "biopet-scatterregions "
+           "--referenceFasta {input.ref} --scatterSize 1000 "
+           "--outputDir scatter"
+
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
     input:
@@ -358,8 +339,7 @@ rule gvcf_scatter:
         bqsr="{sample}/bams/{sample}.baserecal.grp",
         dbsnp=DBSNP,
         ref=REFERENCE,
-    params:
-        chunk="{chunk}"
+        region="scatter/scatter-{chunk}.bed"
     output:
         gvcf=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"),
         gvcf_tbi=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz.tbi")
@@ -367,44 +347,18 @@ rule gvcf_scatter:
     shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar "
            "-T HaplotypeCaller -ERC GVCF -I "
            "{input.bam} -R {input.ref} -D {input.dbsnp} "
-           "-L '{params.chunk}' -o '{output.gvcf}' "
+           "-L '{input.region}' -o '{output.gvcf}' "
            "-variant_index_type LINEAR -variant_index_parameter 128000 "
            "-BQSR {input.bqsr}"
-
-
-rule gvcf_chunkfile:
-    """
-    Create simple text file with paths to chunks for GVCF.
-
-    This uses a run directive in stead of a shell directive because
-    the amount of chunks may be so large the shell would error out with
-    an "argument list too long" error.
-    See https://unix.stackexchange.com/a/120842 for more info
-
-    This also means this rule lives outside of singularity and is
-    executed in snakemake's own environment.
-    """
-    params:
-        chunkfiles = expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
-                            chunk=CHUNKS)
-    output:
-        file = "{sample}/vcf/chunkfile.txt"
-    run:
-        with open(output.file, "w") as ohandle:
-            for filename in params.chunkfiles:
-                corrected = filename.format(sample=wildcards.sample)
-                ohandle.write(corrected + "\n")
 
 rule gvcf_gather:
     """Gather all GVCF scatters"""
     input:
-        gvcfs = expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
-                       chunk=CHUNKS),
-        chunkfile = "{sample}/vcf/chunkfile.txt"
+        gvcfs = "{sample}/vcf/{sample}.{chunk}.part.vcf.gz",
     output:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
     singularity: containers["bcftools"]
-    shell: "bcftools concat -f {input.chunkfile} -n > {output.gvcf}"
+    shell: "bcftools concat {input.gvcfs} -n > {output.gvcf}"
 
 
 rule gvcf_gather_tbi:
@@ -423,53 +377,28 @@ rule genotype_scatter:
         gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=SAMPLES),
         tbis = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",
                       sample=SAMPLES),
-        ref=REFERENCE
+        ref=REFERENCE,
+        region="scatter/scatter-{chunk}.bed"
     params:
         li=" -V ".join(expand("{sample}/vcf/{sample}.g.vcf.gz",
                               sample=SAMPLES)),
-        chunk="{chunk}"
     output:
         vcf=temp("multisample/genotype.{chunk}.part.vcf.gz"),
         vcf_tbi=temp("multisample/genotype.{chunk}.part.vcf.gz.tbi")
     singularity: containers["gatk"]
     shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
            "GenotypeGVCFs -R {input.ref} "
-           "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
-
-
-rule genotype_chunkfile:
-    """
-    Create simple text file with paths to chunks for genotyping
-
-    This uses a run directive in stead of a shell directive because
-    the amount of chunks may be so large the shell would error out with
-    an "argument list too long" error.
-    See https://unix.stackexchange.com/a/120842 for more info
-
-    This also means this rule lives outside of singularity and is
-    executed in snakemake's own environment.
-    """
-    params:
-        vcfs = expand("multisample/genotype.{chunk}.part.vcf.gz",
-                      chunk=CHUNKS)
-    output:
-        file = "multisample/chunkfile.txt"
-    run:
-        with open(output.file, "w") as ohandle:
-            for filename in params.vcfs:
-                ohandle.write(filename + "\n")
+           "-V {params.li} -L '{input.region}' -o '{output.vcf}'"
 
 
 rule genotype_gather:
     """Gather all genotyping VCFs"""
     input:
-        vcfs = expand("multisample/genotype.{chunk}.part.vcf.gz",
-                      chunk=CHUNKS),
-        chunkfile = "multisample/chunkfile.txt"
+        vcfs = "multisample/genotype.{chunk}.part.vcf.gz",
     output:
         vcf = "multisample/genotyped.vcf.gz"
     singularity: containers["bcftools"]
-    shell: "bcftools concat -f {input.chunkfile} -n > {output.vcf}"
+    shell: "bcftools concat {input.vcfs} -n > {output.vcf}"
 
 
 rule genotype_gather_tbi:
