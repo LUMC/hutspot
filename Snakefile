@@ -328,7 +328,7 @@ checkpoint scatterregions:
     singularity: containers["biopet-scatterregions"]
     shell: "mkdir -p {output} && "
            "biopet-scatterregions "
-           "--referenceFasta {input.ref} --scatterSize 1000 "
+           "--referenceFasta {input.ref} --scatterSize 1000000000 "
            "--outputDir scatter"
 
 rule gvcf_scatter:
