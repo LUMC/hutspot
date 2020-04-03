@@ -171,11 +171,10 @@ def metrics(do_metrics=True):
 
 rule all:
     input:
-        #combined="multisample/genotyped.vcf.gz",
-        #report="multiqc_report/multiqc_report.html",
+        report="multiqc_report/multiqc_report.html",
         bais=expand("{sample}/bams/{sample}.markdup.bam.bai",sample=SAMPLES),
         vcfs=expand("{sample}/vcf/{sample}.vcf.gz",sample=SAMPLES),
-        #stats=metrics()
+        stats=metrics()
 
 
 rule create_markdup_tmp:
@@ -325,9 +324,9 @@ checkpoint scatterregions:
     input:
         ref = REFERENCE,
     output:
-        regions = "scatter/scatter-{chunk}.bed"
+        directory("scatter")
     singularity: containers["biopet-scatterregions"]
-    shell: "mkdir -p scatter && "
+    shell: "mkdir -p {output} && "
            "biopet-scatterregions "
            "--referenceFasta {input.ref} --scatterSize 1000 "
            "--outputDir scatter"
@@ -353,25 +352,6 @@ rule gvcf_scatter:
            "-variant_index_type LINEAR -variant_index_parameter 128000 "
            "-BQSR {input.bqsr}"
 
-#rule gvcf_gather:
-#    """Gather all GVCF scatters"""
-#    input:
-#        gvcfs = "{sample}/vcf/{sample}.{chunk}.part.vcf.gz",
-#    output:
-#        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
-#    singularity: containers["bcftools"]
-#    shell: "bcftools concat {input.gvcfs} -n > {output.gvcf}"
-
-
-#rule gvcf_gather_tbi:
-#    """Index GVCF"""
-#    input:
-#        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
-#    output:
-#        tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
-#    singularity: containers["tabix"]
-#    shell: "tabix -pvcf {input.gvcf}"
-
 
 rule genotype_scatter:
     """Run GATK's GenotypeGVCFs by chunk"""
@@ -390,14 +370,21 @@ rule genotype_scatter:
            "-V {input.gvcf} -o '{output.vcf}'"
 
 
+def aggregate_input(wildcards):
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz",
+           i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+
 rule genotype_gather:
     """Gather all genotyping VCFs"""
     input:
-        vcfs = "{sample}/vcf/{sample}.{chunk}.vcf.gz",
+        vcfs = aggregate_input
     output:
         vcf = "{sample}/vcf/{sample}.vcf.gz"
     singularity: containers["bcftools"]
-    shell: "bcftools concat {input.vcfs} -n > {output.vcf}"
+    shell: "bcftools concat {input.vcfs} --allow-overlaps --output {output.vcf} "
+           "--output-type z"
 
 
 rule genotype_gather_tbi:
@@ -438,7 +425,6 @@ rule unique_reads_bases:
 
 
 ## fastqc
-
 rule fastqc_raw:
     """
     Run fastqc on raw fastq files
@@ -577,7 +563,7 @@ rule vcfstats:
     """Calculate vcf statistics"""
     input:
         vcf="{sample}/vcf/{sample}.vcf.gz",
-        tbi = "{sample}/vcf{sample}.vcf.gz.tbi"
+        tbi = "{sample}/vcf/{sample}.vcf.gz.tbi"
     output:
         stats="{sampel}/vcf/{sample}.vcfstats.json"
     singularity: containers["vtools"]
@@ -640,7 +626,7 @@ rule merge_stats:
     """Merge all stats of all samples"""
     input:
         cols=expand("{sample}/{sample}.stats.json", sample=SAMPLES),
-        vstat="{sample}/vcf/{sample}.vcfstats.json",
+        vstat=expand("{sample}/vcf/{sample}.vcfstats.json", sample=SAMPLES),
         mpy=mpy
     output:
         stats="stats.json"
