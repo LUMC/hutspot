@@ -27,8 +27,6 @@ from os.path import join, basename
 from pathlib import Path
 import itertools
 
-from pyfaidx import Fasta
-
 REFERENCE = config.get("REFERENCE")
 if REFERENCE is None:
     raise ValueError("You must set --config REFERENCE=<path>")
@@ -57,6 +55,14 @@ for filename in KNOWN_SITES:
     if not Path(filename).exists():
         raise FileNotFoundError("{0} does not exist".format(filename))
 
+# Set default values
+def set_default(key, value):
+    """ Set default config values """
+    if key not in config:
+        config[key] = value
+
+# Set the default scatter size to 1 billion
+set_default('SCATTER_SIZE', 1000000000)
 
 # these are all optional
 BED = config.get("BED", "")  # comma-separated list of BED files
@@ -324,12 +330,14 @@ checkpoint scatterregions:
     """Scatter the reference genome"""
     input:
         ref = REFERENCE,
+    params:
+        size = config['SCATTER_SIZE']
     output:
         directory("scatter")
     singularity: containers["biopet-scatterregions"]
     shell: "mkdir -p {output} && "
            "biopet-scatterregions "
-           "--referenceFasta {input.ref} --scatterSize 1000000000 "
+           "--referenceFasta {input.ref} --scatterSize {params.size} "
            "--outputDir scatter"
 
 rule gvcf_scatter:

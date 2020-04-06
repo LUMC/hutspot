@@ -8,9 +8,12 @@ GATK HaplotypeCaller.
 * Whole-genome calling, regardless of wet-lab library preparation. 
 * Follows modern best practices
     * Each sample is individually called as as a GVCF. 
-    * A multisample VCF is then produced by genotyping the collection of GVCFs.
+    * A VCF is then produced by genotyping the individual GVCFs separately
+      for each sample.
 * Data parallelization for calling and genotyping steps.
-    * Using ~100 chunks, we call an entire exome in ~15 minutes!
+    * Using the `SCATTER_SIZE` parameter, the reference genome is split into
+      chunks, and each chunk can be processed independenly. The default value of
+      1 billon will scatter the human reference genoom into 4 chunks.
 * Reasonably fast.
     * 96 exomes in < 24 hours.
 * No unnecessary jobs
@@ -26,7 +29,6 @@ To run this pipeline you will need the following at minimum:
 
 * python 3.6
 * snakemake 5.2.0 or newer
-* pyfaidx 
 
 This repository contains a [conda](https://conda.io/docs/) 
 environment file that you can use to install all minimum dependencies in a 
@@ -102,8 +104,7 @@ The following reference files **must** be provided:
 
 1. A reference genome, in fasta format. Must be indexed with `samtools faidx`.
 2. A dbSNP VCF file
-3. A VCF file from 1000Genomes
-4. A VCF file from the HapMap project.
+3. At least one A VCF file with `KNOWN_SITES` for base recalibration
 
 The following reference files **may** be provided:
 
@@ -142,8 +143,10 @@ The following configuration options are **optional**:
 | ------------- | ----------- |
 | `BED` | Comma-separate list of paths to BED files of interest |
 | `FEMALE_THRESHOLD` | Float between 0 and 1 that signifies the threshold of the ratio between coverage on X/overall coverage that 'calls' a sample as female. Default = 0.6 |
-| `MAX_BASES` | Maximum allowed number of bases per sample before subsampling. Default = None (no subsampling) |
-| `KNOWN_SITES` | Path to one or more VCF files of known variants, to be used with baserecalibration |
+| `MAX_BASES` | Maximum allowed number of bases per sample before sub sampling. Default = None (no sub sampling) |
+| `KNOWN_SITES` | Path to one or more VCF files of known variants, to be used with base recalibration |
+| `SCATTER_SIZE` | The size of chunks to divide the reference into for parallel
+execution. Default = 1000000000 |
 
 
 ## Cluster configuration
@@ -212,7 +215,7 @@ BED=/path/to/interesting_region.bed
 
 # Graph
 
-Below you can see the rulegraph of the pipeline. The main variant calling flow
+Below you can see the rule graph of the pipeline. The main variant calling flow
 is highlighted in red. This only shows dependencies
 between rules, and not between jobs. The actual job graph is considerably
 more complex, as nearly all rules are duplicated by sample and some
