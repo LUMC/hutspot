@@ -13,6 +13,8 @@
     contains:
       - "Job counts"
       - "localrule all:"
+      - "output: micro/vcf/micro.vcf.gz"
+      - "output: micro/vcf/micro.g.vcf.gz"
     must_not_contain:
       - "rror"
   stderr:

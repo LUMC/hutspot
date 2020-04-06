@@ -174,6 +174,7 @@ rule all:
         report="multiqc_report/multiqc_report.html",
         bais=expand("{sample}/bams/{sample}.markdup.bam.bai",sample=SAMPLES),
         vcfs=expand("{sample}/vcf/{sample}.vcf.gz",sample=SAMPLES),
+        gvcfs=expand("{sample}/vcf/{sample}.g.vcf.gz",sample=SAMPLES),
         stats=metrics()
 
 
@@ -352,6 +353,26 @@ rule gvcf_scatter:
            "-variant_index_type LINEAR -variant_index_parameter 128000 "
            "-BQSR {input.bqsr}"
 
+def aggregate_gvcf(wildcards):
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("{{sample}}/vcf/{{sample}}.{i}.g.vcf.gz",
+           i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+def aggregate_gvcf_tbi(wildcards):
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("{{sample}}/vcf/{{sample}}.{i}.g.vcf.gz.tbi",
+           i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+rule gvcf_gather:
+    """ Join the gvcf files together """
+    input:
+        gvcfs = aggregate_gvcf,
+        tbis = aggregate_gvcf_tbi,
+    output:
+        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
+    singularity: containers["bcftools"]
+    shell: "bcftools concat {input.gvcfs} --allow-overlaps --output {output.gvcf} "
+           "--output-type z"
 
 rule genotype_scatter:
     """Run GATK's GenotypeGVCFs by chunk"""
@@ -370,7 +391,7 @@ rule genotype_scatter:
            "-V {input.gvcf} -o '{output.vcf}'"
 
 
-def aggregate_input(wildcards):
+def aggregate_vcf(wildcards):
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
     return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz",
            i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
@@ -379,7 +400,7 @@ def aggregate_input(wildcards):
 rule genotype_gather:
     """Gather all genotyping VCFs"""
     input:
-        vcfs = aggregate_input
+        vcfs = aggregate_vcf
     output:
         vcf = "{sample}/vcf/{sample}.vcf.gz"
     singularity: containers["bcftools"]
