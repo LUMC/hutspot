@@ -389,8 +389,8 @@ rule genotype_scatter:
         tbi = "{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi",
         ref=REFERENCE
     output:
-        vcf="{sample}/vcf/{sample}.{chunk}.vcf.gz",
-        vcf_tbi="{sample}/vcf/{sample}.{chunk}.vcf.gz.tbi"
+        vcf = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz"),
+        vcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz.tbi")
     wildcard_constraints:
         chunk="[0-9]+"
     singularity: containers["gatk"]
@@ -405,10 +405,17 @@ def aggregate_vcf(wildcards):
            i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
 
 
+def aggregate_vcf_tbi(wildcards):
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz.tbi",
+           i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+
 rule genotype_gather:
     """Gather all genotyping VCFs"""
     input:
-        vcfs = aggregate_vcf
+        vcfs = aggregate_vcf,
+        tbi = aggregate_vcf_tbi
     output:
         vcf = "{sample}/vcf/{sample}.vcf.gz"
     singularity: containers["bcftools"]
