@@ -180,7 +180,9 @@ rule all:
         report="multiqc_report/multiqc_report.html",
         bais=expand("{sample}/bams/{sample}.markdup.bam.bai",sample=SAMPLES),
         vcfs=expand("{sample}/vcf/{sample}.vcf.gz",sample=SAMPLES),
+        vcf_tbi=expand("{sample}/vcf/{sample}.vcf.gz.tbi",sample=SAMPLES),
         gvcfs=expand("{sample}/vcf/{sample}.g.vcf.gz",sample=SAMPLES),
+        gvcf_tbi=expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",sample=SAMPLES),
         stats=metrics()
 
 
@@ -377,10 +379,12 @@ rule gvcf_gather:
         gvcfs = aggregate_gvcf,
         tbis = aggregate_gvcf_tbi,
     output:
-        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
+        gvcf = "{sample}/vcf/{sample}.g.vcf.gz",
+        gvcf_tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
     singularity: containers["bcftools"]
     shell: "bcftools concat {input.gvcfs} --allow-overlaps --output {output.gvcf} "
-           "--output-type z"
+           "--output-type z && "
+           "bcftools index --tbi --output-file {output.gvcf_tbi} {output.gvcf}"
 
 rule genotype_scatter:
     """Run GATK's GenotypeGVCFs by chunk"""
@@ -415,22 +419,14 @@ rule genotype_gather:
     """Gather all genotyping VCFs"""
     input:
         vcfs = aggregate_vcf,
-        tbi = aggregate_vcf_tbi
+        vcfs_tbi = aggregate_vcf_tbi
     output:
-        vcf = "{sample}/vcf/{sample}.vcf.gz"
+        vcf = "{sample}/vcf/{sample}.vcf.gz",
+        vcf_tbi = "{sample}/vcf/{sample}.vcf.gz.tbi"
     singularity: containers["bcftools"]
     shell: "bcftools concat {input.vcfs} --allow-overlaps --output {output.vcf} "
-           "--output-type z"
-
-
-rule genotype_gather_tbi:
-    """Index genotyped vcf file"""
-    input:
-        vcf = "{sample}/vcf/{sample}.vcf.gz"
-    output:
-        tbi = "{sample}/vcf/{sample}.vcf.gz.tbi"
-    singularity: containers["tabix"]
-    shell: "tabix -pvcf {input.vcf}"
+           "--output-type z && "
+           "bcftools index --tbi --output-file {output.vcf_tbi} {output.vcf}"
 
 
 ## bam metrics
