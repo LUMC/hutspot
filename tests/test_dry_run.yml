@@ -3,11 +3,7 @@
     snakemake
     -n -r -p -s Snakefile
     --config
-    OUTPUT_DIR=teststtest
-    REFERENCE=tests/data/ref.fa
-    DBSNP=tests/data/database.vcf.gz
-    KNOWN_SITES=tests/data/database.vcf.gz
-    SAMPLE_CONFIG=tests/data/sample_config.json
+    CONFIG_JSON=tests/data/config/sample_config.json
   exit_code: 0
   stdout:
     contains:

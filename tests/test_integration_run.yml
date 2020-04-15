@@ -9,10 +9,7 @@
     --jobs 1 -w 120
     -r -p -s Snakefile
     --config
-    REFERENCE=tests/data/ref.fa
-    DBSNP=tests/data/database.vcf.gz
-    KNOWN_SITES=tests/data/database.vcf.gz
-    SAMPLE_CONFIG=tests/data/sample_config.json
+    CONFIG_JSON=tests/data/config/sample_config.json
   stderr:
     contains:
       - "Job counts"
@@ -61,11 +58,7 @@
     --jobs 1 -w 120
     -r -p -s Snakefile
     --config
-    REFERENCE=tests/data/ref.fa
-    DBSNP=tests/data/database.vcf.gz
-    KNOWN_SITES=tests/data/database.vcf.gz
-    SAMPLE_CONFIG=tests/data/sample_config.json
-    SCATTER_SIZE=1000
+    CONFIG_JSON=tests/data/config/sample_config_scatter.json
   stderr:
     contains:
       - "Job counts"

@@ -22,91 +22,50 @@ Main Snakefile for the pipeline.
 """
 
 import json
+import jsonschema
 from functools import partial
 from os.path import join, basename
 from pathlib import Path
 import itertools
 
-REFERENCE = config.get("REFERENCE")
-if REFERENCE is None:
-    raise ValueError("You must set --config REFERENCE=<path>")
-if not Path(REFERENCE).exists():
-    raise FileNotFoundError("Reference file {0} "
-                            "does not exist.".format(REFERENCE))
-DBSNP = config.get("DBSNP")
-if DBSNP is None:
-    raise ValueError("You must set --config DBSNP=<path>")
-if not Path(DBSNP).exists():
-    raise FileNotFoundError("{0} does not exist".format(DBSNP))
+# Read the config json
+with open(config['CONFIG_JSON'], 'rt') as fin:
+    settings = json.load(fin)
 
-SCONFIG = config.get("SAMPLE_CONFIG")
-if SCONFIG is None:
-    raise ValueError("You must set --config SAMPLE_CONFIG=<path>")
-if not Path(SCONFIG).exists():
-    raise FileNotFoundError("{0} does not exist".format(SCONFIG))
+# Read the json schema
+with open('config/schema.json', 'rt') as fin:
+    schema = json.load(fin)
 
-KNOWN_SITES = config.get("KNOWN_SITES")
-if KNOWN_SITES is None:
-    raise ValueError("You must set --config KNOWN_SITES=<path>")
+# Validate the settings against the schema
+try:
+    jsonschema.validate(settings, schema)
+except jsonschema.ValidationError as e:
+    raise jsonschema.ValidationError(f'Invalid CONFIG_JSON: {e}')
 
-# The user can specify multiple known sites
-KNOWN_SITES = KNOWN_SITES.split(',')
-for filename in KNOWN_SITES:
-    if not Path(filename).exists():
-        raise FileNotFoundError("{0} does not exist".format(filename))
 
 # Set default values
 def set_default(key, value):
     """ Set default config values """
-    if key not in config:
-        config[key] = value
+    if key not in settings:
+        settings[key] = value
 
-# Set the default scatter size to 1 billion
-set_default('SCATTER_SIZE', 1000000000)
+# Set the default settings
+set_default('scatter_size', 1000000000)
+set_default('female_threshold', 0.6)
 
-# these are all optional
-BED = config.get("BED", "")  # comma-separated list of BED files
-REFFLAT = config.get("REFFLAT", "")  # comma-separated list of refFlat files
-FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
-MAX_BASES = config.get("MAX_BASES", "")
+# Set the script paths
+set_default("covstats", "src/covstats.py")
+set_default("collect_stats", "src/collect_stats.py")
+set_default("merge_stats", "src/merge_stats.py")
+set_default("fastq_stats", "src/fastqc_stats.py")
+set_default("stats_to_tsv", "src/stats_to_tsv.py")
+set_default("safe_fastqc", "src/safe_fastqc.sh")
+set_default("py_wordcount", "src/pywc.py")
 
 # Generate the input string for basrecalibration
 BSQR_known_sites = ''
-for argument, filename in zip(itertools.repeat('-knownSites'), KNOWN_SITES):
+for argument, filename in zip(itertools.repeat('-knownSites'), settings["known_sites"]):
     BSQR_known_sites +=' {} {}'.format(argument, filename)
-
-def fsrc_dir(*args):
-    """Wrapper around snakemake's srcdir to work like os.path.join"""
-    if len(args) == 1:
-        return srcdir(args[0])
-    return srcdir(join(*args))
-
-covpy = fsrc_dir("src", "covstats.py")
-colpy = fsrc_dir("src", "collect_stats.py")
-mpy = fsrc_dir("src", "merge_stats.py")
-seq = fsrc_dir("src", "seqtk.sh")
-fqpy = fsrc_dir("src", "fastqc_stats.py")
-tsvpy = fsrc_dir("src", "stats_to_tsv.py")
-fqsc = fsrc_dir("src", "safe_fastqc.sh")
-pywc = fsrc_dir("src", "pywc.py")
-
-# sample config parsing
-with open(config.get("SAMPLE_CONFIG")) as handle:
-    SAMPLE_CONFIG = json.load(handle)
-SAMPLES = SAMPLE_CONFIG['samples'].keys()
-
-if BED != "":
-    BEDS = BED.split(",")
-else:
-    BEDS = []
-
-if REFFLAT != "":
-    REFFLATS = REFFLAT.split(",")
-else:
-    REFFLATS = []
-
-BASE_BEDS = [basename(x) for x in BEDS]
-BASE_REFFLATS = [basename(x) for x in REFFLATS]
 
 containers = {
     "bcftools": "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4",
@@ -122,7 +81,6 @@ containers = {
     "picard-2.14": "docker://quay.io/biocontainers/picard:2.14--py36_0",
     "python3": "docker://python:3.6-slim",
     "samtools-1.7-python-3.6": "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0",
-    "seqtk-1.2-jq-1.6": "docker://quay.io/biocontainers/mulled-v2-13686261ac0aa5682c680670ff8cda7b09637943:d143450dec169186731bb4df6f045a3c9ee08eb6-0",
     "sickle": "docker://quay.io/biocontainers/sickle-trim:1.33--ha92aebf_4",
     "tabix": "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0",
     "vtools": "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
@@ -130,7 +88,7 @@ containers = {
 
 def get_r(strand, wildcards):
     """Get fastq files on a single strand for a sample"""
-    s = SAMPLE_CONFIG['samples'].get(wildcards.sample)
+    s = settings['samples'].get(wildcards.sample)
     rs = []
     for l in sorted(s['libraries'].keys()):
         rs.append(s['libraries'][l][strand])
@@ -145,14 +103,9 @@ def get_bedpath(wildcards):
     return next(x for x in BEDS if basename(x) == wildcards.bed)
 
 
-def get_refflatpath(wildcards):
-    """Get absolute path of a refflat file"""
-    return next(x for x in REFFLATS if basename(x) == wildcards.ref)
-
-
 def sample_gender(wildcards):
     """Get sample gender"""
-    sam = SAMPLE_CONFIG['samples'].get(wildcards.sample)
+    sam = settings['samples'].get(wildcards.sample)
     return sam.get("gender", "null")
 
 
@@ -161,28 +114,29 @@ def metrics(do_metrics=True):
         return ""
 
     fqcr = expand("{sample}/pre_process/raw_fastqc/.done.txt",
-                  sample=SAMPLES)
+                  sample=settings['samples']),
     fqcm = expand("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
-                  sample=SAMPLES)
+                  sample=settings['samples']),
     fqcp = expand("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
-                  sample=SAMPLES)
-    if len(REFFLATS) >= 1:
+                  sample=settings['samples']),
+    if "refflat" in settings:
         coverage_stats = expand("{sample}/coverage/{ref}.coverages.tsv",
-                                sample=SAMPLES, ref=BASE_REFFLATS)
+                                sample=settings['samples'], ref=settings['refflat'])
     else:
-        coverage_stats = []
-    stats = "stats.json"
-    return  fqcr + fqcm + fqcp + coverage_stats + [stats]
+        coverage_stats = tuple()
+    stats = "stats.json",
+    print(coverage_stats)
+    return  fqcr + fqcm + fqcp + coverage_stats + stats
 
 
 rule all:
     input:
-        report="multiqc_report/multiqc_report.html",
-        bais=expand("{sample}/bams/{sample}.markdup.bam.bai",sample=SAMPLES),
-        vcfs=expand("{sample}/vcf/{sample}.vcf.gz",sample=SAMPLES),
-        vcf_tbi=expand("{sample}/vcf/{sample}.vcf.gz.tbi",sample=SAMPLES),
-        gvcfs=expand("{sample}/vcf/{sample}.g.vcf.gz",sample=SAMPLES),
-        gvcf_tbi=expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",sample=SAMPLES),
+        multiqc="multiqc_report/multiqc_report.html",
+        bais=expand("{sample}/bams/{sample}.markdup.bam.bai", sample=settings['samples']),
+        vcfs=expand("{sample}/vcf/{sample}.vcf.gz", sample=settings['samples']),
+        vcf_tbi=expand("{sample}/vcf/{sample}.vcf.gz.tbi", sample=settings['samples']),
+        gvcfs=expand("{sample}/vcf/{sample}.g.vcf.gz", sample=settings['samples']),
+        gvcf_tbi=expand("{sample}/vcf/{sample}.g.vcf.gz.tbi", sample=settings['samples']),
         stats=metrics()
 
 
@@ -194,7 +148,7 @@ rule create_markdup_tmp:
 
 rule genome:
     """Create genome file as used by bedtools"""
-    input: REFERENCE
+    input: settings["reference"]
     output: "current.genome"
     singularity: containers["debian"]
     shell: "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output}"
@@ -213,45 +167,12 @@ rule merge_r2:
     singularity: containers["debian"]
     shell: "cat {input} > {output}"
 
-
-rule seqtk_r1:
-    """Either subsample or link forward fastq file"""
-    input:
-        stats="{sample}/pre_process/{sample}.preqc_count.json",
-        fastq="{sample}/pre_process/{sample}.merged_R1.fastq.gz",
-        seqtk=seq
-    params:
-        max_bases=str(MAX_BASES)
-    output:
-        fastq=temp("{sample}/pre_process/{sample}.sampled_R1.fastq.gz")
-    singularity: containers["seqtk-1.2-jq-1.6"]
-    shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
-           "{params.max_bases}"
-
-
-rule seqtk_r2:
-    """Either subsample or link reverse fastq file"""
-    input:
-        stats = "{sample}/pre_process/{sample}.preqc_count.json",
-        fastq = "{sample}/pre_process/{sample}.merged_R2.fastq.gz",
-        seqtk=seq
-    params:
-        max_bases =str(MAX_BASES)
-    output:
-        fastq = temp("{sample}/pre_process/{sample}.sampled_R2.fastq.gz")
-    singularity: containers["seqtk-1.2-jq-1.6"]
-    shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
-           "{params.max_bases}"
-
-
 # contains original merged fastq files as input to prevent them from being prematurely deleted
 rule sickle:
     """Trim fastq files"""
     input:
-        r1 = "{sample}/pre_process/{sample}.sampled_R1.fastq.gz",
-        r2 = "{sample}/pre_process/{sample}.sampled_R2.fastq.gz",
-        rr1 = "{sample}/pre_process/{sample}.merged_R1.fastq.gz",
-        rr2 = "{sample}/pre_process/{sample}.merged_R2.fastq.gz"
+        r1 = "{sample}/pre_process/{sample}.merged_R1.fastq.gz",
+        r2 = "{sample}/pre_process/{sample}.merged_R2.fastq.gz"
     output:
         r1 = temp("{sample}/pre_process/{sample}.trimmed_R1.fastq"),
         r2 = temp("{sample}/pre_process/{sample}.trimmed_R2.fastq"),
@@ -277,7 +198,7 @@ rule align:
     input:
         r1 = "{sample}/pre_process/{sample}.cutadapt_R1.fastq",
         r2 = "{sample}/pre_process/{sample}.cutadapt_R2.fastq",
-        ref = REFERENCE,
+        ref = settings["reference"],
         tmp = ancient("tmp")
     params:
         rg = "@RG\\tID:{sample}_lib1\\tSM:{sample}\\tPL:ILLUMINA"
@@ -317,7 +238,7 @@ rule baserecal:
     """Base recalibrated BAM files"""
     input:
         bam = "{sample}/bams/{sample}.markdup.bam",
-        ref = REFERENCE,
+        ref = settings["reference"],
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
     params:
@@ -331,9 +252,9 @@ rule baserecal:
 checkpoint scatterregions:
     """Scatter the reference genome"""
     input:
-        ref = REFERENCE,
+        ref = settings["reference"],
     params:
-        size = config['SCATTER_SIZE']
+        size = settings['scatter_size']
     output:
         directory("scatter")
     singularity: containers["biopet-scatterregions"]
@@ -347,8 +268,8 @@ rule gvcf_scatter:
     input:
         bam="{sample}/bams/{sample}.markdup.bam",
         bqsr="{sample}/bams/{sample}.baserecal.grp",
-        dbsnp=DBSNP,
-        ref=REFERENCE,
+        dbsnp=settings["dbsnp"],
+        ref=settings["reference"],
         region="scatter/scatter-{chunk}.bed"
     output:
         gvcf=temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz"),
@@ -391,7 +312,7 @@ rule genotype_scatter:
     input:
         gvcf = "{sample}/vcf/{sample}.{chunk}.g.vcf.gz",
         tbi = "{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi",
-        ref=REFERENCE
+        ref= settings["reference"]
     output:
         vcf = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz"),
         vcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz.tbi")
@@ -434,7 +355,7 @@ rule mapped_reads_bases:
     """Calculate number of mapped reads"""
     input:
         bam="{sample}/bams/{sample}.sorted.bam",
-        pywc=pywc
+        pywc=settings["py_wordcount"]
     output:
         reads="{sample}/bams/{sample}.mapped.num",
         bases="{sample}/bams/{sample}.mapped.basenum"
@@ -447,7 +368,7 @@ rule unique_reads_bases:
     """Calculate number of unique reads"""
     input:
         bam="{sample}/bams/{sample}.markdup.bam",
-        pywc=pywc
+        pywc=settings["py_wordcount"]
     output:
         reads="{sample}/bams/{sample}.unique.num",
         bases="{sample}/bams/{sample}.usable.basenum"
@@ -484,7 +405,7 @@ rule fastqc_merged:
     input:
         r1="{sample}/pre_process/{sample}.merged_R1.fastq.gz",
         r2="{sample}/pre_process/{sample}.merged_R2.fastq.gz",
-        fq=fqsc
+        fq=settings["safe_fastqc"]
     params:
         odir="{sample}/pre_process/merged_fastqc"
     output:
@@ -504,7 +425,7 @@ rule fastqc_postqc:
     input:
         r1="{sample}/pre_process/{sample}.cutadapt_R1.fastq",
         r2="{sample}/pre_process/{sample}.cutadapt_R2.fastq",
-        fq=fqsc
+        fq=settings["safe_fastqc"]
     params:
         odir="{sample}/pre_process/postqc_fastqc"
     output:
@@ -547,7 +468,7 @@ rule fastqc_stats:
         preqc_r2="{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip",
         postqc_r1="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
         postqc_r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip",
-        sc=fqpy
+        sc=settings["fastq_stats"]
     singularity: containers["python3"]
     output:
         "{sample}/pre_process/fastq_stats.json"
@@ -563,7 +484,7 @@ rule covstats:
     input:
         bam="{sample}/bams/{sample}.markdup.bam",
         genome="current.genome",
-        covpy=covpy,
+        covpy=settings["covstats"],
         bed=get_bedpath
     params:
         subt="Sample {sample}"
@@ -582,7 +503,7 @@ rule vtools_coverage:
     input:
         gvcf="{sample}/vcf/{sample}.g.vcf.gz",
         tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi",
-        ref=get_refflatpath
+        ref = settings.get('refflat', "")
     output:
         tsv="{sample}/coverage/{ref}.coverages.tsv"
     singularity: containers["vtools"]
@@ -603,7 +524,7 @@ rule vcfstats:
 
 
 ## collection
-if len(BASE_BEDS) >= 1:
+if "bedfile" in settings:
     rule collectstats:
         """Collect all stats for a particular sample with beds"""
         input:
@@ -614,12 +535,11 @@ if len(BASE_BEDS) >= 1:
             unum="{sample}/bams/{sample}.unique.num",
             ubnum="{sample}/bams/{sample}.usable.basenum",
             fastqc="{sample}/pre_process/fastq_stats.json",
-            cov=expand("{{sample}}/coverage/{bed}.covstats.json",
-                       bed=BASE_BEDS),
-            colpy=colpy
+            cov=expand("{{sample}}/coverage/{bed}.covstats.json", bed=settings["bedfile"]),
+            colpy=settings["collect_stats"]
         params:
             sample_name="{sample}",
-            fthresh=FEMALE_THRESHOLD
+            fthresh=settings["female_threshold"]
         output:
             "{sample}/{sample}.stats.json"
         singularity: containers["vtools"]
@@ -640,10 +560,10 @@ else:
             unum = "{sample}/bams/{sample}.unique.num",
             ubnum = "{sample}/bams/{sample}.usable.basenum",
             fastqc="{sample}/pre_process/fastq_stats.json",
-            colpy = colpy
+            colpy = settings["collect_stats"]
         params:
             sample_name = "{sample}",
-            fthresh = FEMALE_THRESHOLD
+            fthresh = settings["female_threshold"]
         output:
             "{sample}/{sample}.stats.json"
         singularity: containers["vtools"]
@@ -657,9 +577,9 @@ else:
 rule merge_stats:
     """Merge all stats of all samples"""
     input:
-        cols=expand("{sample}/{sample}.stats.json", sample=SAMPLES),
-        vstat=expand("{sample}/vcf/{sample}.vcfstats.json", sample=SAMPLES),
-        mpy=mpy
+        cols=expand("{sample}/{sample}.stats.json", sample=settings['samples']),
+        vstat=expand("{sample}/vcf/{sample}.vcfstats.json", sample=settings['samples']),
+        mpy=settings["merge_stats"]
     output:
         stats="stats.json"
     singularity: containers["vtools"]
@@ -671,7 +591,7 @@ rule stats_tsv:
     """Convert stats.json to tsv"""
     input:
         stats="stats.json",
-        sc=tsvpy
+        sc=settings["stats_to_tsv"]
     output:
         stats="stats.tsv"
     singularity: containers["python3"]
@@ -689,6 +609,6 @@ rule multiqc:
         odir=".",
         rdir="multiqc_report"
     output:
-        report="multiqc_report/multiqc_report.html"
+        "multiqc_report/multiqc_report.html"
     singularity: containers["multiqc"]
-    shell: "multiqc -f -o {params.rdir} {params.odir} || touch {output.report}"
+    shell: "multiqc -f -o {params.rdir} {params.odir} || touch {output}"

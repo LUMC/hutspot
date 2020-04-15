@@ -2,7 +2,18 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "description": "JSON schema for samples config for the hutspot pipeline",
     "type": "object",
-    "required": ["samples"],
+    "additionalProperties": false,
+    "required": [
+        "samples",
+        "reference",
+        "dbsnp",
+        "known_sites"
+    ],
+    "optional": [
+        "scatter_size",
+        "female_threshold",
+        "bedfile"
+    ],
     "properties": {
         "samples": {
             "type": "object",
@@ -25,6 +36,35 @@
                     }
                 }
             }
-        }
+        },
+    "reference": {
+        "description": "Reference fasta file to map against",
+        "type": "string"
+    },
+    "dbsnp": {
+        "description": "VCF file to be used to annotate variants",
+        "type": "string"
+    },
+    "known_sites": {
+        "description": "VCF files of known sites, to be used to recalibrate the quality scores",
+        "type": "array",
+        "minItems": 1
+    },
+    "scatter_size": {
+        "description": "Size of the chunks to split the variant calling into",
+        "type": "integer"
+    },
+    "female_threshold": {
+        "description": "Fraction of reads between X and the autosomes to call a female",
+        "type": "number"
+    },
+    "bedfile": {
+        "description": "Bed file to calculate the coverage over",
+        "type": "string"
+    },
+    "refflat": {
+        "description": "RefFlat file with transcripts",
+        "type": "string"
     }
+  }
 }

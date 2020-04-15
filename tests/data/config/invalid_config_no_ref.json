@@ -5,8 +5,10 @@
         "lib_01": {
         "R1": "tests/data/micro_R1.fq.gz",
         "R2": "tests/data/micro_R2.fq.gz"
-      }
+        }
       }
     }
-  }
+  },
+  "dbsnp": "tests/data/database.vcf.gz",
+  "known_sites": ["tests/data/database.vcf.gz"]
 }

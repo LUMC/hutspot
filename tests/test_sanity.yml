@@ -1,0 +1,40 @@
+- name: test-no-reference
+  command: >
+    snakemake
+    -n -r -p -s Snakefile
+    --config CONFIG_JSON=tests/data/config/invalid_config_no_ref.json
+  exit_code: 1
+  stdout:
+    contains:
+        - "Invalid CONFIG_JSON: 'reference' is a required property"
+  tags:
+    - sanity
+
+- name: test-reference-does-not-exist
+  command: >
+    snakemake
+    -n -r -p -s Snakefile
+    --config CONFIG_JSON=tests/data/config/invalid_config_fake_ref.json
+
+  exit_code: 1
+  stdout:
+    contains:
+      - "Missing input files for rule align:"
+      - "/this/file/is/not/there"
+  tags:
+    - sanity
+
+- name: test-snakemake
+  command: >
+    snakemake --version
+  tags:
+    - sanity
+
+- name: test-singluarity-version
+  command: >
+    singularity --version
+  stdout:
+    contains:
+      - "singularity version 3"
+  tags:
+    - sanity
