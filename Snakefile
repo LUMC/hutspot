@@ -484,12 +484,12 @@ rule covstats:
         bam="{sample}/bams/{sample}.markdup.bam",
         genome="current.genome",
         covpy=settings["covstats"],
-        bed=get_bedpath
+        bed=settings.get("bedfile","")
     params:
         subt="Sample {sample}"
     output:
-        covj="{sample}/coverage/{bed}.covstats.json",
-        covp="{sample}/coverage/{bed}.covstats.png"
+        covj="{sample}/coverage/covstats.json",
+        covp="{sample}/coverage/covstats.png"
     singularity: containers["bedtools-2.26-python-2.7"]
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
            "-b {input.bam} -d  | python {input.covpy} - --plot {output.covp} "
@@ -534,7 +534,7 @@ if "bedfile" in settings:
             unum="{sample}/bams/{sample}.unique.num",
             ubnum="{sample}/bams/{sample}.usable.basenum",
             fastqc="{sample}/pre_process/fastq_stats.json",
-            cov=expand("{{sample}}/coverage/{bed}.covstats.json", bed=settings["bedfile"]),
+            cov="{sample}/coverage/covstats.json",
             colpy=settings["collect_stats"]
         params:
             sample_name="{sample}",
