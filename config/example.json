@@ -20,5 +20,12 @@
                 }
             }
         }
-    }
+    },
+    "reference": "/path/to/ref",
+    "dbsnp": "/path/to/vcf1",
+    "known_sites": ["/path/to/vcf1", "/path/to/vcf2"],
+    "scatter_size": 1000000000,
+    "female_threshold": 0.6,
+    "bedfile": "/path/to/bed",
+    "refflat": "/path/to/refflat"
 }

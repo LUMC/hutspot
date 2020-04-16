@@ -55,7 +55,7 @@
         "type": "integer"
     },
     "female_threshold": {
-        "description": "Fraction of reads between X and the autosomes to call a female",
+        "description": "Fraction of reads between X and the autosomes to call as female",
         "type": "number"
     },
     "bedfile": {
