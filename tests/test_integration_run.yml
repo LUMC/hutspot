@@ -103,3 +103,27 @@
      should_exist: false
    - path: "micro/vcf/micro.0.vcf.gz.tbi"
      should_exist: false
+
+- name: test-integration-refflat
+  tags:
+    - integration
+  command: >
+    snakemake
+    --use-singularity
+    --singularity-prefix /tmp/singularity
+    --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120
+    -r -p -s Snakefile
+    --config
+    CONFIG_JSON=tests/data/config/sample_config_refflat.json
+  stderr:
+    contains:
+      - "Job counts"
+      - "localrule all:"
+      - "(100%) done"
+    must_not_contain:
+      - "rror"
+  files:
+   - path: "micro/refFlat_coverage.tsv"
+     contains:
+         - "1\tMIR12136\t133.0\t99.0\t133.0\t99.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\tNR_162149"
