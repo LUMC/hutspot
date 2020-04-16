@@ -62,11 +62,6 @@ set_default("stats_to_tsv", "src/stats_to_tsv.py")
 set_default("safe_fastqc", "src/safe_fastqc.sh")
 set_default("py_wordcount", "src/pywc.py")
 
-# Generate the input string for basrecalibration
-BSQR_known_sites = ''
-for argument, filename in zip(itertools.repeat('-knownSites'), settings["known_sites"]):
-    BSQR_known_sites +=' {} {}'.format(argument, filename)
-
 containers = {
     "bcftools": "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4",
     "bedtools-2.26-python-2.7": "docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0",
@@ -98,45 +93,23 @@ get_r1 = partial(get_r, "R1")
 get_r2 = partial(get_r, "R2")
 
 
-def get_bedpath(wildcards):
-    """Get absolute path of a bed file"""
-    return next(x for x in BEDS if basename(x) == wildcards.bed)
-
-
-def sample_gender(wildcards):
-    """Get sample gender"""
-    sam = settings['samples'].get(wildcards.sample)
-    return sam.get("gender", "null")
-
-
-def metrics(do_metrics=True):
-    if not do_metrics:
-        return ""
-
-    fqcr = expand("{sample}/pre_process/raw_fastqc/.done.txt",
-                  sample=settings['samples']),
-    fqcm = expand("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
-                  sample=settings['samples']),
-    fqcp = expand("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
-                  sample=settings['samples']),
-    if "refflat" in settings:
-        coverage_stats = tuple(expand("{sample}/coverage/refFlat_coverage.tsv", sample=settings['samples']))
-    else:
-        coverage_stats = tuple()
-    stats = "stats.json",
-    print(coverage_stats)
-    return  fqcr + fqcm + fqcp + coverage_stats + stats
-
+def coverage_stats(wildcards):
+    files = expand("{sample}/coverage/refFlat_coverage.tsv", sample=settings['samples'])
+    return files if "refflat" in settings else []
 
 rule all:
     input:
         multiqc="multiqc_report/multiqc_report.html",
+        stats = "stats.json",
         bais=expand("{sample}/bams/{sample}.markdup.bam.bai", sample=settings['samples']),
         vcfs=expand("{sample}/vcf/{sample}.vcf.gz", sample=settings['samples']),
         vcf_tbi=expand("{sample}/vcf/{sample}.vcf.gz.tbi", sample=settings['samples']),
         gvcfs=expand("{sample}/vcf/{sample}.g.vcf.gz", sample=settings['samples']),
         gvcf_tbi=expand("{sample}/vcf/{sample}.g.vcf.gz.tbi", sample=settings['samples']),
-        stats=metrics()
+        fqcr = expand("{sample}/pre_process/raw_fastqc/.done.txt", sample=settings['samples']),
+        fqcm = expand("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip", sample=settings['samples']),
+        fqcp = expand("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip", sample=settings['samples']),
+        coverage_stats = coverage_stats,
 
 
 rule create_markdup_tmp:
@@ -238,15 +211,15 @@ rule baserecal:
     input:
         bam = "{sample}/bams/{sample}.markdup.bam",
         ref = settings["reference"],
+        vcfs = settings["known_sites"]
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
-    params:
-        known_sites = BSQR_known_sites
+    params: " ".join(expand("-knownSites {vcf}", vcf=settings["known_sites"]))
     singularity: containers["gatk"]
     shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
            "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
-           "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
+           "-cov CycleCovariate -cov ContextCovariate {params}"
 
 checkpoint scatterregions:
     """Scatter the reference genome"""
