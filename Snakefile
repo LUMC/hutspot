@@ -254,7 +254,9 @@ rule gvcf_scatter:
            "{input.bam} -R {input.ref} -D {input.dbsnp} "
            "-L '{input.region}' -o '{output.gvcf}' "
            "-variant_index_type LINEAR -variant_index_parameter 128000 "
-           "-BQSR {input.bqsr}"
+           "-BQSR {input.bqsr} "
+           "--GVCFGQBands 20 --GVCFGQBands 40 --GVCFGQBands 60 "
+           "--GVCFGQBands 80 --GVCFGQBands 100 "
 
 def aggregate_gvcf(wildcards):
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
