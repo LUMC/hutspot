@@ -120,7 +120,7 @@ def metrics(do_metrics=True):
     fqcp = expand("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
                   sample=settings['samples']),
     if "refflat" in settings:
-        coverage_stats = tuple(expand("{sample}/refFlat_coverage.tsv", sample=settings['samples']))
+        coverage_stats = tuple(expand("{sample}/coverage/refFlat_coverage.tsv", sample=settings['samples']))
     else:
         coverage_stats = tuple()
     stats = "stats.json",
@@ -504,7 +504,7 @@ rule vtools_coverage:
         tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi",
         ref = settings.get('refflat', "")
     output:
-        tsv="{sample}/refFlat_coverage.tsv"
+        tsv="{sample}/coverage/refFlat_coverage.tsv"
     singularity: containers["vtools"]
     shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
 

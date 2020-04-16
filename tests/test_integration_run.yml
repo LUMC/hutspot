@@ -124,6 +124,6 @@
     must_not_contain:
       - "rror"
   files:
-   - path: "micro/refFlat_coverage.tsv"
+   - path: "micro/coverage/refFlat_coverage.tsv"
      contains:
          - "1\tMIR12136\t133.0\t99.0\t133.0\t99.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\tNR_162149"
