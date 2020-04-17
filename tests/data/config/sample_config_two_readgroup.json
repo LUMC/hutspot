@@ -3,8 +3,12 @@
     "micro": {
       "libraries": {
         "lib_01": {
-        "R1": "tests/data/fastq/micro_R1.fq.gz",
-        "R2": "tests/data/fastq/micro_R2.fq.gz"
+        "R1": "tests/data/fastq/micro_rg1_R1.fq.gz",
+        "R2": "tests/data/fastq/micro_rg1_R2.fq.gz"
+        },
+        "lib_02": {
+        "R1": "tests/data/fastq/micro_rg2_R1.fq.gz",
+        "R2": "tests/data/fastq/micro_rg2_R2.fq.gz"
         }
       }
     }

@@ -179,6 +179,41 @@
       - "Job counts"
       - "localrule all:"
       - "(100%) done"
-      - "-knownSites tests/data/database.vcf.gz -knownSites tests/data/database.vcf.gz"
+      - "-knownSites tests/data/reference/database.vcf.gz -knownSites tests/data/reference/database.vcf.gz"
     must_not_contain:
       - "rror"
+
+- name: test-integration-two-readgroups
+  tags:
+    - integration
+    - new
+  command: >
+    snakemake
+    --use-singularity
+    --singularity-prefix /tmp/singularity
+    --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120
+    -r -p -s Snakefile
+    --config
+    CONFIG_JSON=tests/data/config/sample_config_two_readgroup.json
+  stderr:
+    contains:
+      - "Job counts"
+      - "localrule all:"
+      - "(100%) done"
+    must_not_contain:
+      - "rror"
+  files:
+   - path: "micro/coverage/covstats.png"
+   - path: "micro/coverage/covstats.json"
+     contains:
+       - "\"frac_min_100x\": 0.9748"
+       - "\"mean\": 136.70"
+       - "\"width_nonzero\": 16569"
+   - path: "stats.tsv"
+     contains:
+       - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tusable_reads\tusable_bases\ttotal_variants\tsnps\tinsertions\tdeletions\ttransversions\ttransitions\tti_tv_ratio\thomozygous_variants\theterozygous_variants\tcovstats.json_median_coverage"
+       - "micro\t15440\t2276743\t15398\t2269171\t15515\t2275114\t15477\t2270739\t17\t15\t2\t0\t0\t15\tnan\t16\t1\t136"
+
+       - "\tcovstats.json_modal_coverage\tcovstats.json_horizontal_coverage\t"
+       - "\t137\t1.0\t"
