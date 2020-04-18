@@ -141,12 +141,14 @@ rule cutadapt:
         r2=get_reverse
     output:
         r1 = "{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
-        r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz"
+        r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz",
+        summary = "{sample}/pre_process/{sample}-{read_group}.txt"
     singularity: containers["cutadapt"]
     shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG "
            "--minimum-length 1 --quality-cutoff=20,20 "
            "--output {output.r1} --paired-output {output.r2} -Z "
-           "{input.r1} {input.r2}"
+           "{input.r1} {input.r2} "
+           "--report=minimal > {output.summary}"
 
 rule align:
     """Align fastq files"""

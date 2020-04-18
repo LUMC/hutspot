@@ -210,11 +210,6 @@
       - "rror"
   files:
    - path: "micro/coverage/covstats.png"
-   - path: "micro/coverage/covstats.json"
-     contains:
-       - "\"frac_min_100x\": 0.97"
-       - "\"mean\": 137"
-       - "\"width_nonzero\": 16569"
    - path: "stats.tsv"
    - path: "micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R1_fastqc.zip"
    - path: "micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R2_fastqc.zip"
@@ -224,3 +219,19 @@
    - path: "micro/pre_process/raw-micro-lib_01/micro_rg1_R2_fastqc.zip"
    - path: "micro/pre_process/raw-micro-lib_02/micro_rg2_R1_fastqc.zip"
    - path: "micro/pre_process/raw-micro-lib_02/micro_rg2_R2_fastqc.zip"
+
+   - path: "micro/coverage/covstats.json"
+     contains:
+       - "\"frac_min_100x\": 0.97"
+       - "\"mean\": 137"
+       - "\"width_nonzero\": 16569"
+
+   - path: "micro/pre_process/micro-lib_01.txt"
+     contains:
+       - "status\tin_reads\tin_bp\ttoo_short\ttoo_long\ttoo_many_n\tout_reads\tw/adapters\tqualtrim_bp\tout_bp\tw/adapters2\tqualtrim2_bp\tout2_bp"
+       - "OK\t3860\t1137566\t0\t0\t0\t3860\t4\t375\t573198\t10\t727\t563218"
+
+   - path: "micro/pre_process/micro-lib_02.txt"
+     contains:
+       - "status\tin_reads\tin_bp\ttoo_short\ttoo_long\ttoo_many_n\tout_reads\tw/adapters\tqualtrim_bp\tout_bp\tw/adapters2\tqualtrim2_bp\tout2_bp"
+       - "OK\t3860\t1139177\t0\t0\t0\t3860\t3\t416\t572845\t14\t711\t565152"
