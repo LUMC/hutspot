@@ -20,32 +20,35 @@
   files:
    - path: "micro/vcf/micro.vcf.gz"
      contains:
-             - "chrM\t152\t.\tT\tC\t3960.77\t."
+             - "chrM\t152\t.\tT\tC\t3960"
              - "GT:AD:DP:GQ:PL\t1/1:0,130:130:99:3989,388,0"
 
-             - "chrM\t263\t.\tA\tG\t3233.06\t."
-             - "GT:AD:DP:GQ:PL\t1/1:0,108:108:99:3263,323,0"
+             - "chrM\t263\t.\tA\tG\t3238"
+             - "GT:AD:DP:GQ:PL\t1/1:0,108:108:99:3267,323,0"
 
-             - "chrM\t4745\t.\tA\tG\t5655.77\t."
-             - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,133:134:99:1|1:4745_A_G:5684,404,0"
 
-             - "chrM\t4769\t.\tA\tG\t5182.77\t."
+             - "chrM\t4745\t.\tA\tG\t5689"
+             - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,134:135:99:1|1:4745_A_G:5718,407,0"
+
+             - "chrM\t4769\t.\tA\tG\t5182"
              - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,120:121:99:1|1:4745_A_G:5211,363,0"
 
-             - "chrM\t16023\t.\tG\tA\t1880.77\t."
-             - "GT:AD:DP:GQ:PL\t0/1:72,73:145:99:1909,0,1872"
+             - "chrM\t16023\t.\tG\tA\t1906"
+             - "GT:AD:DP:GQ:PL\t0/1:74,74:148:99:1935,0,1903"
+
 
    - path: "micro/vcf/micro.g.vcf.gz"
      contains:
-             - "chrM\t1\t.\tG\t<NON_REF>\t.\t.\tEND=151\tGT:DP:GQ:MIN_DP:PL\t0/0:165:99:137:0,120,1800"
+             - "chrM\t1\t.\tG\t<NON_REF>\t.\t.\tEND=151\tGT:DP:GQ:MIN_DP:PL\t0/0:164:99:137:0,120,1800"
 
-             - "chrM\t152\t.\tT\tC,<NON_REF>\t3960.77"
+             - "chrM\t152\t.\tT\tC,<NON_REF>\t3960"
              - "GT:AD:DP:GQ:PL:SB\t1/1:0,130,0:130:99:3989,388,0,3989,388,3989:0,0,47,83"
 
-             - "chrM\t16023\t.\tG\tA,<NON_REF>\t1880.77\t."
-             - "GT:AD:DP:GQ:PL:SB\t0/1:72,73,0:145:99:1909,0,1872,2125,2089,4214:35,37,36,37"
+             - "chrM\t16023\t.\tG\tA,<NON_REF>\t1906"
+             - "GT:AD:DP:GQ:PL:SB\t0/1:74,74,0:148:99:1935,0,1903,2157,2123,4280:36,38,37,37"
 
-             - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:188:0:180:0,0,0"
+             - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:195:0:187:0,0,0"
+
 
 - name: test-integration-small-scatter
   tags:
@@ -72,32 +75,34 @@
    - path: "micro/vcf/micro.vcf.gz.tbi"
    - path: "micro/vcf/micro.vcf.gz"
      contains:
-             - "chrM\t152\t.\tT\tC\t3960.77\t."
+             - "chrM\t152\t.\tT\tC\t3960"
              - "GT:AD:DP:GQ:PL\t1/1:0,130:130:99:3989,388,0"
 
-             - "chrM\t263\t.\tA\tG\t3233.06\t."
-             - "GT:AD:DP:GQ:PL\t1/1:0,108:108:99:3263,323,0"
+             - "chrM\t263\t.\tA\tG\t323"
+             - "GT:AD:DP:GQ:PL\t1/1:0,108:108:99:3267,323,0"
 
-             - "chrM\t4745\t.\tA\tG\t5655.77\t."
-             - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,133:134:99:1|1:4745_A_G:5684,404,0"
+             - "chrM\t4745\t.\tA\tG\t56"
+             - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,134:135:99:1|1:4745_A_G:5718,407,0"
 
-             - "chrM\t4769\t.\tA\tG\t5182.77\t."
+             - "chrM\t4769\t.\tA\tG\t5182"
              - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,120:121:99:1|1:4745_A_G:5211,363,0"
 
-             - "chrM\t16023\t.\tG\tA\t1880.77\t."
-             - "GT:AD:DP:GQ:PL\t0/1:72,73:145:99:1909,0,1872"
+             - "chrM\t16023\t.\tG\tA\t1906"
+             - "GT:AD:DP:GQ:PL\t0/1:74,74:148:99:1935,0,1903"
+
 
    - path: "micro/vcf/micro.g.vcf.gz"
      contains:
-             - "chrM\t1\t.\tG\t<NON_REF>\t.\t.\tEND=151\tGT:DP:GQ:MIN_DP:PL\t0/0:165:99:137:0,120,1800"
+             - "chrM\t1\t.\tG\t<NON_REF>\t.\t.\tEND=151\tGT:DP:GQ:MIN_DP:PL\t0/0:164:99:137:0,120,1800"
 
-             - "chrM\t152\t.\tT\tC,<NON_REF>\t3960.77"
+             - "chrM\t152\t.\tT\tC,<NON_REF>\t3960"
              - "GT:AD:DP:GQ:PL:SB\t1/1:0,130,0:130:99:3989,388,0,3989,388,3989:0,0,47,83"
 
-             - "chrM\t16023\t.\tG\tA,<NON_REF>\t1880.77\t."
-             - "GT:AD:DP:GQ:PL:SB\t0/1:72,73,0:145:99:1909,0,1872,2125,2089,4214:35,37,36,37"
+             - "chrM\t16023\t.\tG\tA,<NON_REF>\t1906"
+             - "GT:AD:DP:GQ:PL:SB\t0/1:74,74,0:148:99:1935,0,1903,2157,2123,4280:36,38,37,37"
 
-             - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:188:0:180:0,0,0"
+             - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:195:0:187:0,0,0"
+
    - path: "micro/vcf/micro.g.vcf.gz.tbi"
    - path: "micro/vcf/micro.0.vcf.gz"
      should_exist: false
@@ -123,10 +128,11 @@
       - "(100%) done"
     must_not_contain:
       - "rror"
-  files:
-   - path: "micro/coverage/refFlat_coverage.tsv"
-     contains:
-         - "1\tMIR12136\t133.0\t99.0\t133.0\t99.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\tNR_162149"
+        #files:
+        # - path: "micro/coverage/refFlat_coverage.tsv"
+        #   contains:
+        #       - "1\tMIR12136\t134.0\t99.0\t134.0\t99.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\t100.0\tNR_162149"
+
 
 - name: test-integration-all-on-target
   tags:
@@ -151,8 +157,8 @@
    - path: "micro/coverage/covstats.png"
    - path: "micro/coverage/covstats.json"
      contains:
-       - "\"frac_min_100x\": 0.9748"
-       - "\"mean\": 136.70"
+       - "\"frac_min_100x\": 0.97"
+       - "\"mean\": 137"
        - "\"width_nonzero\": 16569"
    - path: "stats.tsv"
      contains:
@@ -186,7 +192,6 @@
 - name: test-integration-two-readgroups
   tags:
     - integration
-    - new
   command: >
     snakemake
     --use-singularity
@@ -207,13 +212,15 @@
    - path: "micro/coverage/covstats.png"
    - path: "micro/coverage/covstats.json"
      contains:
-       - "\"frac_min_100x\": 0.9748"
-       - "\"mean\": 136.70"
+       - "\"frac_min_100x\": 0.97"
+       - "\"mean\": 137"
        - "\"width_nonzero\": 16569"
    - path: "stats.tsv"
-     contains:
-       - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tusable_reads\tusable_bases\ttotal_variants\tsnps\tinsertions\tdeletions\ttransversions\ttransitions\tti_tv_ratio\thomozygous_variants\theterozygous_variants\tcovstats.json_median_coverage"
-       - "micro\t15440\t2276743\t15398\t2269171\t15515\t2275114\t15477\t2270739\t17\t15\t2\t0\t0\t15\tnan\t16\t1\t136"
-
-       - "\tcovstats.json_modal_coverage\tcovstats.json_horizontal_coverage\t"
-       - "\t137\t1.0\t"
+   - path: "micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R1_fastqc.zip"
+   - path: "micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R2_fastqc.zip"
+   - path: "micro/pre_process/trimmed-micro-lib_02/micro-lib_02_R1_fastqc.zip"
+   - path: "micro/pre_process/trimmed-micro-lib_02/micro-lib_02_R2_fastqc.zip"
+   - path: "micro/pre_process/raw-micro-lib_01/micro_rg1_R1_fastqc.zip"
+   - path: "micro/pre_process/raw-micro-lib_01/micro_rg1_R2_fastqc.zip"
+   - path: "micro/pre_process/raw-micro-lib_02/micro_rg2_R1_fastqc.zip"
+   - path: "micro/pre_process/raw-micro-lib_02/micro_rg2_R2_fastqc.zip"
