@@ -277,5 +277,6 @@
    - path: "micro2/bams/micro2.markdup.bam"
    - path: "metrics.tsv"
      contains:
+      - "sample_name\tpostqc_bases\tpostqc_reads\tpreqc_bases\tpreqc_reads"
       - "micro1"
-      - "micro2"
+      - "micro2\t1137997\t3860\t1139177\t3860"
