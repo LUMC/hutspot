@@ -192,6 +192,7 @@
 - name: test-integration-two-readgroups
   tags:
     - integration
+    - new
   command: >
     snakemake
     --use-singularity
@@ -219,6 +220,8 @@
    - path: "micro/pre_process/raw-micro-lib_01/micro_rg1_R2_fastqc.zip"
    - path: "micro/pre_process/raw-micro-lib_02/micro_rg2_R1_fastqc.zip"
    - path: "micro/pre_process/raw-micro-lib_02/micro_rg2_R2_fastqc.zip"
+   - path: "micro/pre_process/micro-lib_01.txt"
+   - path: "micro/pre_process/micro-lib_02.txt"
 
    - path: "micro/coverage/covstats.json"
      contains:

@@ -71,7 +71,7 @@ containers = {
     "fastq-count": "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0",
     "fastqc": "docker://quay.io/biocontainers/fastqc:0.11.7--4",
     "gatk": "docker://broadinstitute/gatk3:3.7-0",
-    "multiqc": "docker://quay.io/biocontainers/multiqc:1.5--py36_0",
+    "multiqc": "docker://quay.io/biocontainers/multiqc:1.8--py_2",
     "picard-2.14": "docker://quay.io/biocontainers/picard:2.14--py36_0",
     "python3": "docker://python:3.6-slim",
     "samtools-1.7-python-3.6": "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0",
@@ -142,13 +142,14 @@ rule cutadapt:
     output:
         r1 = "{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
         r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz",
-        summary = "{sample}/pre_process/{sample}-{read_group}.txt"
+    log:
+        "{sample}/pre_process/{sample}-{read_group}.txt"
     singularity: containers["cutadapt"]
     shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG "
            "--minimum-length 1 --quality-cutoff=20,20 "
            "--output {output.r1} --paired-output {output.r2} -Z "
            "{input.r1} {input.r2} "
-           "--report=minimal > {output.summary}"
+           "--report=minimal > {log}"
 
 rule align:
     """Align fastq files"""
