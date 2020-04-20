@@ -222,6 +222,8 @@
    - path: "micro/pre_process/raw-micro-lib_02/micro_rg2_R2_fastqc.zip"
    - path: "micro/pre_process/micro-lib_01.txt"
    - path: "micro/pre_process/micro-lib_02.txt"
+   - path: "metrics.tsv"
+   - path: "metrics.json"
    - path: "micro/metrics.json"
      contains:
        - "sample_name\": \"micro"

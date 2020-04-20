@@ -61,6 +61,7 @@ set_default("fastq_stats", "src/fastqc_stats.py")
 set_default("stats_to_tsv", "src/stats_to_tsv.py")
 set_default("py_wordcount", "src/pywc.py")
 set_default("collect_metrics", "src/collect_metrics.py")
+set_default("merge_metrics", "src/merge_metrics.py")
 
 containers = {
     "bcftools": "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4",
@@ -120,7 +121,9 @@ rule all:
         fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
         fastqc_trimmed = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
         cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt" for read_group, sample in get_readgroup_per_sample()),
-        metrics = expand("{sample}/metrics.json", sample=settings['samples']),
+        sample_metrics = expand("{sample}/metrics.json", sample=settings['samples']),
+        metrics_json = "metrics.json",
+        metrics_tsv = "metrics.tsv",
         coverage_stats = coverage_stats,
 
 
@@ -504,6 +507,18 @@ rule collect_metrics:
     shell: "python {input.collect_metrics} --sample {wildcards.sample} "
            "--cutadapt-summary {input.cutadapt} > {output}"
 
+rule merge_metrics:
+   """ Merge per sample metrics files """
+   input:
+        metrics = expand("{sample}/metrics.json", sample=settings["samples"]),
+        merge_metrics = settings["merge_metrics"]
+   output:
+        json = "metrics.json",
+        tsv = "metrics.tsv"
+   singularity: containers["python3"]
+   shell: "python {input.merge_metrics} --metrics {input.metrics} "
+          "--json {output.json} --tsv {output.tsv}"
+
 #rule merge_stats:
 #    """Merge all stats of all samples"""
 #    input:
@@ -541,4 +556,4 @@ rule multiqc:
     output:
         "multiqc_report/multiqc_report.html"
     singularity: containers["multiqc"]
-    shell: "multiqc -f -o {params.rdir} {params.odir} || touch {output}"
+    shell: "multiqc -f -o {params.rdir} {params.odir} --ignore metrics.tsv || touch {output}"
