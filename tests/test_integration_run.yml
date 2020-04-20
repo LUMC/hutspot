@@ -192,7 +192,6 @@
 - name: test-integration-two-readgroups
   tags:
     - integration
-    - new
   command: >
     snakemake
     --use-singularity
@@ -246,3 +245,37 @@
      contains:
        - "status\tin_reads\tin_bp\ttoo_short\ttoo_long\ttoo_many_n\tout_reads\tw/adapters\tqualtrim_bp\tout_bp\tw/adapters2\tqualtrim2_bp\tout2_bp"
        - "OK\t3860\t1139177\t0\t0\t0\t3860\t3\t416\t572845\t14\t711\t565152"
+
+- name: test-integration-two-samples
+  tags:
+    - integration
+    - new
+  command: >
+    snakemake
+    --use-singularity
+    --singularity-prefix /tmp/singularity
+    --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120
+    -r -p -s Snakefile
+    --config
+    CONFIG_JSON=tests/data/config/sample_config_two_samples.json
+  stderr:
+    contains:
+      - "Job counts"
+      - "localrule all:"
+      - "(100%) done"
+    must_not_contain:
+      - "rror"
+  files:
+   - path: "micro1/pre_process/micro1-lib_01.txt"
+   - path: "micro2/pre_process/micro2-lib_02.txt"
+   - path: "micro1/vcf/micro1.vcf.gz"
+   - path: "micro2/vcf/micro2.vcf.gz"
+   - path: "micro1/vcf/micro1.g.vcf.gz"
+   - path: "micro2/vcf/micro2.g.vcf.gz"
+   - path: "micro1/bams/micro1.markdup.bam"
+   - path: "micro2/bams/micro2.markdup.bam"
+   - path: "metrics.tsv"
+     contains:
+      - "micro1"
+      - "micro2"
