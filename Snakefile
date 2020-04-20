@@ -60,6 +60,7 @@ set_default("merge_stats", "src/merge_stats.py")
 set_default("fastq_stats", "src/fastqc_stats.py")
 set_default("stats_to_tsv", "src/stats_to_tsv.py")
 set_default("py_wordcount", "src/pywc.py")
+set_default("collect_metrics", "src/collect_metrics.py")
 
 containers = {
     "bcftools": "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4",
@@ -118,7 +119,9 @@ rule all:
         gvcf_tbi=expand("{sample}/vcf/{sample}.g.vcf.gz.tbi", sample=settings['samples']),
         fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
         fastqc_trimmed = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
-        #coverage_stats = coverage_stats,
+        cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt" for read_group, sample in get_readgroup_per_sample()),
+        metrics = expand("{sample}/metrics.json", sample=settings['samples']),
+        coverage_stats = coverage_stats,
 
 
 rule create_markdup_tmp:
@@ -444,73 +447,85 @@ rule vcfstats:
 
 
 ## collection
-if "bedfile" in settings:
-    rule collectstats:
-        """Collect all stats for a particular sample with beds"""
-        input:
-            mnum="{sample}/bams/{sample}.mapped.num",
-            mbnum="{sample}/bams/{sample}.mapped.basenum",
-            unum="{sample}/bams/{sample}.unique.num",
-            ubnum="{sample}/bams/{sample}.usable.basenum",
-            cov="{sample}/coverage/covstats.json",
-            colpy=settings["collect_stats"]
-        params:
-            sample_name="{sample}",
-            fthresh=settings["female_threshold"]
-        output:
-            "{sample}/{sample}.stats.json"
-        singularity: containers["vtools"]
-        shell: "python {input.colpy} --sample-name {params.sample_name} "
-               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
-               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-               "--female-threshold {params.fthresh} "
-               "{input.cov} > {output}"
-else:
-    rule collectstats:
-        """Collect all stats for a particular sample without beds"""
-        input:
-            preqc = "{sample}/pre_process/{sample}.preqc_count.json",
-            postq = "{sample}/pre_process/{sample}.postqc_count.json",
-            mnum = "{sample}/bams/{sample}.mapped.num",
-            mbnum = "{sample}/bams/{sample}.mapped.basenum",
-            unum = "{sample}/bams/{sample}.unique.num",
-            ubnum = "{sample}/bams/{sample}.usable.basenum",
-            colpy = settings["collect_stats"]
-        params:
-            sample_name = "{sample}",
-            fthresh = settings["female_threshold"]
-        output:
-            "{sample}/{sample}.stats.json"
-        singularity: containers["vtools"]
-        shell: "python {input.colpy} --sample-name {params.sample_name} "
-               "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
-               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
-               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-               "--female-threshold {params.fthresh} "
-               "> {output}"
-
-rule merge_stats:
-    """Merge all stats of all samples"""
+#if "bedfile" in settings:
+#    rule collectstats:
+#        """Collect all stats for a particular sample with beds"""
+#        input:
+#            mnum="{sample}/bams/{sample}.mapped.num",
+#            mbnum="{sample}/bams/{sample}.mapped.basenum",
+#            unum="{sample}/bams/{sample}.unique.num",
+#            ubnum="{sample}/bams/{sample}.usable.basenum",
+#            cov="{sample}/coverage/covstats.json",
+#            colpy=settings["collect_stats"]
+#        params:
+#            sample_name="{sample}",
+#            fthresh=settings["female_threshold"]
+#        output:
+#            "{sample}/{sample}.stats.json"
+#        singularity: containers["vtools"]
+#        shell: "python {input.colpy} --sample-name {params.sample_name} "
+#               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
+#               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
+#               "--female-threshold {params.fthresh} "
+#               "{input.cov} > {output}"
+#else:
+#    rule collectstats:
+#        """Collect all stats for a particular sample without beds"""
+#        input:
+#            preqc = "{sample}/pre_process/{sample}.preqc_count.json",
+#            postq = "{sample}/pre_process/{sample}.postqc_count.json",
+#            mnum = "{sample}/bams/{sample}.mapped.num",
+#            mbnum = "{sample}/bams/{sample}.mapped.basenum",
+#            unum = "{sample}/bams/{sample}.unique.num",
+#            ubnum = "{sample}/bams/{sample}.usable.basenum",
+#            colpy = settings["collect_stats"]
+#        params:
+#            sample_name = "{sample}",
+#            fthresh = settings["female_threshold"]
+#        output:
+#            "{sample}/{sample}.stats.json"
+#        singularity: containers["vtools"]
+#        shell: "python {input.colpy} --sample-name {params.sample_name} "
+#               "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
+#               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
+#               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
+#               "--female-threshold {params.fthresh} "
+#               "> {output}"
+#
+rule collect_metrics:
+    """ Colect metrics for each sample """
     input:
-        cols=expand("{sample}/{sample}.stats.json", sample=settings['samples']),
-        vstat=expand("{sample}/vcf/{sample}.vcfstats.json", sample=settings['samples']),
-        mpy=settings["merge_stats"]
-    output:
-        stats="stats.json"
-    singularity: containers["vtools"]
-    shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} "
-           "> {output.stats}"
-
-
-rule stats_tsv:
-    """Convert stats.json to tsv"""
-    input:
-        stats="stats.json",
-        sc=settings["stats_to_tsv"]
-    output:
-        stats="stats.tsv"
+        cutadapt = lambda wildcards:
+        ("{sample}/pre_process/{sample}-{read_group}.txt".format(sample=wildcards.sample,
+        read_group=read_group) for read_group in get_readgroup(wildcards)),
+        collect_metrics = settings["collect_metrics"]
+    output: "{sample}/metrics.json"
     singularity: containers["python3"]
-    shell: "python {input.sc} -i {input.stats} > {output.stats}"
+    shell: "python {input.collect_metrics} --sample {wildcards.sample} "
+           "--cutadapt-summary {input.cutadapt} > {output}"
+
+#rule merge_stats:
+#    """Merge all stats of all samples"""
+#    input:
+#        cols=expand("{sample}/{sample}.stats.json", sample=settings['samples']),
+#        vstat=expand("{sample}/vcf/{sample}.vcfstats.json", sample=settings['samples']),
+#        mpy=settings["merge_stats"]
+#    output:
+#        stats="stats.json"
+#    singularity: containers["vtools"]
+#    shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} "
+#           "> {output.stats}"
+#
+#
+#rule stats_tsv:
+#    """Convert stats.json to tsv"""
+#    input:
+#        stats="stats.json",
+#        sc=settings["stats_to_tsv"]
+#    output:
+#        stats="stats.tsv"
+#    singularity: containers["python3"]
+#    shell: "python {input.sc} -i {input.stats} > {output.stats}"
 
 
 rule multiqc:
@@ -519,7 +534,7 @@ rule multiqc:
     Depends on stats.tsv to forcefully run at end of pipeline
     """
     input:
-        stats="stats.tsv"
+        stats=expand("{sample}/metrics.json", sample=settings["samples"])
     params:
         odir=".",
         rdir="multiqc_report"

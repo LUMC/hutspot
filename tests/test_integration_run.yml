@@ -210,8 +210,8 @@
     must_not_contain:
       - "rror"
   files:
-   - path: "micro/coverage/covstats.png"
-   - path: "stats.tsv"
+   #- path: "micro/coverage/covstats.png"
+   #- path: "stats.tsv"
    - path: "micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R1_fastqc.zip"
    - path: "micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R2_fastqc.zip"
    - path: "micro/pre_process/trimmed-micro-lib_02/micro-lib_02_R1_fastqc.zip"
@@ -222,12 +222,18 @@
    - path: "micro/pre_process/raw-micro-lib_02/micro_rg2_R2_fastqc.zip"
    - path: "micro/pre_process/micro-lib_01.txt"
    - path: "micro/pre_process/micro-lib_02.txt"
-
-   - path: "micro/coverage/covstats.json"
+   - path: "micro/metrics.json"
      contains:
-       - "\"frac_min_100x\": 0.97"
-       - "\"mean\": 137"
-       - "\"width_nonzero\": 16569"
+       - "sample_name\": \"micro"
+       - "preqc_reads\": 7720"
+       - "postqc_reads\": 7720"
+
+
+    #- path: "micro/coverage/covstats.json"
+    #  contains:
+    #    - "\"frac_min_100x\": 0.97"
+    #    - "\"mean\": 137"
+    #    - "\"width_nonzero\": 16569"
 
    - path: "micro/pre_process/micro-lib_01.txt"
      contains:
