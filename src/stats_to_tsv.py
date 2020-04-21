@@ -72,8 +72,6 @@ if __name__ == "__main__":
 
     sdicts = []
 
-    #vcfstats = orig_dict['multisample_vcfstats']
-
     for sample in orig_dict['sample_stats']:
         sname = sample['sample_name']
         sample_dict = OrderedDict()
@@ -88,7 +86,6 @@ if __name__ == "__main__":
             "usable_reads": sample['n_usable_reads'],
             "usable_bases": sample['n_usable_bases'],
         })
-        #sample_dict.update(get_vcf_stats(sname, vcfstats))
         if "covstats" in sample:
             for cov_d in sample['covstats']:
                 sample_dict.update(get_covstats(cov_d))

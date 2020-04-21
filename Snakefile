@@ -57,7 +57,6 @@ set_default('female_threshold', 0.6)
 set_default("covstats", "src/covstats.py")
 set_default("collect_stats", "src/collect_stats.py")
 set_default("merge_stats", "src/merge_stats.py")
-set_default("fastq_stats", "src/fastqc_stats.py")
 set_default("stats_to_tsv", "src/stats_to_tsv.py")
 set_default("py_wordcount", "src/pywc.py")
 set_default("collect_metrics", "src/collect_metrics.py")
@@ -125,7 +124,6 @@ rule all:
         metrics_json = "metrics.json",
         metrics_tsv = "metrics.tsv",
         coverage_stats = coverage_stats,
-        #covstat_png=expand("{sample}/coverage/covstats.png", sample=settings['samples'])
 
 
 rule create_markdup_tmp:
@@ -413,19 +411,6 @@ rule vtools_coverage:
     shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
 
 
-## vcfstats
-
-rule vcfstats:
-    """Calculate vcf statistics"""
-    input:
-        vcf="{sample}/vcf/{sample}.vcf.gz",
-        tbi = "{sample}/vcf/{sample}.vcf.gz.tbi"
-    output:
-        stats="{sampel}/vcf/{sample}.vcfstats.json"
-    singularity: containers["vtools"]
-    shell: "vtools-stats -i {input.vcf} > {output.stats}"
-
-
 # collection
 if "bedfile" in settings:
     rule collectstats:
@@ -501,12 +486,11 @@ rule merge_stats:
     """Merge all stats of all samples"""
     input:
         cols=expand("{sample}/{sample}.stats.json", sample=settings['samples']),
-        vstat=expand("{sample}/vcf/{sample}.vcfstats.json", sample=settings['samples']),
         mpy=settings["merge_stats"]
     output:
         stats="stats.json"
     singularity: containers["vtools"]
-    shell: "python {input.mpy} --vcfstats {input.vstat} --collectstats {input.cols} "
+    shell: "python {input.mpy} --collectstats {input.cols} "
            "> {output.stats}"
 
 

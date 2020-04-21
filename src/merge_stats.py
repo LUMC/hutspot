@@ -31,14 +31,12 @@ def parse_json(path):
         return json.load(handle)
 
 
-def main(vcfstats, collectstats):
+def main(collectstats):
     data = dict()
     data["sample_stats"] = list()
 
-    for vcf, stats in zip(vcfstats, collectstats):
-        v = parse_json(vcf)
+    for stats in collectstats:
         cs = parse_json(stats)
-        cs['vcfstats'] = v
         data["sample_stats"].append(cs)
     print(json.dumps(data))
 
@@ -46,14 +44,9 @@ def main(vcfstats, collectstats):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--vcfstats',
-                        nargs='+',
-                        required=True,
-                        help='Path to the vcfstats json for each sample')
     parser.add_argument('--collectstats',
                         nargs='+',
                         required=True,
                         help='Path to the collected stats for each sample')
     args = parser.parse_args()
-    assert len(args.vcfstats) == len(args.collectstats)
-    main(args.vcfstats, args.collectstats)
+    main(args.collectstats)
