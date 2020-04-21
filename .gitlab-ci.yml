@@ -7,6 +7,15 @@ variables:
     - pip3 install -r requirements.txt
     - pip3 install -r requirements-dev.txt
 
+.singularity_before_script_anchor: &singularity_before_script_anchor
+  before_script:
+    - apt update -y && apt install python3-pip -y
+    - pip3 install -r requirements.txt
+    - pip3 install -r requirements-dev.txt
+    - export BASETEMP=$RUN_BASE_DIR/$CI_COMMIT_REF_NAME/$CI_JOB_ID
+    - echo $BASETEMP
+    - mkdir -p $BASETEMP
+
 stages:
   - sanity
   - dry-run
@@ -32,9 +41,7 @@ test_dry_run:
 
 
 test_integration:
-  <<: *docker_before_script_anchor
-  before_script:
-    - export BASETEMP=$RUN_BASE_DIR/$CI_COMMIT_REF_NAME/$CI_JOB_ID
+  <<: *singularity_before_script_anchor
   script:
     - pytest-3 --tag integration --basetemp ${BASETEMP} --keep-workflow-wd
   image: lumc/singularity-snakemake:3.5.2-5.9.1
