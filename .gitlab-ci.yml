@@ -11,7 +11,6 @@ stages:
   - sanity
   - dry-run
   - integration
-  - functional
 
 test_sanities:
   <<: *docker_before_script_anchor
@@ -33,23 +32,12 @@ test_dry_run:
 
 
 test_integration:
+  <<: *docker_before_script_anchor
   before_script:
-    - export BASETEMP=$(mktemp -p ${RUN_BASE_DIR} -d)
+    - export BASETEMP=$RUN_BASE_DIR/$CI_COMMIT_REF_NAME/$CI_JOB_ID
   script:
     - pytest-3 --tag integration --basetemp ${BASETEMP} --keep-workflow-wd
   image: lumc/singularity-snakemake:3.5.2-5.9.1
   tags:
     - slurm
   stage: integration
-
-test_functional:
-  before_script:
-    - export BASETEMP=$(mktemp -p ${RUN_BASE_DIR} -d)
-  script:
-    - pytest-3 --tag functional --basetemp ${BASETEMP} --keep-workflow-wd
-  tags:
-    - slurm
-  stage: functional
-  only:
-    - schedules
-
