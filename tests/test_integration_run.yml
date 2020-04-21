@@ -185,10 +185,10 @@
     must_not_contain:
       - "rror"
   files:
-   - path: "metrics.tsv"
+   - path: "stats.tsv"
      contains:
-      - "sample_name\tpostqc_bases\tpostqc_reads\tpreqc_bases\tpreqc_reads"
-      - "micro\t2274413\t15440\t2276743\t15440"
+      - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tusable_reads\tusable_bases\tcovstats.json_median_coverage"
+      - "micro\t15440\t2276743\t15440\t2274413\t15558\t2280294\t15515\t2275470\t133.0"
 
 - name: test-integration-two-known-sites
   tags:
@@ -241,14 +241,7 @@
    - path: "micro/pre_process/raw-micro-lib_02/micro_rg2_R2_fastqc.zip"
    - path: "micro/pre_process/micro-lib_01.txt"
    - path: "micro/pre_process/micro-lib_02.txt"
-   - path: "metrics.tsv"
-   - path: "metrics.json"
-   - path: "micro/metrics.json"
-     contains:
-       - "sample_name\": \"micro"
-       - "preqc_reads\": 15440"
-       - "postqc_reads\": 15440"
-
+   - path: "stats.tsv"
    - path: "micro/pre_process/micro-lib_01.txt"
      contains:
        - "status\tin_reads\tin_bp\ttoo_short\ttoo_long\ttoo_many_n\tout_reads\tw/adapters\tqualtrim_bp\tout_bp\tw/adapters2\tqualtrim2_bp\tout2_bp"
@@ -287,8 +280,8 @@
    - path: "micro2/vcf/micro2.g.vcf.gz"
    - path: "micro1/bams/micro1.markdup.bam"
    - path: "micro2/bams/micro2.markdup.bam"
-   - path: "metrics.tsv"
+   - path: "stats.tsv"
      contains:
-      - "sample_name\tpostqc_bases\tpostqc_reads\tpreqc_bases\tpreqc_reads"
-      - "micro1"
-      - "micro2\t1137997\t7720\t1139177\t7720"
+      - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases"
+      - "micro1\t7720\t1137566\t7720\t1136416"
+      - "micro2\t7720\t1139177\t7720\t1137997"

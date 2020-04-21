@@ -59,8 +59,7 @@ set_default("collect_stats", "src/collect_stats.py")
 set_default("merge_stats", "src/merge_stats.py")
 set_default("stats_to_tsv", "src/stats_to_tsv.py")
 set_default("py_wordcount", "src/pywc.py")
-set_default("collect_metrics", "src/collect_metrics.py")
-set_default("merge_metrics", "src/merge_metrics.py")
+set_default("cutadapt_summary", "src/cutadapt_summary.py")
 
 containers = {
     "bcftools": "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4",
@@ -75,8 +74,6 @@ containers = {
     "picard-2.14": "docker://quay.io/biocontainers/picard:2.14--py36_0",
     "python3": "docker://python:3.6-slim",
     "samtools-1.7-python-3.6": "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0",
-    "sickle": "docker://quay.io/biocontainers/sickle-trim:1.33--ha92aebf_4",
-    "tabix": "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0",
     "vtools": "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
 }
 
@@ -120,9 +117,6 @@ rule all:
         fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
         fastqc_trimmed = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
         cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt" for read_group, sample in get_readgroup_per_sample()),
-        sample_metrics = expand("{sample}/metrics.json", sample=settings['samples']),
-        metrics_json = "metrics.json",
-        metrics_tsv = "metrics.tsv",
         coverage_stats = coverage_stats,
 
 
@@ -378,8 +372,7 @@ rule fastqc_postqc:
     shell: "fastqc --threads 4 --nogroup -o {output} {input.r1} {input.r2} "
 
 
-## coverages
-
+## coverage
 rule covstats:
     """Calculate coverage statistics on bam file"""
     input:
@@ -411,7 +404,7 @@ rule vtools_coverage:
     shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
 
 
-# collection
+## collection
 if "bedfile" in settings:
     rule collectstats:
         """Collect all stats for a particular sample with beds"""
@@ -421,7 +414,7 @@ if "bedfile" in settings:
             unum="{sample}/bams/{sample}.unique.num",
             ubnum="{sample}/bams/{sample}.usable.basenum",
             cov="{sample}/coverage/covstats.json",
-            cutadapt = "{sample}/metrics.json",
+            cutadapt = "{sample}/cutadapt.json",
             colpy=settings["collect_stats"]
         params:
             sample_name="{sample}",
@@ -443,7 +436,7 @@ else:
             mbnum = "{sample}/bams/{sample}.mapped.basenum",
             unum = "{sample}/bams/{sample}.unique.num",
             ubnum = "{sample}/bams/{sample}.usable.basenum",
-            cutadapt = "{sample}/metrics.json",
+            cutadapt = "{sample}/cutadapt.json",
             colpy = settings["collect_stats"]
         params:
             sample_name = "{sample}",
@@ -458,29 +451,18 @@ else:
                "--cutadapt {input.cutadapt} "
                "> {output}"
 
-rule collect_metrics:
-    """ Colect metrics for each sample """
+rule collect_cutadapt_summary:
+    """ Colect cutadapt summary from each readgroup per sample """
     input:
         cutadapt = lambda wildcards:
         ("{sample}/pre_process/{sample}-{read_group}.txt".format(sample=wildcards.sample,
         read_group=read_group) for read_group in get_readgroup(wildcards)),
-        collect_metrics = settings["collect_metrics"]
-    output: "{sample}/metrics.json"
+        cutadapt_summary= settings["cutadapt_summary"]
+    output: "{sample}/cutadapt.json"
     singularity: containers["python3"]
-    shell: "python {input.collect_metrics} --sample {wildcards.sample} "
+    shell: "python {input.cutadapt_summary} --sample {wildcards.sample} "
            "--cutadapt-summary {input.cutadapt} > {output}"
 
-rule merge_metrics:
-   """ Merge per sample metrics files """
-   input:
-        metrics = expand("{sample}/metrics.json", sample=settings["samples"]),
-        merge_metrics = settings["merge_metrics"]
-   output:
-        json = "metrics.json",
-        tsv = "metrics.tsv"
-   singularity: containers["python3"]
-   shell: "python {input.merge_metrics} --metrics {input.metrics} "
-          "--json {output.json} --tsv {output.tsv}"
 
 rule merge_stats:
     """Merge all stats of all samples"""
@@ -511,11 +493,11 @@ rule multiqc:
     Depends on stats.tsv to forcefully run at end of pipeline
     """
     input:
-        stats=expand("{sample}/metrics.json", sample=settings["samples"])
+        stats="stats.tsv"
     params:
         odir=".",
         rdir="multiqc_report"
     output:
         "multiqc_report/multiqc_report.html"
     singularity: containers["multiqc"]
-    shell: "multiqc -f -o {params.rdir} {params.odir} --ignore metrics.tsv || touch {output}"
+    shell: "multiqc -f -o {params.rdir} {params.odir} || touch {output}"
