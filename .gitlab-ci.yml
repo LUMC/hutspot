@@ -9,7 +9,6 @@ variables:
 
 .singularity_before_script_anchor: &singularity_before_script_anchor
   before_script:
-    - apt update -y && apt install python3-pip -y
     - pip3 install -r requirements.txt
     - pip3 install -r requirements-dev.txt
     - export BASETEMP=$RUN_BASE_DIR/$CI_COMMIT_REF_NAME/$CI_JOB_ID
@@ -44,7 +43,6 @@ test_integration:
   <<: *singularity_before_script_anchor
   script:
     - pytest-3 --tag integration --basetemp ${BASETEMP} --keep-workflow-wd
-  image: lumc/singularity-snakemake:3.5.2-5.9.1
   tags:
     - slurm
   stage: integration
