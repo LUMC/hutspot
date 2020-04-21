@@ -3,8 +3,9 @@ variables:
 
 .docker_before_script_anchor: &docker_before_script_anchor
   before_script:
-    - pip install -r requirements.txt
-    - pip install -r requirements-dev.txt
+    - apt update -y && apt install python3-pip -y
+    - pip3 install -r requirements.txt
+    - pip3 install -r requirements-dev.txt
 
 stages:
   - sanity
@@ -15,8 +16,8 @@ stages:
 test_sanities:
   <<: *docker_before_script_anchor
   script:
-    - py.test --tag sanity
-  image: python:3.6-stretch
+    - pytest-3 --tag sanity
+  image: lumc/singularity-snakemake:3.5.2-5.9.1
   tags:
     - docker
   stage: sanity
@@ -24,35 +25,19 @@ test_sanities:
 test_dry_run:
   <<: *docker_before_script_anchor
   script:
-    - py.test --tag dry-run
-  image: python:3.6-stretch
+    - pytest-3 --tag dry-run
+  image: lumc/singularity-snakemake:3.5.2-5.9.1
   tags:
     - docker
   stage: dry-run
 
 
-# this requires a priviliged docker container.
-# most docker runners will not do this
-test_integration_singularity:
-  before_script:
-    - apt update -y && apt install -y python3-pip
-    - pip3 install pyfaidx
-    - pip3 install -r requirements-dev.txt
-  script:
-    - py.test --tag singularity-integration
-  image: lumc/singularity-snakemake:3.0.3-5.4.0
-  tags:
-    - docker
-  stage: integration
-
 test_integration:
   before_script:
     - export BASETEMP=$(mktemp -p ${RUN_BASE_DIR} -d)
   script:
-    - source ${CONDA_SH}
-    - conda activate hutspot-pipeline
-    - export PATH=${PATH}:${CONDA_EXTRA_PATH}
-    - py.test --tag integration --basetemp ${BASETEMP} --keep-workflow-wd
+    - pytest-3 --tag integration --basetemp ${BASETEMP} --keep-workflow-wd
+  image: lumc/singularity-snakemake:3.5.2-5.9.1
   tags:
     - slurm
   stage: integration
@@ -61,10 +46,7 @@ test_functional:
   before_script:
     - export BASETEMP=$(mktemp -p ${RUN_BASE_DIR} -d)
   script:
-    - source ${CONDA_SH}
-    - conda activate hutspot-pipeline
-    - export PATH=${PATH}:${CONDA_EXTRA_PATH}
-    - py.test --tag functional --basetemp ${BASETEMP} --keep-workflow-wd
+    - pytest-3 --tag functional --basetemp ${BASETEMP} --keep-workflow-wd
   tags:
     - slurm
   stage: functional
