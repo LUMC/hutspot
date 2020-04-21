@@ -70,7 +70,6 @@ containers = {
     "bwa-0.7.17-picard-2.18.7": "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:43ec6124f9f4f875515f9548733b8b4e5fed9aa6-0",
     "cutadapt": "docker://quay.io/biocontainers/cutadapt:2.9--py37h516909a_0",
     "debian": "docker://debian:buster-slim",
-    "fastq-count": "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0",
     "fastqc": "docker://quay.io/biocontainers/fastqc:0.11.7--4",
     "gatk": "docker://broadinstitute/gatk3:3.7-0",
     "multiqc": "docker://quay.io/biocontainers/multiqc:1.8--py_2",
@@ -126,7 +125,7 @@ rule all:
         metrics_json = "metrics.json",
         metrics_tsv = "metrics.tsv",
         coverage_stats = coverage_stats,
-        covstat_png=expand("{sample}/coverage/covstats.png", sample=settings['samples'])
+        #covstat_png=expand("{sample}/coverage/covstats.png", sample=settings['samples'])
 
 
 rule create_markdup_tmp:
@@ -381,30 +380,6 @@ rule fastqc_postqc:
     shell: "fastqc --threads 4 --nogroup -o {output} {input.r1} {input.r2} "
 
 
-## fastq-count
-
-rule fqcount_preqc:
-    """Calculate number of reads and bases before pre-processing"""
-    input:
-        r1=get_forward,
-        r2=get_reverse
-    output:
-        "{sample}/pre_process/{sample}-{read_group}.preqc_count.json"
-    singularity: containers["fastq-count"]
-    shell: "fastq-count {input.r1} {input.r2} > {output}"
-
-
-rule fqcount_postqc:
-    """Calculate number of reads and bases after pre-processing"""
-    input:
-        r1="{sample}/pre_process/{sample}-{read_group}_R1.fastq",
-        r2="{sample}/pre_process/{sample}-{read_group}_R2.fastq"
-    output:
-        "{sample}/pre_process/{sample}-{read_group}.postqc_count.json"
-    singularity: containers["fastq-count"]
-    shell: "fastq-count {input.r1} {input.r2} > {output}"
-
-
 ## coverages
 
 rule covstats:
@@ -479,8 +454,6 @@ else:
     rule collectstats:
         """Collect all stats for a particular sample without beds"""
         input:
-            preqc = "{sample}/pre_process/{sample}.preqc_count.json",
-            postq = "{sample}/pre_process/{sample}.postqc_count.json",
             mnum = "{sample}/bams/{sample}.mapped.num",
             mbnum = "{sample}/bams/{sample}.mapped.basenum",
             unum = "{sample}/bams/{sample}.unique.num",
@@ -494,7 +467,6 @@ else:
             "{sample}/{sample}.stats.json"
         singularity: containers["vtools"]
         shell: "python {input.colpy} --sample-name {params.sample_name} "
-               "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
                "--unique-num {input.unum} --usable-basenum {input.ubnum} "
                "--female-threshold {params.fthresh} "
@@ -534,7 +506,7 @@ rule merge_stats:
     output:
         stats="stats.json"
     singularity: containers["vtools"]
-    shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} "
+    shell: "python {input.mpy} --vcfstats {input.vstat} --collectstats {input.cols} "
            "> {output.stats}"
 
 

@@ -37,7 +37,7 @@ def test_stats_file_mapped_reads(workflow_dir):
         values = next(fin).strip().split('\t')
     data = dict(zip(header, values))
 
-    assert data['mapped_reads'] == '15515'
+    assert data['mapped_reads'] == '15558'
 
 
 @pytest.mark.workflow(name='test-integration-no-cluster')
@@ -51,7 +51,7 @@ def test_stats_file_mapped_bases(workflow_dir):
         values = next(fin).strip().split('\t')
     data = dict(zip(header, values))
 
-    assert data['mapped_bases'] == '2275114'
+    assert data['mapped_bases'] == '2280294'
 
 
 @pytest.mark.workflow(name='test-integration-no-cluster')
@@ -65,7 +65,7 @@ def test_stats_file_usable_reads(workflow_dir):
         values = next(fin).strip().split('\t')
     data = dict(zip(header, values))
 
-    assert data['usable_reads'] == '15477'
+    assert data['usable_reads'] == '15515'
 
 
 @pytest.mark.workflow(name='test-integration-no-cluster')
@@ -79,4 +79,4 @@ def test_stats_file_usable_bases(workflow_dir):
         values = next(fin).strip().split('\t')
     data = dict(zip(header, values))
 
-    assert data['usable_bases'] == '2270739'
+    assert data['usable_bases'] == '2275470'

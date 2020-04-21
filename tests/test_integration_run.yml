@@ -162,13 +162,12 @@
        - "\"width_nonzero\": 16569"
    - path: "stats.tsv"
      contains:
-       - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tusable_reads\tusable_bases\ttotal_variants\tsnps\tinsertions\tdeletions\ttransversions\ttransitions\tti_tv_ratio\thomozygous_variants\theterozygous_variants\tcovstats.json_median_coverage"
-       - "micro\t15440\t2276743\t15440\t2274413\t15558\t2280294\t15515\t2275470\t17\t15\t2\t0\t0\t15\tnan\t16\t1\t136"
+       - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tusable_reads\tusable_bases\tcovstats.json_median_coverage"
+       - "micro\t15440\t2276743\t15440\t2274413\t15558\t2280294\t15515\t2275470\t136"
 
 - name: test-integration-gene-bedfile
   tags:
     - integration
-    - new
   command: >
     snakemake
     --use-singularity
@@ -189,7 +188,7 @@
    - path: "metrics.tsv"
      contains:
       - "sample_name\tpostqc_bases\tpostqc_reads\tpreqc_bases\tpreqc_reads"
-      - "micro\t2274413\t7720\t2276743\t7720"
+      - "micro\t2274413\t15440\t2276743\t15440"
 
 - name: test-integration-two-known-sites
   tags:
@@ -215,7 +214,6 @@
 - name: test-integration-two-readgroups
   tags:
     - integration
-    - new
   command: >
     snakemake
     --use-singularity
@@ -233,8 +231,6 @@
     must_not_contain:
       - "rror"
   files:
-   #- path: "micro/coverage/covstats.png"
-   #- path: "stats.tsv"
    - path: "micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R1_fastqc.zip"
    - path: "micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R2_fastqc.zip"
    - path: "micro/pre_process/trimmed-micro-lib_02/micro-lib_02_R1_fastqc.zip"
@@ -250,15 +246,8 @@
    - path: "micro/metrics.json"
      contains:
        - "sample_name\": \"micro"
-       - "preqc_reads\": 7720"
-       - "postqc_reads\": 7720"
-
-
-    #- path: "micro/coverage/covstats.json"
-    #  contains:
-    #    - "\"frac_min_100x\": 0.97"
-    #    - "\"mean\": 137"
-    #    - "\"width_nonzero\": 16569"
+       - "preqc_reads\": 15440"
+       - "postqc_reads\": 15440"
 
    - path: "micro/pre_process/micro-lib_01.txt"
      contains:
@@ -273,7 +262,6 @@
 - name: test-integration-two-samples
   tags:
     - integration
-    - new
   command: >
     snakemake
     --use-singularity
@@ -303,4 +291,4 @@
      contains:
       - "sample_name\tpostqc_bases\tpostqc_reads\tpreqc_bases\tpreqc_reads"
       - "micro1"
-      - "micro2\t1137997\t3860\t1139177\t3860"
+      - "micro2\t1137997\t7720\t1139177\t7720"
