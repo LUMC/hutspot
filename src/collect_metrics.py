@@ -10,9 +10,11 @@ def collect_cutadapt_summary(data, files):
     metrics to the data dictionary """
     for filename in files:
         cutadapt = read_cutadapt(filename)
-        data['preqc_reads'] += cutadapt['in_reads']
+        # Times 2 since cutadapt outputs read pairs
+        data['preqc_reads'] += cutadapt['in_reads']*2
         data['preqc_bases'] += cutadapt['in_bp']
-        data['postqc_reads'] += cutadapt['out_reads']
+        # Times 2 since cutadapt outputs read pairs
+        data['postqc_reads'] += cutadapt['out_reads']*2
         # For some reason, cutadapt outputs the basepairs out separate for
         # forward and reverse reads
         data['postqc_bases'] += cutadapt['out_bp'] + cutadapt['out2_bp']

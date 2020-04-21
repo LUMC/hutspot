@@ -86,17 +86,21 @@ def determine_gender(covstat, fthresh):
               type=click.FLOAT,
               default=0.6,
               help="Female threshold of X/all cov")
+@click.option("--cutadapt",
+                type=click.Path(dir_okay=False, exists=True, readable=True),
+                help="Cutadapt summary output")
 @click.argument("covstats",
                 type=click.Path(dir_okay=False, exists=True, readable=True),
                 nargs=-1)
 def main(sample_name, mapped_num, mapped_basenum,
-         unique_num, usable_basenum, female_threshold, covstats):
+         unique_num, usable_basenum, female_threshold, covstats, cutadapt):
 
 
     mpnum = parse_num_file(mapped_num)
     mpbnum = parse_num_file(mapped_basenum)
     unum = parse_num_file(unique_num)
     ubnum = parse_num_file(usable_basenum)
+    cutadapt = parse_json_file(cutadapt)
 
     covl = []
     for c in covstats:
@@ -110,6 +114,10 @@ def main(sample_name, mapped_num, mapped_basenum,
 
     d = {
         "sample_name": sample_name,
+        "preqc_reads": cutadapt["preqc_reads"],
+        "preqc_bases": cutadapt["preqc_bases"],
+        "postqc_reads": cutadapt["postqc_reads"],
+        "postqc_bases": cutadapt["postqc_bases"],
         "n_mapped_reads": mpnum,
         "n_mapped_bases": mpbnum,
         "n_usable_reads": unum,
