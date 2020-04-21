@@ -1,0 +1,7 @@
+__default__:
+  job_name: hutspot
+  queue: short
+  vmem: 4G
+  threads: 1
+  time: 00:10:00
+  tmp: 1G

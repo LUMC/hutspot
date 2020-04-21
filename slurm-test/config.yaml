@@ -1,0 +1,5 @@
+cluster: ' sbatch --parsable --job-name {jobid} --time={cluster.time} -p {cluster.queue} -c {cluster.threads} --mem-per-cpu={cluster.vmem} --tmp={cluster.tmp}'
+cluster-config: 'slurm-test/cluster.yaml'
+cluster-status: 'cluster/slurm-cluster-status/slurm-cluster-status.py'
+jobs: 70
+latency-wait: 120
