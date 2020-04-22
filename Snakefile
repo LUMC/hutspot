@@ -200,20 +200,30 @@ rule bai:
     singularity: containers["debian"]
     shell: "cp {input.bai} {output.bai}"
 
+
+def bqsr_bam_input(wildcards):
+    """ Generate the bam input string for each read group for BQSR"""
+    return " ".join(["-I {sample}/bams/{sample}-{read_group}.sorted.bam".format(sample=wildcards.sample,
+            read_group=rg) for rg in get_readgroup(wildcards)])
+
 rule baserecal:
     """Base recalibrated BAM files"""
     input:
-        bam = "{sample}/bams/{sample}.markdup.bam",
+        bam = lambda wildcards:
+        ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(sample=wildcards.sample,
+        read_group=rg) for rg in get_readgroup(wildcards)),
         ref = settings["reference"],
         vcfs = settings["known_sites"]
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
-    params: " ".join(expand("-knownSites {vcf}", vcf=settings["known_sites"]))
+    params:
+        known_sites = " ".join(expand("-knownSites {vcf}", vcf=settings["known_sites"])),
+        bams = bqsr_bam_input
     singularity: containers["gatk"]
     shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
-           "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
+           "BaseRecalibrator {params.bams} -o {output.grp} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
-           "-cov CycleCovariate -cov ContextCovariate {params}"
+           "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
 
 checkpoint scatterregions:
     """Scatter the reference genome"""
@@ -229,11 +239,12 @@ checkpoint scatterregions:
            "--referenceFasta {input.ref} --scatterSize {params.size} "
            "--outputDir scatter"
 
+
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
     input:
         bam="{sample}/bams/{sample}.markdup.bam",
-        bqsr="{sample}/bams/{sample}.baserecal.grp",
+        bqsr = "{sample}/bams/{sample}.baserecal.grp",
         dbsnp=settings["dbsnp"],
         ref=settings["reference"],
         region="scatter/scatter-{chunk}.bed"
