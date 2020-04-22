@@ -214,6 +214,7 @@
 - name: test-integration-two-readgroups
   tags:
     - integration
+    - new
   command: >
     snakemake
     --use-singularity
@@ -251,6 +252,11 @@
      contains:
        - "status\tin_reads\tin_bp\ttoo_short\ttoo_long\ttoo_many_n\tout_reads\tw/adapters\tqualtrim_bp\tout_bp\tw/adapters2\tqualtrim2_bp\tout2_bp"
        - "OK\t3860\t1139177\t0\t0\t0\t3860\t3\t416\t572845\t14\t711\t565152"
+
+   - path: "micro/bams/micro.baserecal.grp"
+     contains:
+       - "lib_01"
+       - "lib_02"
 
 - name: test-integration-two-samples
   tags:
