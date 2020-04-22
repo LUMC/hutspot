@@ -13,7 +13,8 @@ variables:
     - source ${CONDA_SH}
     - conda activate hutspot-pipeline
     - export PATH=${PATH}:${SINGULARITY_PATH}
-    - echo "$(which snakemake) --profile slurm-test \"\$@\"" > snakemake
+    - echo "#!/usr/bin/env bash" > snakemake
+    - echo "$(which snakemake) --profile slurm-test \"\$@\"" >> snakemake
     - chmod +x snakemake
     - export PATH=$(pwd):${PATH}
     - hash -r
