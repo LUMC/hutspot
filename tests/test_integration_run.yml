@@ -1,6 +1,7 @@
 - name: test-integration-no-cluster
   tags:
     - integration
+    - new
   command: >
     snakemake
     --use-singularity
