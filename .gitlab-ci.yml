@@ -1,6 +1,5 @@
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-  GIT_STRATEGY: clone
 
 .docker_before_script_anchor: &docker_before_script_anchor
   before_script:
