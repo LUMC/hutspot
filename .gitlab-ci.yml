@@ -15,8 +15,9 @@ variables:
     - export PATH=${PATH}:${SINGULARITY_PATH}
     - echo "$(which snakemake) --profile slurm-test \"\$@\"" > snakemake
     - chmod +x snakemake
-    - export PATH=.:${PATH}
+    - export PATH=$(pwd):${PATH}
     - hash -r
+    - which snakemake
 
 
 stages:
