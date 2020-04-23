@@ -1,7 +1,6 @@
 - name: test-integration-no-cluster
   tags:
     - integration
-    - new
   command: >
     snakemake
     --use-singularity
@@ -215,7 +214,6 @@
 - name: test-integration-two-readgroups
   tags:
     - integration
-    - new
   command: >
     snakemake
     --use-singularity

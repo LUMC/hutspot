@@ -18,7 +18,6 @@ variables:
     - chmod +x snakemake
     - export PATH=$(pwd):${PATH}
     - hash -r
-    - which snakemake
 
 
 stages:
@@ -48,7 +47,7 @@ test_dry_run:
 test_integration:
   <<: *singularity_before_script_anchor
   script:
-    - pytest --tag new --basetemp ${BASETEMP} --keep-workflow-wd
+    - pytest --tag integration --basetemp ${BASETEMP} --keep-workflow-wd
   tags:
     - slurm
   stage: integration
