@@ -28,7 +28,7 @@ stages:
 test_sanities:
   <<: *docker_before_script_anchor
   script:
-    - pytest-3 --tag sanity
+    - pytest-3 --tag sanity --workflow-threads 8
   image: lumc/singularity-snakemake:3.5.2-5.9.1
   tags:
     - docker
@@ -37,7 +37,7 @@ test_sanities:
 test_dry_run:
   <<: *docker_before_script_anchor
   script:
-    - pytest-3 --tag dry-run
+    - pytest-3 --tag dry-run --workflow-threads 8
   image: lumc/singularity-snakemake:3.5.2-5.9.1
   tags:
     - docker
@@ -47,7 +47,7 @@ test_dry_run:
 test_integration:
   <<: *singularity_before_script_anchor
   script:
-    - pytest --tag integration --basetemp ${BASETEMP} --keep-workflow-wd
+    - pytest --tag integration --basetemp ${BASETEMP} --keep-workflow-wd --workflow-threads 8
   tags:
     - slurm
   stage: integration
