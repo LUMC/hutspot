@@ -3,13 +3,13 @@
     "micro": {
       "libraries": {
         "lib_01": {
-        "R1": "tests/data/micro_R1.fq.gz",
-        "R2": "tests/data/micro_R2.fq.gz"
+        "R1": "tests/data/fastq/micro_R1.fq.gz",
+        "R2": "tests/data/fastq/micro_R2.fq.gz"
         }
       }
     }
   },
-  "reference":"tests/data/ref.fa",
-  "dbsnp": "tests/data/database.vcf.gz",
-  "known_sites": ["tests/data/database.vcf.gz", "tests/data/database.vcf.gz"]
+  "reference":"tests/data/reference/ref.fa",
+  "dbsnp": "tests/data/reference/database.vcf.gz",
+  "known_sites": ["tests/data/reference/database.vcf.gz", "tests/data/reference/database.vcf.gz"]
 }

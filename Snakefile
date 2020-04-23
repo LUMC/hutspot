@@ -57,40 +57,47 @@ set_default('female_threshold', 0.6)
 set_default("covstats", "src/covstats.py")
 set_default("collect_stats", "src/collect_stats.py")
 set_default("merge_stats", "src/merge_stats.py")
-set_default("fastq_stats", "src/fastqc_stats.py")
 set_default("stats_to_tsv", "src/stats_to_tsv.py")
-set_default("safe_fastqc", "src/safe_fastqc.sh")
 set_default("py_wordcount", "src/pywc.py")
+set_default("cutadapt_summary", "src/cutadapt_summary.py")
 
 containers = {
     "bcftools": "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4",
     "bedtools-2.26-python-2.7": "docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0",
     "biopet-scatterregions": "docker://quay.io/biocontainers/biopet-scatterregions:0.2--0",
     "bwa-0.7.17-picard-2.18.7": "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:43ec6124f9f4f875515f9548733b8b4e5fed9aa6-0",
-    "cutadapt": "docker://quay.io/biocontainers/cutadapt:1.14--py36_0",
+    "cutadapt": "docker://quay.io/biocontainers/cutadapt:2.9--py37h516909a_0",
     "debian": "docker://debian:buster-slim",
-    "fastq-count": "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0",
     "fastqc": "docker://quay.io/biocontainers/fastqc:0.11.7--4",
     "gatk": "docker://broadinstitute/gatk3:3.7-0",
-    "multiqc": "docker://quay.io/biocontainers/multiqc:1.5--py36_0",
+    "multiqc": "docker://quay.io/biocontainers/multiqc:1.8--py_2",
     "picard-2.14": "docker://quay.io/biocontainers/picard:2.14--py36_0",
     "python3": "docker://python:3.6-slim",
     "samtools-1.7-python-3.6": "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0",
-    "sickle": "docker://quay.io/biocontainers/sickle-trim:1.33--ha92aebf_4",
-    "tabix": "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0",
     "vtools": "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
 }
 
-def get_r(strand, wildcards):
-    """Get fastq files on a single strand for a sample"""
-    s = settings['samples'].get(wildcards.sample)
-    rs = []
-    for l in sorted(s['libraries'].keys()):
-        rs.append(s['libraries'][l][strand])
-    return rs
+def get_forward(wildcards):
+    """ Get the forward fastq file from the config """
+    return (
+        settings["samples"][wildcards.sample]["libraries"]
+                [wildcards.read_group]["R1"]
+    )
 
-get_r1 = partial(get_r, "R1")
-get_r2 = partial(get_r, "R2")
+def get_reverse(wildcards):
+    """ Get the reverse fastq file from the config """
+    return (
+        settings["samples"][wildcards.sample]["libraries"]
+            [wildcards.read_group]["R2"]
+    )
+
+def get_readgroup(wildcards):
+    return settings["samples"][wildcards.sample]["libraries"]
+
+def get_readgroup_per_sample():
+    for sample in settings["samples"]:
+        for rg in settings["samples"][sample]["libraries"]:
+            yield rg, sample
 
 
 def coverage_stats(wildcards):
@@ -101,14 +108,15 @@ rule all:
     input:
         multiqc="multiqc_report/multiqc_report.html",
         stats = "stats.json",
+        stats_tsv = "stats.tsv",
         bais=expand("{sample}/bams/{sample}.markdup.bam.bai", sample=settings['samples']),
         vcfs=expand("{sample}/vcf/{sample}.vcf.gz", sample=settings['samples']),
         vcf_tbi=expand("{sample}/vcf/{sample}.vcf.gz.tbi", sample=settings['samples']),
         gvcfs=expand("{sample}/vcf/{sample}.g.vcf.gz", sample=settings['samples']),
         gvcf_tbi=expand("{sample}/vcf/{sample}.g.vcf.gz.tbi", sample=settings['samples']),
-        fqcr = expand("{sample}/pre_process/raw_fastqc/.done.txt", sample=settings['samples']),
-        fqcm = expand("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip", sample=settings['samples']),
-        fqcp = expand("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip", sample=settings['samples']),
+        fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
+        fastqc_trimmed = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
+        cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt" for read_group, sample in get_readgroup_per_sample()),
         coverage_stats = coverage_stats,
 
 
@@ -125,75 +133,61 @@ rule genome:
     singularity: containers["debian"]
     shell: "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output}"
 
-rule merge_r1:
-    """Merge all forward fastq files into one"""
-    input: get_r1
-    output: temp("{sample}/pre_process/{sample}.merged_R1.fastq.gz")
-    singularity: containers["debian"]
-    shell: "cat {input} > {output}"
-
-rule merge_r2:
-    """Merge all reverse fastq files into one"""
-    input: get_r2
-    output: temp("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
-    singularity: containers["debian"]
-    shell: "cat {input} > {output}"
-
-# contains original merged fastq files as input to prevent them from being prematurely deleted
-rule sickle:
-    """Trim fastq files"""
-    input:
-        r1 = "{sample}/pre_process/{sample}.merged_R1.fastq.gz",
-        r2 = "{sample}/pre_process/{sample}.merged_R2.fastq.gz"
-    output:
-        r1 = temp("{sample}/pre_process/{sample}.trimmed_R1.fastq"),
-        r2 = temp("{sample}/pre_process/{sample}.trimmed_R2.fastq"),
-        s = "{sample}/pre_process/{sample}.trimmed_singles.fastq"
-    singularity: containers["sickle"]
-    shell: "sickle pe -f {input.r1} -r {input.r2} -t sanger -o {output.r1} "
-           "-p {output.r2} -s {output.s}"
-
 rule cutadapt:
     """Clip fastq files"""
     input:
-        r1 = "{sample}/pre_process/{sample}.trimmed_R1.fastq",
-        r2 = "{sample}/pre_process/{sample}.trimmed_R2.fastq"
+        r1=get_forward,
+        r2=get_reverse
     output:
-        r1 = temp("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
-        r2 = temp("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
+        r1 = "{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
+        r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz",
+    log:
+        "{sample}/pre_process/{sample}-{read_group}.txt"
     singularity: containers["cutadapt"]
-    shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG -m 1 -o {output.r1} "
-           "{input.r1} -p {output.r2} {input.r2}"
+    shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG "
+           "--minimum-length 1 --quality-cutoff=20,20 "
+           "--output {output.r1} --paired-output {output.r2} -Z "
+           "{input.r1} {input.r2} "
+           "--report=minimal > {log}"
 
 rule align:
     """Align fastq files"""
     input:
-        r1 = "{sample}/pre_process/{sample}.cutadapt_R1.fastq",
-        r2 = "{sample}/pre_process/{sample}.cutadapt_R2.fastq",
+        r1 = "{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
+        r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz",
         ref = settings["reference"],
         tmp = ancient("tmp")
     params:
-        rg = "@RG\\tID:{sample}_lib1\\tSM:{sample}\\tPL:ILLUMINA"
-    output: temp("{sample}/bams/{sample}.sorted.bam")
+        rg = "@RG\\tID:{read_group}\\tSM:{sample}\\tPL:ILLUMINA"
+    output: "{sample}/bams/{sample}-{read_group}.sorted.bam"
     singularity: containers["bwa-0.7.17-picard-2.18.7"]
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
            "| picard -Xmx4G -Djava.io.tmpdir={input.tmp} SortSam "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate"
 
+def markdup_bam_input(wildcards):
+    """ Generate the INPUT for each bam file """
+    return ["INPUT={sample}/bams/{sample}-{read_group}.sorted.bam".format(sample=wildcards.sample,
+            read_group=rg) for rg in get_readgroup(wildcards)]
+
 rule markdup:
     """Mark duplicates in BAM file"""
     input:
-        bam = "{sample}/bams/{sample}.sorted.bam",
+        bam = lambda wildcards:
+        ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(sample=wildcards.sample,
+        read_group=rg) for rg in get_readgroup(wildcards)),
         tmp = ancient("tmp")
     output:
         bam = "{sample}/bams/{sample}.markdup.bam",
         bai = "{sample}/bams/{sample}.markdup.bai",
         metrics = "{sample}/bams/{sample}.markdup.metrics"
+    params:
+        bams=markdup_bam_input
     singularity: containers["picard-2.14"]
     shell: "picard -Xmx4G -Djava.io.tmpdir={input.tmp} MarkDuplicates "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
-           "INPUT={input.bam} OUTPUT={output.bam} "
+           "{params.bams} OUTPUT={output.bam} "
            "METRICS_FILE={output.metrics} "
            "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
 
@@ -206,20 +200,30 @@ rule bai:
     singularity: containers["debian"]
     shell: "cp {input.bai} {output.bai}"
 
+
+def bqsr_bam_input(wildcards):
+    """ Generate the bam input string for each read group for BQSR"""
+    return " ".join(["-I {sample}/bams/{sample}-{read_group}.sorted.bam".format(sample=wildcards.sample,
+            read_group=rg) for rg in get_readgroup(wildcards)])
+
 rule baserecal:
     """Base recalibrated BAM files"""
     input:
-        bam = "{sample}/bams/{sample}.markdup.bam",
+        bam = lambda wildcards:
+        ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(sample=wildcards.sample,
+        read_group=rg) for rg in get_readgroup(wildcards)),
         ref = settings["reference"],
         vcfs = settings["known_sites"]
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
-    params: " ".join(expand("-knownSites {vcf}", vcf=settings["known_sites"]))
+    params:
+        known_sites = " ".join(expand("-knownSites {vcf}", vcf=settings["known_sites"])),
+        bams = bqsr_bam_input
     singularity: containers["gatk"]
     shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
-           "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
+           "BaseRecalibrator {params.bams} -o {output.grp} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
-           "-cov CycleCovariate -cov ContextCovariate {params}"
+           "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
 
 checkpoint scatterregions:
     """Scatter the reference genome"""
@@ -235,11 +239,12 @@ checkpoint scatterregions:
            "--referenceFasta {input.ref} --scatterSize {params.size} "
            "--outputDir scatter"
 
+
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
     input:
         bam="{sample}/bams/{sample}.markdup.bam",
-        bqsr="{sample}/bams/{sample}.baserecal.grp",
+        bqsr = "{sample}/bams/{sample}.baserecal.grp",
         dbsnp=settings["dbsnp"],
         ref=settings["reference"],
         region="scatter/scatter-{chunk}.bed"
@@ -328,7 +333,7 @@ rule genotype_gather:
 rule mapped_reads_bases:
     """Calculate number of mapped reads"""
     input:
-        bam="{sample}/bams/{sample}.sorted.bam",
+        bam="{sample}/bams/{sample}.markdup.bam",
         pywc=settings["py_wordcount"]
     output:
         reads="{sample}/bams/{sample}.mapped.num",
@@ -355,104 +360,30 @@ rule unique_reads_bases:
 rule fastqc_raw:
     """
     Run fastqc on raw fastq files
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
-    perl missing in the container of 0.11.5
     """
     input:
-        r1=get_r1,
-        r2=get_r2
-    params:
-        odir="{sample}/pre_process/raw_fastqc"
+        r1=get_forward,
+        r2=get_reverse
     output:
-        aux="{sample}/pre_process/raw_fastqc/.done.txt"
+        directory("{sample}/pre_process/raw-{sample}-{read_group}/")
     singularity: containers["fastqc"]
-    shell: "fastqc --threads 4 --nogroup -o {params.odir} {input.r1} {input.r2} "
-           "&& echo 'done' > {output.aux}"
-
-
-rule fastqc_merged:
-    """
-    Run fastqc on merged fastq files
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
-    perl missing in the container of 0.11.5
-    """
-    input:
-        r1="{sample}/pre_process/{sample}.merged_R1.fastq.gz",
-        r2="{sample}/pre_process/{sample}.merged_R2.fastq.gz",
-        fq=settings["safe_fastqc"]
-    params:
-        odir="{sample}/pre_process/merged_fastqc"
-    output:
-        r1="{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
-        r2="{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip"
-    singularity: containers["fastqc"]
-    shell: "bash {input.fq} {input.r1} {input.r2} "
-           "{output.r1} {output.r2} {params.odir}"
+    shell: "fastqc --threads 4 --nogroup -o {output} {input.r1} {input.r2} "
 
 
 rule fastqc_postqc:
     """
     Run fastqc on fastq files post pre-processing
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
-    perl missing in the container of 0.11.5
     """
     input:
-        r1="{sample}/pre_process/{sample}.cutadapt_R1.fastq",
-        r2="{sample}/pre_process/{sample}.cutadapt_R2.fastq",
-        fq=settings["safe_fastqc"]
-    params:
-        odir="{sample}/pre_process/postqc_fastqc"
+        r1="{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
+        r2="{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz",
     output:
-        r1="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
-        r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip"
+        directory("{sample}/pre_process/trimmed-{sample}-{read_group}/")
     singularity: containers["fastqc"]
-    shell: "bash {input.fq} {input.r1} {input.r2} "
-           "{output.r1} {output.r2} {params.odir}"
+    shell: "fastqc --threads 4 --nogroup -o {output} {input.r1} {input.r2} "
 
 
-## fastq-count
-
-rule fqcount_preqc:
-    """Calculate number of reads and bases before pre-processing"""
-    input:
-        r1="{sample}/pre_process/{sample}.merged_R1.fastq.gz",
-        r2="{sample}/pre_process/{sample}.merged_R2.fastq.gz"
-    output:
-        "{sample}/pre_process/{sample}.preqc_count.json"
-    singularity: containers["fastq-count"]
-    shell: "fastq-count {input.r1} {input.r2} > {output}"
-
-
-rule fqcount_postqc:
-    """Calculate number of reads and bases after pre-processing"""
-    input:
-        r1="{sample}/pre_process/{sample}.cutadapt_R1.fastq",
-        r2="{sample}/pre_process/{sample}.cutadapt_R2.fastq"
-    output:
-        "{sample}/pre_process/{sample}.postqc_count.json"
-    singularity: containers["fastq-count"]
-    shell: "fastq-count {input.r1} {input.r2} > {output}"
-
-
-# fastqc stats
-rule fastqc_stats:
-    """Collect fastq stats for a sample in json format"""
-    input:
-        preqc_r1="{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
-        preqc_r2="{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip",
-        postqc_r1="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
-        postqc_r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip",
-        sc=settings["fastq_stats"]
-    singularity: containers["python3"]
-    output:
-        "{sample}/pre_process/fastq_stats.json"
-    shell: "python {input.sc} --preqc-r1 {input.preqc_r1} "
-           "--preqc-r2 {input.preqc_r2} "
-           "--postqc-r1 {input.postqc_r1} "
-           "--postqc-r2 {input.postqc_r2} > {output}"
-
-## coverages
-
+## coverage
 rule covstats:
     """Calculate coverage statistics on bam file"""
     input:
@@ -484,32 +415,17 @@ rule vtools_coverage:
     shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
 
 
-## vcfstats
-
-rule vcfstats:
-    """Calculate vcf statistics"""
-    input:
-        vcf="{sample}/vcf/{sample}.vcf.gz",
-        tbi = "{sample}/vcf/{sample}.vcf.gz.tbi"
-    output:
-        stats="{sampel}/vcf/{sample}.vcfstats.json"
-    singularity: containers["vtools"]
-    shell: "vtools-stats -i {input.vcf} > {output.stats}"
-
-
 ## collection
 if "bedfile" in settings:
     rule collectstats:
         """Collect all stats for a particular sample with beds"""
         input:
-            preqc="{sample}/pre_process/{sample}.preqc_count.json",
-            postq="{sample}/pre_process/{sample}.postqc_count.json",
             mnum="{sample}/bams/{sample}.mapped.num",
             mbnum="{sample}/bams/{sample}.mapped.basenum",
             unum="{sample}/bams/{sample}.unique.num",
             ubnum="{sample}/bams/{sample}.usable.basenum",
-            fastqc="{sample}/pre_process/fastq_stats.json",
             cov="{sample}/coverage/covstats.json",
+            cutadapt = "{sample}/cutadapt.json",
             colpy=settings["collect_stats"]
         params:
             sample_name="{sample}",
@@ -518,22 +434,20 @@ if "bedfile" in settings:
             "{sample}/{sample}.stats.json"
         singularity: containers["vtools"]
         shell: "python {input.colpy} --sample-name {params.sample_name} "
-               "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
                "--unique-num {input.unum} --usable-basenum {input.ubnum} "
                "--female-threshold {params.fthresh} "
-               "--fastqc-stats {input.fastqc} {input.cov} > {output}"
+               "--cutadapt {input.cutadapt} "
+               "{input.cov} > {output}"
 else:
     rule collectstats:
         """Collect all stats for a particular sample without beds"""
         input:
-            preqc = "{sample}/pre_process/{sample}.preqc_count.json",
-            postq = "{sample}/pre_process/{sample}.postqc_count.json",
             mnum = "{sample}/bams/{sample}.mapped.num",
             mbnum = "{sample}/bams/{sample}.mapped.basenum",
             unum = "{sample}/bams/{sample}.unique.num",
             ubnum = "{sample}/bams/{sample}.usable.basenum",
-            fastqc="{sample}/pre_process/fastq_stats.json",
+            cutadapt = "{sample}/cutadapt.json",
             colpy = settings["collect_stats"]
         params:
             sample_name = "{sample}",
@@ -542,22 +456,34 @@ else:
             "{sample}/{sample}.stats.json"
         singularity: containers["vtools"]
         shell: "python {input.colpy} --sample-name {params.sample_name} "
-               "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
                "--unique-num {input.unum} --usable-basenum {input.ubnum} "
                "--female-threshold {params.fthresh} "
-               "--fastqc-stats {input.fastqc}  > {output}"
+               "--cutadapt {input.cutadapt} "
+               "> {output}"
+
+rule collect_cutadapt_summary:
+    """ Colect cutadapt summary from each readgroup per sample """
+    input:
+        cutadapt = lambda wildcards:
+        ("{sample}/pre_process/{sample}-{read_group}.txt".format(sample=wildcards.sample,
+        read_group=read_group) for read_group in get_readgroup(wildcards)),
+        cutadapt_summary= settings["cutadapt_summary"]
+    output: "{sample}/cutadapt.json"
+    singularity: containers["python3"]
+    shell: "python {input.cutadapt_summary} --sample {wildcards.sample} "
+           "--cutadapt-summary {input.cutadapt} > {output}"
+
 
 rule merge_stats:
     """Merge all stats of all samples"""
     input:
         cols=expand("{sample}/{sample}.stats.json", sample=settings['samples']),
-        vstat=expand("{sample}/vcf/{sample}.vcfstats.json", sample=settings['samples']),
         mpy=settings["merge_stats"]
     output:
         stats="stats.json"
     singularity: containers["vtools"]
-    shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} "
+    shell: "python {input.mpy} --collectstats {input.cols} "
            "> {output.stats}"
 
 

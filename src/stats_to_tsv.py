@@ -72,23 +72,20 @@ if __name__ == "__main__":
 
     sdicts = []
 
-    vcfstats = orig_dict['multisample_vcfstats']
-
     for sample in orig_dict['sample_stats']:
         sname = sample['sample_name']
         sample_dict = OrderedDict()
         sample_dict.update({
             "sample_name": sname,
-            "preqc_reads": sample['pre_qc_fastq_count']['reads'],
-            "preqc_bases": sample['pre_qc_fastq_count']['bases'],
-            "postqc_reads": sample['post_qc_fastq_count']['reads'],
-            "postqc_bases": sample['post_qc_fastq_count']['bases'],
+            "preqc_reads" : sample['preqc_reads'],
+            "preqc_bases" : sample['preqc_bases'],
+            "postqc_reads": sample['postqc_reads'],
+            "postqc_bases": sample['postqc_bases'],
             "mapped_reads": sample['n_mapped_reads'],
             "mapped_bases": sample['n_mapped_bases'],
             "usable_reads": sample['n_usable_reads'],
-            "usable_bases": sample['n_usable_bases']
+            "usable_bases": sample['n_usable_bases'],
         })
-        sample_dict.update(get_vcf_stats(sname, vcfstats))
         if "covstats" in sample:
             for cov_d in sample['covstats']:
                 sample_dict.update(get_covstats(cov_d))

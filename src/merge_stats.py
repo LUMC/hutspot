@@ -22,7 +22,7 @@ collect_stats.py
 :license: AGPL-3.0
 """
 
-import click
+import argparse
 import json
 
 
@@ -31,24 +31,22 @@ def parse_json(path):
         return json.load(handle)
 
 
-@click.command()
-@click.option("--vcfstats",
-              type=click.Path(exists=True, dir_okay=False, readable=True),
-              required=True,
-              help="Path to vcfstats json")
-@click.argument("collectstats",
-              type=click.Path(exists=True, dir_okay=False, readable=True),
-              nargs=-1,
-              required=True)
-def main(vcfstats, collectstats):
-    v = parse_json(vcfstats)
-    cs = [parse_json(x) for x in collectstats]
-    d = {
-        "sample_stats": cs,
-        "multisample_vcfstats": v
-    }
-    print(json.dumps(d))
+def main(collectstats):
+    data = dict()
+    data["sample_stats"] = list()
+
+    for stats in collectstats:
+        cs = parse_json(stats)
+        data["sample_stats"].append(cs)
+    print(json.dumps(data))
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--collectstats',
+                        nargs='+',
+                        required=True,
+                        help='Path to the collected stats for each sample')
+    args = parser.parse_args()
+    main(args.collectstats)
