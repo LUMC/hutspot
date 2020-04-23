@@ -3,7 +3,6 @@ variables:
 
 .docker_before_script_anchor: &docker_before_script_anchor
   before_script:
-    - apt update -y && apt install python3-pip -y
     - pip3 install -r requirements.txt
     - pip3 install -r requirements-dev.txt
 
@@ -29,7 +28,7 @@ test_sanities:
   <<: *docker_before_script_anchor
   script:
     - pytest-3 --tag sanity --workflow-threads 8
-  image: lumc/singularity-snakemake:3.5.2-5.9.1
+  image: lumc/singularity-snakemake:3.5.2-5.15.0
   tags:
     - docker
   stage: sanity
@@ -38,7 +37,7 @@ test_dry_run:
   <<: *docker_before_script_anchor
   script:
     - pytest-3 --tag dry-run --workflow-threads 8
-  image: lumc/singularity-snakemake:3.5.2-5.9.1
+  image: lumc/singularity-snakemake:3.5.2-5.15.0
   tags:
     - docker
   stage: dry-run
