@@ -8,8 +8,7 @@
     --singularity-args ' --cleanenv --bind /tmp'
     --jobs 1 -w 120
     -r -p -s Snakefile
-    --config
-    CONFIG_JSON=tests/data/config/sample_config.json
+    --configfile tests/data/config/sample_config.json
   stderr:
     contains:
       - "Job counts"
@@ -60,8 +59,7 @@
     --singularity-args ' --cleanenv --bind /tmp'
     --jobs 1 -w 120
     -r -p -s Snakefile
-    --config
-    CONFIG_JSON=tests/data/config/sample_config_scatter.json
+    --configfile tests/data/config/sample_config_scatter.json
   stderr:
     contains:
       - "Job counts"
@@ -119,8 +117,7 @@
     --singularity-args ' --cleanenv --bind /tmp'
     --jobs 1 -w 120
     -r -p -s Snakefile
-    --config
-    CONFIG_JSON=tests/data/config/sample_config_refflat.json
+    --configfile tests/data/config/sample_config_refflat.json
   stderr:
     contains:
       - "Job counts"
@@ -144,8 +141,7 @@
     --singularity-args ' --cleanenv --bind /tmp'
     --jobs 1 -w 120
     -r -p -s Snakefile
-    --config
-    CONFIG_JSON=tests/data/config/sample_config_bed_all.json
+    --configfile tests/data/config/sample_config_bed_all.json
   stderr:
     contains:
       - "Job counts"
@@ -175,8 +171,7 @@
     --singularity-args ' --cleanenv --bind /tmp'
     --jobs 1 -w 120
     -r -p -s Snakefile
-    --config
-    CONFIG_JSON=tests/data/config/sample_config_bed_target.json
+    --configfile tests/data/config/sample_config_bed_target.json
   stderr:
     contains:
       - "Job counts"
@@ -200,8 +195,7 @@
     --singularity-args ' --cleanenv --bind /tmp'
     --jobs 1 -w 120
     -r -p -s Snakefile
-    --config
-    CONFIG_JSON=tests/data/config/sample_config_two_known_vcf.json
+    --configfile tests/data/config/sample_config_two_known_vcf.json
   stderr:
     contains:
       - "Job counts"
@@ -221,8 +215,7 @@
     --singularity-args ' --cleanenv --bind /tmp'
     --jobs 1 -w 120
     -r -p -s Snakefile
-    --config
-    CONFIG_JSON=tests/data/config/sample_config_two_readgroup.json
+    --configfile tests/data/config/sample_config_two_readgroup.json
   stderr:
     contains:
       - "Job counts"
@@ -267,8 +260,7 @@
     --singularity-args ' --cleanenv --bind /tmp'
     --jobs 1 -w 120
     -r -p -s Snakefile
-    --config
-    CONFIG_JSON=tests/data/config/sample_config_two_samples.json
+    --configfile tests/data/config/sample_config_two_samples.json
   stderr:
     contains:
       - "Job counts"

@@ -28,17 +28,13 @@ from os.path import join, basename
 from pathlib import Path
 import itertools
 
-# Read the config json
-with open(config['CONFIG_JSON'], 'rt') as fin:
-    settings = json.load(fin)
-
 # Read the json schema
 with open('config/schema.json', 'rt') as fin:
     schema = json.load(fin)
 
-# Validate the settings against the schema
+# Validate the config against the schema
 try:
-    jsonschema.validate(settings, schema)
+    jsonschema.validate(config, schema)
 except jsonschema.ValidationError as e:
     raise jsonschema.ValidationError(f'Invalid CONFIG_JSON: {e}')
 
@@ -46,10 +42,10 @@ except jsonschema.ValidationError as e:
 # Set default values
 def set_default(key, value):
     """ Set default config values """
-    if key not in settings:
-        settings[key] = value
+    if key not in config:
+        config[key] = value
 
-# Set the default settings
+# Set the default config
 set_default('scatter_size', 1000000000)
 set_default('female_threshold', 0.6)
 
@@ -80,40 +76,40 @@ containers = {
 def get_forward(wildcards):
     """ Get the forward fastq file from the config """
     return (
-        settings["samples"][wildcards.sample]["libraries"]
+        config["samples"][wildcards.sample]["libraries"]
                 [wildcards.read_group]["R1"]
     )
 
 def get_reverse(wildcards):
     """ Get the reverse fastq file from the config """
     return (
-        settings["samples"][wildcards.sample]["libraries"]
+        config["samples"][wildcards.sample]["libraries"]
             [wildcards.read_group]["R2"]
     )
 
 def get_readgroup(wildcards):
-    return settings["samples"][wildcards.sample]["libraries"]
+    return config["samples"][wildcards.sample]["libraries"]
 
 def get_readgroup_per_sample():
-    for sample in settings["samples"]:
-        for rg in settings["samples"][sample]["libraries"]:
+    for sample in config["samples"]:
+        for rg in config["samples"][sample]["libraries"]:
             yield rg, sample
 
 
 def coverage_stats(wildcards):
-    files = expand("{sample}/coverage/refFlat_coverage.tsv", sample=settings['samples'])
-    return files if "refflat" in settings else []
+    files = expand("{sample}/coverage/refFlat_coverage.tsv", sample=config["samples"])
+    return files if "refflat" in config else []
 
 rule all:
     input:
-        multiqc="multiqc_report/multiqc_report.html",
+        multiqc = "multiqc_report/multiqc_report.html",
         stats = "stats.json",
         stats_tsv = "stats.tsv",
-        bais=expand("{sample}/bams/{sample}.markdup.bam.bai", sample=settings['samples']),
-        vcfs=expand("{sample}/vcf/{sample}.vcf.gz", sample=settings['samples']),
-        vcf_tbi=expand("{sample}/vcf/{sample}.vcf.gz.tbi", sample=settings['samples']),
-        gvcfs=expand("{sample}/vcf/{sample}.g.vcf.gz", sample=settings['samples']),
-        gvcf_tbi=expand("{sample}/vcf/{sample}.g.vcf.gz.tbi", sample=settings['samples']),
+        bais = expand("{sample}/bams/{sample}.markdup.bam.bai", sample=config["samples"]),
+        vcfs = expand("{sample}/vcf/{sample}.vcf.gz", sample=config["samples"]),
+        vcf_tbi = expand("{sample}/vcf/{sample}.vcf.gz.tbi", sample=config["samples"]),
+        gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=config["samples"]),
+        gvcf_tbi = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi", sample=config["samples"]),
         fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
         fastqc_trimmed = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
         cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt" for read_group, sample in get_readgroup_per_sample()),
@@ -128,7 +124,7 @@ rule create_markdup_tmp:
 
 rule genome:
     """Create genome file as used by bedtools"""
-    input: settings["reference"]
+    input: config["reference"]
     output: "current.genome"
     singularity: containers["debian"]
     shell: "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output}"
@@ -136,8 +132,8 @@ rule genome:
 rule cutadapt:
     """Clip fastq files"""
     input:
-        r1=get_forward,
-        r2=get_reverse
+        r1 = get_forward,
+        r2 = get_reverse
     output:
         r1 = "{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
         r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz",
@@ -155,7 +151,7 @@ rule align:
     input:
         r1 = "{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
         r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz",
-        ref = settings["reference"],
+        ref = config["reference"],
         tmp = ancient("tmp")
     params:
         rg = "@RG\\tID:{read_group}\\tSM:{sample}\\tPL:ILLUMINA"
@@ -212,12 +208,12 @@ rule baserecal:
         bam = lambda wildcards:
         ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(sample=wildcards.sample,
         read_group=rg) for rg in get_readgroup(wildcards)),
-        ref = settings["reference"],
-        vcfs = settings["known_sites"]
+        ref = config["reference"],
+        vcfs = config["known_sites"]
     output:
         grp = "{sample}/bams/{sample}.baserecal.grp"
     params:
-        known_sites = " ".join(expand("-knownSites {vcf}", vcf=settings["known_sites"])),
+        known_sites = " ".join(expand("-knownSites {vcf}", vcf=config["known_sites"])),
         bams = bqsr_bam_input
     singularity: containers["gatk"]
     shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
@@ -228,9 +224,9 @@ rule baserecal:
 checkpoint scatterregions:
     """Scatter the reference genome"""
     input:
-        ref = settings["reference"],
+        ref = config["reference"],
     params:
-        size = settings['scatter_size']
+        size = config['scatter_size']
     output:
         directory("scatter")
     singularity: containers["biopet-scatterregions"]
@@ -243,16 +239,16 @@ checkpoint scatterregions:
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
     input:
-        bam="{sample}/bams/{sample}.markdup.bam",
+        bam = "{sample}/bams/{sample}.markdup.bam",
         bqsr = "{sample}/bams/{sample}.baserecal.grp",
-        dbsnp=settings["dbsnp"],
-        ref=settings["reference"],
-        region="scatter/scatter-{chunk}.bed"
+        dbsnp = config["dbsnp"],
+        ref = config["reference"],
+        region = "scatter/scatter-{chunk}.bed"
     output:
-        gvcf=temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz"),
-        gvcf_tbi=temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi")
+        gvcf = temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz"),
+        gvcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi")
     wildcard_constraints:
-        chunk="[0-9]+"
+        chunk = "[0-9]+"
     singularity: containers["gatk"]
     shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar "
            "-T HaplotypeCaller -ERC GVCF -I "
@@ -291,7 +287,7 @@ rule genotype_scatter:
     input:
         gvcf = "{sample}/vcf/{sample}.{chunk}.g.vcf.gz",
         tbi = "{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi",
-        ref= settings["reference"]
+        ref= config["reference"]
     output:
         vcf = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz"),
         vcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz.tbi")
@@ -334,7 +330,7 @@ rule mapped_reads_bases:
     """Calculate number of mapped reads"""
     input:
         bam="{sample}/bams/{sample}.markdup.bam",
-        pywc=settings["py_wordcount"]
+        pywc=config["py_wordcount"]
     output:
         reads="{sample}/bams/{sample}.mapped.num",
         bases="{sample}/bams/{sample}.mapped.basenum"
@@ -347,7 +343,7 @@ rule unique_reads_bases:
     """Calculate number of unique reads"""
     input:
         bam="{sample}/bams/{sample}.markdup.bam",
-        pywc=settings["py_wordcount"]
+        pywc=config["py_wordcount"]
     output:
         reads="{sample}/bams/{sample}.unique.num",
         bases="{sample}/bams/{sample}.usable.basenum"
@@ -389,8 +385,8 @@ rule covstats:
     input:
         bam="{sample}/bams/{sample}.markdup.bam",
         genome="current.genome",
-        covpy=settings["covstats"],
-        bed=settings.get("bedfile","")
+        covpy=config["covstats"],
+        bed=config.get("bedfile","")
     params:
         subt="Sample {sample}"
     output:
@@ -408,7 +404,7 @@ rule vtools_coverage:
     input:
         gvcf="{sample}/vcf/{sample}.g.vcf.gz",
         tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi",
-        ref = settings.get('refflat', "")
+        ref = config.get('refflat', "")
     output:
         tsv="{sample}/coverage/refFlat_coverage.tsv"
     singularity: containers["vtools"]
@@ -416,7 +412,7 @@ rule vtools_coverage:
 
 
 ## collection
-if "bedfile" in settings:
+if "bedfile" in config:
     rule collectstats:
         """Collect all stats for a particular sample with beds"""
         input:
@@ -426,10 +422,10 @@ if "bedfile" in settings:
             ubnum="{sample}/bams/{sample}.usable.basenum",
             cov="{sample}/coverage/covstats.json",
             cutadapt = "{sample}/cutadapt.json",
-            colpy=settings["collect_stats"]
+            colpy=config["collect_stats"]
         params:
             sample_name="{sample}",
-            fthresh=settings["female_threshold"]
+            fthresh=config["female_threshold"]
         output:
             "{sample}/{sample}.stats.json"
         singularity: containers["vtools"]
@@ -448,10 +444,10 @@ else:
             unum = "{sample}/bams/{sample}.unique.num",
             ubnum = "{sample}/bams/{sample}.usable.basenum",
             cutadapt = "{sample}/cutadapt.json",
-            colpy = settings["collect_stats"]
+            colpy = config["collect_stats"]
         params:
             sample_name = "{sample}",
-            fthresh = settings["female_threshold"]
+            fthresh = config["female_threshold"]
         output:
             "{sample}/{sample}.stats.json"
         singularity: containers["vtools"]
@@ -468,7 +464,7 @@ rule collect_cutadapt_summary:
         cutadapt = lambda wildcards:
         ("{sample}/pre_process/{sample}-{read_group}.txt".format(sample=wildcards.sample,
         read_group=read_group) for read_group in get_readgroup(wildcards)),
-        cutadapt_summary= settings["cutadapt_summary"]
+        cutadapt_summary= config["cutadapt_summary"]
     output: "{sample}/cutadapt.json"
     singularity: containers["python3"]
     shell: "python {input.cutadapt_summary} --sample {wildcards.sample} "
@@ -478,8 +474,8 @@ rule collect_cutadapt_summary:
 rule merge_stats:
     """Merge all stats of all samples"""
     input:
-        cols=expand("{sample}/{sample}.stats.json", sample=settings['samples']),
-        mpy=settings["merge_stats"]
+        cols=expand("{sample}/{sample}.stats.json", sample=config['samples']),
+        mpy=config["merge_stats"]
     output:
         stats="stats.json"
     singularity: containers["vtools"]
@@ -491,7 +487,7 @@ rule stats_tsv:
     """Convert stats.json to tsv"""
     input:
         stats="stats.json",
-        sc=settings["stats_to_tsv"]
+        sc=config["stats_to_tsv"]
     output:
         stats="stats.tsv"
     singularity: containers["python3"]

@@ -125,7 +125,7 @@ the pipeline can be started with:
 ```bash
 snakemake -s Snakefile \
 --use-singularity \
---config CONFIG_JSON=tests/data/config/sample_config.json
+--configfile tests/data/config/sample_config.json
 ```
 
 This would start all jobs locally. Obviously this is not what one would
@@ -134,7 +134,7 @@ described later. Let's first move on to the necessary configuration values.
 
 ## Configuration values
 The required and optional outputs are specified in the json schema located in
-`config/schema.json`. Before running, the content of the `CONFIG_JSON` is
+`config/schema.json`. Before running, the content of the `--configfile` is
 validated against this schema.
 
 The following configuration values are **required**:
@@ -217,7 +217,7 @@ snakemake -s Snakefile \
 -w 120 \
 --max-jobs-per-second 30 \
 --restart-times 2 \
---config CONFIG_JSON=config.json
+--configfile config.json
 ```
 
 # Graph

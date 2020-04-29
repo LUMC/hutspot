@@ -2,7 +2,7 @@
   command: >
     snakemake
     -n -r -p -s Snakefile
-    --config CONFIG_JSON=tests/data/config/invalid_config_no_ref.json
+    --configfile tests/data/config/invalid_config_no_ref.json
   exit_code: 1
   stdout:
     contains:
@@ -14,7 +14,7 @@
   command: >
     snakemake
     -n -r -p -s Snakefile
-    --config CONFIG_JSON=tests/data/config/invalid_config_fake_ref.json
+    --configfile tests/data/config/invalid_config_fake_ref.json
 
   exit_code: 1
   stdout:

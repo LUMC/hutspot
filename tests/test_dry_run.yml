@@ -2,8 +2,7 @@
   command: >
     snakemake
     -n -r -p -s Snakefile
-    --config
-    CONFIG_JSON=tests/data/config/sample_config.json
+    --configfile tests/data/config/sample_config.json
   exit_code: 0
   stdout:
     contains:
