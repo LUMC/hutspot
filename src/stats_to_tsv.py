@@ -45,7 +45,7 @@ def get_vcf_stats(sample_name, vcfstats):
 
 def get_covstats(cov_d):
     s_d = cov_d['covstats']['stats']['coverage']['_all']
-    tmp_d = {
+    return {
         'median_coverage': s_d['median'],
         'mean_coverage': s_d['mean'],
         'modal_coverage': s_d['mode'],
@@ -58,7 +58,6 @@ def get_covstats(cov_d):
         'coverage_frac_min_50x': s_d['frac_min_50x'],
         'determined_gender': cov_d['gender']
     }
-    return {"{0}_{1}".format(cov_d['name'], k): v for k, v in tmp_d.items()}
 
 
 if __name__ == "__main__":
