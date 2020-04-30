@@ -33,3 +33,5 @@ fastqc_merged:
   threads: 4
 fastqc_postqc:
   threads: 4
+scatterregions:
+  vmem: 10G
