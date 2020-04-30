@@ -29,7 +29,7 @@ from pathlib import Path
 import itertools
 
 # Read the json schema
-with open('config/schema.json', 'rt') as fin:
+with open(srcdir('config/schema.json'), 'rt') as fin:
     schema = json.load(fin)
 
 # Validate the config against the schema
@@ -50,12 +50,12 @@ set_default('scatter_size', 1000000000)
 set_default('female_threshold', 0.6)
 
 # Set the script paths
-set_default("covstats", "src/covstats.py")
-set_default("collect_stats", "src/collect_stats.py")
-set_default("merge_stats", "src/merge_stats.py")
-set_default("stats_to_tsv", "src/stats_to_tsv.py")
-set_default("py_wordcount", "src/pywc.py")
-set_default("cutadapt_summary", "src/cutadapt_summary.py")
+set_default("covstats", srcdir("src/covstats.py"))
+set_default("collect_stats", srcdir("src/collect_stats.py"))
+set_default("merge_stats", srcdir("src/merge_stats.py"))
+set_default("stats_to_tsv", srcdir("src/stats_to_tsv.py"))
+set_default("py_wordcount", srcdir("src/pywc.py"))
+set_default("cutadapt_summary", srcdir("src/cutadapt_summary.py"))
 
 containers = {
     "bcftools": "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4",
