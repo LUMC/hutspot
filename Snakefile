@@ -76,23 +76,23 @@ containers = {
 def get_forward(wildcards):
     """ Get the forward fastq file from the config """
     return (
-        config["samples"][wildcards.sample]["libraries"]
+        config["samples"][wildcards.sample]["read_groups"]
                 [wildcards.read_group]["R1"]
     )
 
 def get_reverse(wildcards):
     """ Get the reverse fastq file from the config """
     return (
-        config["samples"][wildcards.sample]["libraries"]
+        config["samples"][wildcards.sample]["read_groups"]
             [wildcards.read_group]["R2"]
     )
 
 def get_readgroup(wildcards):
-    return config["samples"][wildcards.sample]["libraries"]
+    return config["samples"][wildcards.sample]["read_groups"]
 
 def get_readgroup_per_sample():
     for sample in config["samples"]:
-        for rg in config["samples"][sample]["libraries"]:
+        for rg in config["samples"][sample]["read_groups"]:
             yield rg, sample
 
 

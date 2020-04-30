@@ -1,7 +1,7 @@
 {
   "samples": {
     "micro": {
-      "libraries": {
+      "read_groups": {
         "lib_01": {
         "R1": "tests/data/fastq/micro_R1.fq.gz",
         "R2": "tests/data/fastq/micro_R2.fq.gz"

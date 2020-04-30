@@ -1,7 +1,7 @@
 {
     "samples": {
         "sample_01": {
-            "libraries": {
+            "read_groups": {
                 "lib_l1": {
                     "R1": "1.fq.gz",
                     "R2": "2.fq.gz"
@@ -13,7 +13,7 @@
             }
         },
         "sample_02": {
-            "libraries": {
+            "read_groups": {
                 "lib_l1": {
                     "R1": "3.1.fq.gz",
                     "R2": "3.2.fq.gz"

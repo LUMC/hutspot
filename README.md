@@ -92,8 +92,8 @@ readgroups in fastq format. They must be compressed with either `gzip` or
 `bgzip`.
 
 The configuration must be passed to the pipeline through a configuration file.
-This is a json file listing the samples and their associated readgroups/
-libraries, as well as the other settings to be used.
+This is a json file listing the samples and their associated readgroups 
+as well as the other settings to be used.
 An example config json can be found [here](config/example.json), and a
 json schema describing the configuration file can be found [here](config/schema.json). 
 This json schema can also be used to validate your configuration file.

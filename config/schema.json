@@ -20,9 +20,9 @@
             "additionalProperties": {
                 "description": "sample object",
                 "type": "object",
-                "required": ["libraries"],
+                "required": ["read_groups"],
                 "properties": {
-                    "libraries": {
+                    "read_groups": {
                         "type": "object",
                         "additionalProperties": {
                             "description": "library",
