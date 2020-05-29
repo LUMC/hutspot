@@ -41,7 +41,7 @@ except jsonschema.ValidationError as e:
 
 # Set default values
 def set_default(key, value):
-    """ Set default config values """
+    """Set default config values"""
     if key not in config:
         config[key] = value
 
@@ -74,14 +74,14 @@ containers = {
 }
 
 def get_forward(wildcards):
-    """ Get the forward fastq file from the config """
+    """Get the forward fastq file from the config"""
     return (
         config["samples"][wildcards.sample]["read_groups"]
                 [wildcards.read_group]["R1"]
     )
 
 def get_reverse(wildcards):
-    """ Get the reverse fastq file from the config """
+    """Get the reverse fastq file from the config"""
     return (
         config["samples"][wildcards.sample]["read_groups"]
             [wildcards.read_group]["R2"]
@@ -97,7 +97,8 @@ def get_readgroup_per_sample():
 
 
 def coverage_stats(wildcards):
-    files = expand("{sample}/coverage/refFlat_coverage.tsv", sample=config["samples"])
+    files = expand("{sample}/coverage/refFlat_coverage.tsv",
+                   sample=config["samples"])
     return files if "refflat" in config else []
 
 rule all:
@@ -105,28 +106,44 @@ rule all:
         multiqc = "multiqc_report/multiqc_report.html",
         stats = "stats.json",
         stats_tsv = "stats.tsv",
-        bam = expand("{sample}/bams/{sample}.bam", sample=config["samples"]),
-        vcfs = expand("{sample}/vcf/{sample}.vcf.gz", sample=config["samples"]),
-        vcf_tbi = expand("{sample}/vcf/{sample}.vcf.gz.tbi", sample=config["samples"]),
-        gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=config["samples"]),
-        gvcf_tbi = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi", sample=config["samples"]),
-        fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
-        fastqc_trimmed = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/" for read_group, sample in get_readgroup_per_sample()),
-        cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt" for read_group, sample in get_readgroup_per_sample()),
+
+        bam = expand("{sample}/bams/{sample}.bam",
+                     sample=config["samples"]),
+
+        vcfs = expand("{sample}/vcf/{sample}.vcf.gz",
+                      sample=config["samples"]),
+
+        vcf_tbi = expand("{sample}/vcf/{sample}.vcf.gz.tbi",
+                         sample=config["samples"]),
+
+        gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz",
+                       sample=config["samples"]),
+
+        gvcf_tbi = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",
+                          sample=config["samples"]),
+
+        fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/"
+                      for read_group, sample in get_readgroup_per_sample()),
+
+        fastqc_trim = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/"
+                      for read_group, sample in get_readgroup_per_sample()),
+
+        cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt"
+                    for read_group, sample in get_readgroup_per_sample()),
         coverage_stats = coverage_stats,
 
 
 rule create_markdup_tmp:
     """Create tmp directory for mark duplicates"""
     output: directory("tmp")
-    singularity: containers["debian"]
+    container: containers["debian"]
     shell: "mkdir -p {output}"
 
 rule genome:
     """Create genome file as used by bedtools"""
     input: config["reference"]
     output: "current.genome"
-    singularity: containers["debian"]
+    container: containers["debian"]
     shell: "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output}"
 
 rule cutadapt:
@@ -139,7 +156,7 @@ rule cutadapt:
         r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz",
     log:
         "{sample}/pre_process/{sample}-{read_group}.txt"
-    singularity: containers["cutadapt"]
+    container: containers["cutadapt"]
     shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG "
            "--minimum-length 1 --quality-cutoff=20,20 "
            "--output {output.r1} --paired-output {output.r2} -Z "
@@ -156,23 +173,25 @@ rule align:
     params:
         rg = "@RG\\tID:{read_group}\\tSM:{sample}\\tPL:ILLUMINA"
     output: "{sample}/bams/{sample}-{read_group}.sorted.bam"
-    singularity: containers["bwa-0.7.17-picard-2.18.7"]
+    container: containers["bwa-0.7.17-picard-2.18.7"]
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
            "| picard -Xmx4G -Djava.io.tmpdir={input.tmp} SortSam "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate"
 
 def markdup_bam_input(wildcards):
-    """ Generate the INPUT for each bam file """
-    return ["INPUT={sample}/bams/{sample}-{read_group}.sorted.bam".format(sample=wildcards.sample,
-            read_group=rg) for rg in get_readgroup(wildcards)]
+    """Generate the INPUT for each bam file """
+    return ["INPUT={sample}/bams/{sample}-{read_group}.sorted.bam".format(
+                sample=wildcards.sample, read_group=rg)
+            for rg in get_readgroup(wildcards)]
 
 rule markdup:
     """Mark duplicates in BAM file"""
     input:
         bam = lambda wildcards:
-        ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(sample=wildcards.sample,
-        read_group=rg) for rg in get_readgroup(wildcards)),
+        ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(
+            sample=wildcards.sample, read_group=rg)
+            for rg in get_readgroup(wildcards)),
         tmp = ancient("tmp")
     output:
         bam = "{sample}/bams/{sample}.bam",
@@ -180,7 +199,7 @@ rule markdup:
         metrics = "{sample}/bams/{sample}.metrics"
     params:
         bams=markdup_bam_input
-    singularity: containers["picard"]
+    container: containers["picard"]
     shell: "picard -Xmx4G -Djava.io.tmpdir={input.tmp} MarkDuplicates "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "{params.bams} OUTPUT={output.bam} "
@@ -193,28 +212,32 @@ rule bai:
         bai = rules.markdup.output.bai
     output:
         bai = "{sample}/bams/{sample}.bam.bai"
-    singularity: containers["debian"]
+    container: containers["debian"]
     shell: "cp {input.bai} {output.bai}"
 
 
 def bqsr_bam_input(wildcards):
-    """ Generate the bam input string for each read group for BQSR"""
-    return " ".join(["-I {sample}/bams/{sample}-{read_group}.sorted.bam".format(sample=wildcards.sample,
+    """Generate the bam input string for each read group for BQSR"""
+    template = "-I {sample}/bams/{sample}-{read_group}.sorted.bam"
+    return " ".join([template.format(sample=wildcards.sample,
             read_group=rg) for rg in get_readgroup(wildcards)])
 
 rule baserecal:
     """Base recalibrated BAM files"""
     input:
         bam = lambda wildcards:
-        ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(sample=wildcards.sample,
-        read_group=rg) for rg in get_readgroup(wildcards)),
+        ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(
+            sample=wildcards.sample, read_group=rg)
+            for rg in get_readgroup(wildcards)),
         ref = config["reference"],
         vcfs = config["known_sites"]
     output: "{sample}/bams/{sample}.baserecal.grp"
     params:
-        known_sites = " ".join(expand("-knownSites {vcf}", vcf=config["known_sites"])),
+        known_sites = " ".join(
+                expand("-knownSites {vcf}", vcf=config["known_sites"])
+        ),
         bams = bqsr_bam_input
-    singularity: containers["gatk"]
+    container: containers["gatk"]
     shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
            "BaseRecalibrator {params.bams} -o {output} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
@@ -228,7 +251,7 @@ checkpoint scatterregions:
         size = config['scatter_size']
     output:
         directory("scatter")
-    singularity: containers["biopet-scatterregions"]
+    container: containers["biopet-scatterregions"]
     shell: "mkdir -p {output} && "
            "biopet-scatterregions -Xmx24G "
            "--referenceFasta {input.ref} --scatterSize {params.size} "
@@ -248,7 +271,7 @@ rule gvcf_scatter:
         gvcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi")
     wildcard_constraints:
         chunk = "[0-9]+"
-    singularity: containers["gatk"]
+    container: containers["gatk"]
     shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar "
            "-T HaplotypeCaller -ERC GVCF -I "
            "{input.bam} -R {input.ref} -D {input.dbsnp} "
@@ -261,24 +284,24 @@ rule gvcf_scatter:
 def aggregate_gvcf(wildcards):
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
     return expand("{{sample}}/vcf/{{sample}}.{i}.g.vcf.gz",
-           i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
 
 def aggregate_gvcf_tbi(wildcards):
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
     return expand("{{sample}}/vcf/{{sample}}.{i}.g.vcf.gz.tbi",
-           i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
 
 rule gvcf_gather:
-    """ Join the gvcf files together """
+    """Join the gvcf files together"""
     input:
         gvcfs = aggregate_gvcf,
         tbis = aggregate_gvcf_tbi,
     output:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz",
         gvcf_tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
-    singularity: containers["bcftools"]
-    shell: "bcftools concat {input.gvcfs} --allow-overlaps --output {output.gvcf} "
-           "--output-type z && "
+    container: containers["bcftools"]
+    shell: "bcftools concat {input.gvcfs} --allow-overlaps "
+           "--output {output.gvcf} --output-type z && "
            "bcftools index --tbi --output-file {output.gvcf_tbi} {output.gvcf}"
 
 rule genotype_scatter:
@@ -291,9 +314,10 @@ rule genotype_scatter:
         vcf = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz"),
         vcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz.tbi")
     wildcard_constraints:
-        chunk="[0-9]+"
-    singularity: containers["gatk"]
-    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
+        chunk = "[0-9]+"
+    container: containers["gatk"]
+    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 "
+           "/usr/GenomeAnalysisTK.jar -T "
            "GenotypeGVCFs -R {input.ref} "
            "-V {input.gvcf} -o '{output.vcf}'"
 
@@ -301,13 +325,13 @@ rule genotype_scatter:
 def aggregate_vcf(wildcards):
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
     return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz",
-           i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
 
 
 def aggregate_vcf_tbi(wildcards):
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
     return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz.tbi",
-           i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
 
 
 rule genotype_gather:
@@ -318,9 +342,9 @@ rule genotype_gather:
     output:
         vcf = "{sample}/vcf/{sample}.vcf.gz",
         vcf_tbi = "{sample}/vcf/{sample}.vcf.gz.tbi"
-    singularity: containers["bcftools"]
-    shell: "bcftools concat {input.vcfs} --allow-overlaps --output {output.vcf} "
-           "--output-type z && "
+    container: containers["bcftools"]
+    shell: "bcftools concat {input.vcfs} --allow-overlaps "
+           "--output {output.vcf} --output-type z && "
            "bcftools index --tbi --output-file {output.vcf_tbi} {output.vcf}"
 
 
@@ -331,9 +355,9 @@ rule mapped_reads_bases:
         bam = rules.markdup.output.bam,
         pywc = config["py_wordcount"]
     output:
-        reads="{sample}/bams/{sample}.mapped.num",
-        bases="{sample}/bams/{sample}.mapped.basenum"
-    singularity: containers["samtools-1.7-python-3.6"]
+        reads = "{sample}/bams/{sample}.mapped.num",
+        bases = "{sample}/bams/{sample}.mapped.basenum"
+    container: containers["samtools-1.7-python-3.6"]
     shell: "samtools view -F 4 {input.bam} | cut -f 10 | python {input.pywc} "
            "--reads {output.reads} --bases {output.bases}"
 
@@ -342,39 +366,35 @@ rule unique_reads_bases:
     """Calculate number of unique reads"""
     input:
         bam = rules.markdup.output.bam,
-        pywc=config["py_wordcount"]
+        pywc = config["py_wordcount"]
     output:
-        reads="{sample}/bams/{sample}.unique.num",
-        bases="{sample}/bams/{sample}.usable.basenum"
-    singularity: containers["samtools-1.7-python-3.6"]
-    shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f 10 | python {input.pywc} "
-           "--reads {output.reads} --bases {output.bases}"
+        reads = "{sample}/bams/{sample}.unique.num",
+        bases = "{sample}/bams/{sample}.usable.basenum"
+    container: containers["samtools-1.7-python-3.6"]
+    shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f 10 | "
+           "python {input.pywc} --reads {output.reads} --bases {output.bases}"
 
 
 ## fastqc
 rule fastqc_raw:
-    """
-    Run fastqc on raw fastq files
-    """
+    """Run fastqc on raw fastq files"""
     input:
-        r1=get_forward,
-        r2=get_reverse
+        r1 = get_forward,
+        r2 = get_reverse
     output:
         directory("{sample}/pre_process/raw-{sample}-{read_group}/")
-    singularity: containers["fastqc"]
+    container: containers["fastqc"]
     shell: "fastqc --threads 4 --nogroup -o {output} {input.r1} {input.r2} "
 
 
 rule fastqc_postqc:
-    """
-    Run fastqc on fastq files post pre-processing
-    """
+    """Run fastqc on fastq files post pre-processing"""
     input:
         r1 = rules.cutadapt.output.r1,
         r2 = rules.cutadapt.output.r2
     output:
         directory("{sample}/pre_process/trimmed-{sample}-{read_group}/")
-    singularity: containers["fastqc"]
+    container: containers["fastqc"]
     shell: "fastqc --threads 4 --nogroup -o {output} {input.r1} {input.r2} "
 
 
@@ -383,15 +403,15 @@ rule covstats:
     """Calculate coverage statistics on bam file"""
     input:
         bam = rules.markdup.output.bam,
-        genome="current.genome",
-        covpy=config["covstats"],
-        bed=config.get("bedfile","")
+        genome = "current.genome",
+        covpy = config["covstats"],
+        bed = config.get("bedfile","")
     params:
-        subt="Sample {sample}"
+        subt = "Sample {sample}"
     output:
-        covj="{sample}/coverage/covstats.json",
-        covp="{sample}/coverage/covstats.png"
-    singularity: containers["bedtools-2.26-python-2.7"]
+        covj = "{sample}/coverage/covstats.json",
+        covp = "{sample}/coverage/covstats.png"
+    container: containers["bedtools-2.26-python-2.7"]
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
            "-b {input.bam} -d  | python {input.covpy} - --plot {output.covp} "
            "--title 'Targets coverage' --subtitle '{params.subt}' "
@@ -405,20 +425,21 @@ rule vtools_coverage:
         tbi = rules.gvcf_gather.output.gvcf_tbi,
         ref = config.get('refflat', "")
     output:
-        tsv="{sample}/coverage/refFlat_coverage.tsv"
-    singularity: containers["vtools"]
+        tsv = "{sample}/coverage/refFlat_coverage.tsv"
+    container: containers["vtools"]
     shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
 
 
 rule collect_cutadapt_summary:
-    """ Colect cutadapt summary from each readgroup per sample """
+    """Colect cutadapt summary from each readgroup per sample """
     input:
         cutadapt = lambda wildcards:
-        ("{sample}/pre_process/{sample}-{read_group}.txt".format(sample=wildcards.sample,
-        read_group=read_group) for read_group in get_readgroup(wildcards)),
+        ("{sample}/pre_process/{sample}-{read_group}.txt".format(
+            sample=wildcards.sample, read_group=read_group)
+            for read_group in get_readgroup(wildcards)),
         cutadapt_summary= config["cutadapt_summary"]
     output: "{sample}/cutadapt.json"
-    singularity: containers["python3"]
+    container: containers["python3"]
     shell: "python {input.cutadapt_summary} --sample {wildcards.sample} "
            "--cutadapt-summary {input.cutadapt} > {output}"
 
@@ -434,13 +455,12 @@ if "bedfile" in config:
             ubnum = rules.unique_reads_bases.output.bases,
             cov = rules.covstats.output.covj,
             cutadapt = rules.collect_cutadapt_summary.output,
-            colpy=config["collect_stats"]
+            colpy = config["collect_stats"]
         params:
-            sample_name="{sample}",
-            fthresh=config["female_threshold"]
+            fthresh = config["female_threshold"]
         output: "{sample}/{sample}.stats.json"
-        singularity: containers["vtools"]
-        shell: "python {input.colpy} --sample-name {params.sample_name} "
+        container: containers["vtools"]
+        shell: "python {input.colpy} --sample-name {wildcards.sample} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
                "--unique-num {input.unum} --usable-basenum {input.ubnum} "
                "--female-threshold {params.fthresh} "
@@ -455,13 +475,12 @@ else:
             unum = rules.unique_reads_bases.output.reads,
             ubnum = rules.unique_reads_bases.output.bases,
             cutadapt = rules.collect_cutadapt_summary.output,
-            colpy=config["collect_stats"]
+            colpy = config["collect_stats"]
         params:
-            sample_name = "{sample}",
             fthresh = config["female_threshold"]
         output: "{sample}/{sample}.stats.json"
-        singularity: containers["vtools"]
-        shell: "python {input.colpy} --sample-name {params.sample_name} "
+        container: containers["vtools"]
+        shell: "python {input.colpy} --sample-name {wildcards.sample} "
                "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
                "--unique-num {input.unum} --usable-basenum {input.ubnum} "
                "--female-threshold {params.fthresh} "
@@ -471,10 +490,11 @@ else:
 rule merge_stats:
     """Merge all stats of all samples"""
     input:
-        cols=expand("{sample}/{sample}.stats.json", sample=config['samples']),
-        mpy=config["merge_stats"]
+        cols = expand("{sample}/{sample}.stats.json",
+                      sample=config['samples']),
+        mpy = config["merge_stats"]
     output: "stats.json"
-    singularity: containers["vtools"]
+    container: containers["vtools"]
     shell: "python {input.mpy} --collectstats {input.cols} "
            "> {output}"
 
@@ -483,11 +503,10 @@ rule stats_tsv:
     """Convert stats.json to tsv"""
     input:
         stats = rules.merge_stats.output,
-        sc=config["stats_to_tsv"]
-    output:
-        stats="stats.tsv"
-    singularity: containers["python3"]
-    shell: "python {input.sc} -i {input.stats} > {output.stats}"
+        sc = config["stats_to_tsv"]
+    output: "stats.tsv"
+    container: containers["python3"]
+    shell: "python {input.sc} -i {input.stats} > {output}"
 
 
 rule multiple_metrics:
@@ -496,11 +515,11 @@ rule multiple_metrics:
         bam = rules.markdup.output.bam,
         ref = config["reference"],
     params:
-        prefix="{sample}/bams/{sample}",
+        prefix = "{sample}/bams/{sample}",
     output:
-        alignment="{sample}/bams/{sample}.alignment_summary_metrics",
-        insert="{sample}/bams/{sample}.insert_size_metrics"
-    singularity: containers["picard"]
+        alignment = "{sample}/bams/{sample}.alignment_summary_metrics",
+        insert = "{sample}/bams/{sample}.insert_size_metrics"
+    container: containers["picard"]
     shell: "picard CollectMultipleMetrics "
            "I={input.bam} O={params.prefix} "
            "R={input.ref} "
@@ -513,14 +532,19 @@ rule multiqc:
     Depends on stats.tsv to forcefully run at end of pipeline
     """
     input:
-        stats="stats.tsv",
-        bam=expand("{sample}/bams/{sample}.bam", sample=config["samples"]),
-        metric=expand("{sample}/bams/{sample}.metrics", sample=config["samples"]),
-        alignment_metrics=expand("{sample}/bams/{sample}.alignment_summary_metrics", sample=config["samples"]),
-        insert_metrics=expand("{sample}/bams/{sample}.insert_size_metrics", sample=config["samples"]),
-    params:
-        odir=".",
-        rdir="multiqc_report"
+        stats = rules.stats_tsv.output,
+        bam = expand("{sample}/bams/{sample}.bam", sample=config["samples"]),
+        metric = expand("{sample}/bams/{sample}.metrics",
+                        sample=config["samples"]),
+        alignment_metrics = expand(
+                "{sample}/bams/{sample}.alignment_summary_metrics",
+                sample=config["samples"]
+        ),
+        insert_metrics = expand(
+                "{sample}/bams/{sample}.insert_size_metrics",
+                sample=config["samples"]
+        ),
     output: "multiqc_report/multiqc_report.html"
-    singularity: containers["multiqc"]
-    shell: "multiqc --data-format json -f -o {params.rdir} {params.odir} || touch {output}"
+    container: containers["multiqc"]
+    shell: "multiqc --data-format json --force --outdir multiqc_report . "
+           "|| touch {output}"
