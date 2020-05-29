@@ -105,7 +105,7 @@ rule all:
         multiqc = "multiqc_report/multiqc_report.html",
         stats = "stats.json",
         stats_tsv = "stats.tsv",
-        bais = expand("{sample}/bams/{sample}.markdup.bam.bai", sample=config["samples"]),
+        bam = expand("{sample}/bams/{sample}.bam", sample=config["samples"]),
         vcfs = expand("{sample}/vcf/{sample}.vcf.gz", sample=config["samples"]),
         vcf_tbi = expand("{sample}/vcf/{sample}.vcf.gz.tbi", sample=config["samples"]),
         gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=config["samples"]),
@@ -175,9 +175,9 @@ rule markdup:
         read_group=rg) for rg in get_readgroup(wildcards)),
         tmp = ancient("tmp")
     output:
-        bam = "{sample}/bams/{sample}.markdup.bam",
-        bai = "{sample}/bams/{sample}.markdup.bai",
-        metrics = "{sample}/bams/{sample}.markdup.metrics"
+        bam = "{sample}/bams/{sample}.bam",
+        bai = "{sample}/bams/{sample}.bai",
+        metrics = "{sample}/bams/{sample}.metrics"
     params:
         bams=markdup_bam_input
     singularity: containers["picard"]
@@ -190,9 +190,9 @@ rule markdup:
 rule bai:
     """Copy bai files as some genome browsers can only .bam.bai files"""
     input:
-        bai = "{sample}/bams/{sample}.markdup.bai"
+        bai = rules.markdup.output.bai
     output:
-        bai = "{sample}/bams/{sample}.markdup.bam.bai"
+        bai = "{sample}/bams/{sample}.bam.bai"
     singularity: containers["debian"]
     shell: "cp {input.bai} {output.bai}"
 
@@ -239,7 +239,7 @@ checkpoint scatterregions:
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
     input:
-        bam = "{sample}/bams/{sample}.markdup.bam",
+        bam = rules.markdup.output.bam,
         bqsr = "{sample}/bams/{sample}.baserecal.grp",
         dbsnp = config["dbsnp"],
         ref = config["reference"],
@@ -329,8 +329,8 @@ rule genotype_gather:
 rule mapped_reads_bases:
     """Calculate number of mapped reads"""
     input:
-        bam="{sample}/bams/{sample}.markdup.bam",
-        pywc=config["py_wordcount"]
+        bam = rules.markdup.output.bam,
+        pywc = config["py_wordcount"]
     output:
         reads="{sample}/bams/{sample}.mapped.num",
         bases="{sample}/bams/{sample}.mapped.basenum"
@@ -342,7 +342,7 @@ rule mapped_reads_bases:
 rule unique_reads_bases:
     """Calculate number of unique reads"""
     input:
-        bam="{sample}/bams/{sample}.markdup.bam",
+        bam = rules.markdup.output.bam,
         pywc=config["py_wordcount"]
     output:
         reads="{sample}/bams/{sample}.unique.num",
@@ -383,7 +383,7 @@ rule fastqc_postqc:
 rule covstats:
     """Calculate coverage statistics on bam file"""
     input:
-        bam="{sample}/bams/{sample}.markdup.bam",
+        bam = rules.markdup.output.bam,
         genome="current.genome",
         covpy=config["covstats"],
         bed=config.get("bedfile","")
@@ -497,7 +497,7 @@ rule stats_tsv:
 rule multiple_metrics:
     """Run picard CollectMultipleMetrics"""
     input:
-        bam = "{sample}/bams/{sample}.markdup.bam",
+        bam = rules.markdup.output.bam,
         ref = config["reference"],
     params:
         prefix="{sample}/bams/{sample}",
@@ -518,8 +518,8 @@ rule multiqc:
     """
     input:
         stats="stats.tsv",
-        bam=expand("{sample}/bams/{sample}.markdup.bam", sample=config["samples"]),
-        metric=expand("{sample}/bams/{sample}.markdup.metrics", sample=config["samples"]),
+        bam=expand("{sample}/bams/{sample}.bam", sample=config["samples"]),
+        metric=expand("{sample}/bams/{sample}.metrics", sample=config["samples"]),
         alignment_metrics=expand("{sample}/bams/{sample}.alignment_summary_metrics", sample=config["samples"]),
         insert_metrics=expand("{sample}/bams/{sample}.insert_size_metrics", sample=config["samples"]),
     params:

@@ -49,6 +49,14 @@
              - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:195:0:187:0,0,0"
 
    - path: "multiqc_report/multiqc_data/multiqc_picard_dups.json"
+   - path: "multiqc_report/multiqc_data/multiqc_fastqc.json"
+   - path: "multiqc_report/multiqc_data/multiqc_picard_AlignmentSummaryMetrics.json"
+   - path: "multiqc_report/multiqc_data/multiqc_picard_insertSize.json"
+     contains:
+             - '"SAMPLE_NAME": "micro",'
+     must_not_contain:
+             - '"SAMPLE_NAME": "micro.markdup",'
+
 
 
 - name: test-integration-small-scatter
@@ -277,8 +285,8 @@
    - path: "micro2/vcf/micro2.vcf.gz"
    - path: "micro1/vcf/micro1.g.vcf.gz"
    - path: "micro2/vcf/micro2.g.vcf.gz"
-   - path: "micro1/bams/micro1.markdup.bam"
-   - path: "micro2/bams/micro2.markdup.bam"
+   - path: "micro1/bams/micro1.bam"
+   - path: "micro2/bams/micro2.bam"
    - path: "stats.tsv"
      contains:
       - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases"

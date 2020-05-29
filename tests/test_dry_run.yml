@@ -10,6 +10,10 @@
       - "localrule all:"
       - "output: micro/vcf/micro.vcf.gz"
       - "output: micro/vcf/micro.g.vcf.gz"
+      - "multiple_metrics"
+      - "output: stats.tsv"
+      - "micro/bams/micro.alignment_summary_metrics"
+      - "micro/bams/micro.insert_size_metrics"
     must_not_contain:
       - "rror"
   stderr:
