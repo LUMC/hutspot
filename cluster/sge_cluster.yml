@@ -22,7 +22,7 @@ genotype_scatter:
 genotype_gather:
   vmem: 10G
 covstats:
-  vmem: 6G
+  vmem: 10G
 multiqc:
   vmem: 30G
 split_vcf:
@@ -34,4 +34,4 @@ fastqc_merged:
 fastqc_postqc:
   threads: 4
 scatterregions:
-  vmem: 10G
+  vmem: 30G

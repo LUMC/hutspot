@@ -231,7 +231,7 @@ checkpoint scatterregions:
         directory("scatter")
     singularity: containers["biopet-scatterregions"]
     shell: "mkdir -p {output} && "
-           "biopet-scatterregions -Xmx8G "
+           "biopet-scatterregions -Xmx24G "
            "--referenceFasta {input.ref} --scatterSize {params.size} "
            "--outputDir scatter"
 
