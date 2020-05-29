@@ -67,7 +67,7 @@ containers = {
     "fastqc": "docker://quay.io/biocontainers/fastqc:0.11.7--4",
     "gatk": "docker://broadinstitute/gatk3:3.7-0",
     "multiqc": "docker://quay.io/biocontainers/multiqc:1.8--py_2",
-    "picard-2.14": "docker://quay.io/biocontainers/picard:2.14--py36_0",
+    "picard": "docker://quay.io/biocontainers/picard:2.22.8--0",
     "python3": "docker://python:3.6-slim",
     "samtools-1.7-python-3.6": "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0",
     "vtools": "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
@@ -180,7 +180,7 @@ rule markdup:
         metrics = "{sample}/bams/{sample}.markdup.metrics"
     params:
         bams=markdup_bam_input
-    singularity: containers["picard-2.14"]
+    singularity: containers["picard"]
     shell: "picard -Xmx4G -Djava.io.tmpdir={input.tmp} MarkDuplicates "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "{params.bams} OUTPUT={output.bam} "
@@ -494,13 +494,34 @@ rule stats_tsv:
     shell: "python {input.sc} -i {input.stats} > {output.stats}"
 
 
+rule multiple_metrics:
+    """Run picard CollectMultipleMetrics"""
+    input:
+        bam = "{sample}/bams/{sample}.markdup.bam",
+        ref = config["reference"],
+    params:
+        prefix="{sample}/bams/{sample}",
+    output:
+        alignment="{sample}/bams/{sample}.alignment_summary_metrics",
+        insert="{sample}/bams/{sample}.insert_size_metrics"
+    singularity: containers["picard"]
+    shell: "picard CollectMultipleMetrics "
+           "I={input.bam} O={params.prefix} "
+           "R={input.ref} "
+           "PROGRAM=CollectAlignmentSummaryMetrics "
+           "PROGRAM=CollectInsertSizeMetrics "
+
 rule multiqc:
     """
     Create multiQC report
     Depends on stats.tsv to forcefully run at end of pipeline
     """
     input:
-        stats="stats.tsv"
+        stats="stats.tsv",
+        bam=expand("{sample}/bams/{sample}.markdup.bam", sample=config["samples"]),
+        metric=expand("{sample}/bams/{sample}.markdup.metrics", sample=config["samples"]),
+        alignment_metrics=expand("{sample}/bams/{sample}.alignment_summary_metrics", sample=config["samples"]),
+        insert_metrics=expand("{sample}/bams/{sample}.insert_size_metrics", sample=config["samples"]),
     params:
         odir=".",
         rdir="multiqc_report"
