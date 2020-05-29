@@ -48,6 +48,8 @@
 
              - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:195:0:187:0,0,0"
 
+   - path: "multiqc_report/multiqc_data/multiqc_picard_dups.json"
+
 
 - name: test-integration-small-scatter
   tags:

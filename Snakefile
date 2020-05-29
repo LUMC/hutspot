@@ -507,4 +507,4 @@ rule multiqc:
     output:
         "multiqc_report/multiqc_report.html"
     singularity: containers["multiqc"]
-    shell: "multiqc -f -o {params.rdir} {params.odir} || touch {output}"
+    shell: "multiqc --data-format json -f -o {params.rdir} {params.odir} || touch {output}"
