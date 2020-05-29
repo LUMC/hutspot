@@ -149,8 +149,8 @@ rule cutadapt:
 rule align:
     """Align fastq files"""
     input:
-        r1 = "{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
-        r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz",
+        r1 = rules.cutadapt.output.r1,
+        r2 = rules.cutadapt.output.r2,
         ref = config["reference"],
         tmp = ancient("tmp")
     params:
@@ -210,14 +210,13 @@ rule baserecal:
         read_group=rg) for rg in get_readgroup(wildcards)),
         ref = config["reference"],
         vcfs = config["known_sites"]
-    output:
-        grp = "{sample}/bams/{sample}.baserecal.grp"
+    output: "{sample}/bams/{sample}.baserecal.grp"
     params:
         known_sites = " ".join(expand("-knownSites {vcf}", vcf=config["known_sites"])),
         bams = bqsr_bam_input
     singularity: containers["gatk"]
     shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
-           "BaseRecalibrator {params.bams} -o {output.grp} -nct 8 "
+           "BaseRecalibrator {params.bams} -o {output} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
            "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
 
@@ -240,7 +239,7 @@ rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
     input:
         bam = rules.markdup.output.bam,
-        bqsr = "{sample}/bams/{sample}.baserecal.grp",
+        bqsr = rules.baserecal.output,
         dbsnp = config["dbsnp"],
         ref = config["reference"],
         region = "scatter/scatter-{chunk}.bed"
@@ -285,8 +284,8 @@ rule gvcf_gather:
 rule genotype_scatter:
     """Run GATK's GenotypeGVCFs by chunk"""
     input:
-        gvcf = "{sample}/vcf/{sample}.{chunk}.g.vcf.gz",
-        tbi = "{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi",
+        gvcf = rules.gvcf_scatter.output.gvcf,
+        tbi = rules.gvcf_scatter.output.gvcf_tbi,
         ref= config["reference"]
     output:
         vcf = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz"),
@@ -371,8 +370,8 @@ rule fastqc_postqc:
     Run fastqc on fastq files post pre-processing
     """
     input:
-        r1="{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
-        r2="{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz",
+        r1 = rules.cutadapt.output.r1,
+        r2 = rules.cutadapt.output.r2
     output:
         directory("{sample}/pre_process/trimmed-{sample}-{read_group}/")
     singularity: containers["fastqc"]
@@ -402,61 +401,14 @@ rule covstats:
 rule vtools_coverage:
     """Calculate coverage statistics per transcript"""
     input:
-        gvcf="{sample}/vcf/{sample}.g.vcf.gz",
-        tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi",
+        gvcf = rules.gvcf_gather.output.gvcf,
+        tbi = rules.gvcf_gather.output.gvcf_tbi,
         ref = config.get('refflat', "")
     output:
         tsv="{sample}/coverage/refFlat_coverage.tsv"
     singularity: containers["vtools"]
     shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
 
-
-## collection
-if "bedfile" in config:
-    rule collectstats:
-        """Collect all stats for a particular sample with beds"""
-        input:
-            mnum="{sample}/bams/{sample}.mapped.num",
-            mbnum="{sample}/bams/{sample}.mapped.basenum",
-            unum="{sample}/bams/{sample}.unique.num",
-            ubnum="{sample}/bams/{sample}.usable.basenum",
-            cov="{sample}/coverage/covstats.json",
-            cutadapt = "{sample}/cutadapt.json",
-            colpy=config["collect_stats"]
-        params:
-            sample_name="{sample}",
-            fthresh=config["female_threshold"]
-        output:
-            "{sample}/{sample}.stats.json"
-        singularity: containers["vtools"]
-        shell: "python {input.colpy} --sample-name {params.sample_name} "
-               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
-               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-               "--female-threshold {params.fthresh} "
-               "--cutadapt {input.cutadapt} "
-               "{input.cov} > {output}"
-else:
-    rule collectstats:
-        """Collect all stats for a particular sample without beds"""
-        input:
-            mnum = "{sample}/bams/{sample}.mapped.num",
-            mbnum = "{sample}/bams/{sample}.mapped.basenum",
-            unum = "{sample}/bams/{sample}.unique.num",
-            ubnum = "{sample}/bams/{sample}.usable.basenum",
-            cutadapt = "{sample}/cutadapt.json",
-            colpy = config["collect_stats"]
-        params:
-            sample_name = "{sample}",
-            fthresh = config["female_threshold"]
-        output:
-            "{sample}/{sample}.stats.json"
-        singularity: containers["vtools"]
-        shell: "python {input.colpy} --sample-name {params.sample_name} "
-               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
-               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-               "--female-threshold {params.fthresh} "
-               "--cutadapt {input.cutadapt} "
-               "> {output}"
 
 rule collect_cutadapt_summary:
     """ Colect cutadapt summary from each readgroup per sample """
@@ -471,22 +423,66 @@ rule collect_cutadapt_summary:
            "--cutadapt-summary {input.cutadapt} > {output}"
 
 
+## collection
+if "bedfile" in config:
+    rule collectstats:
+        """Collect all stats for a particular sample with beds"""
+        input:
+            mnum = rules.mapped_reads_bases.output.reads,
+            mbnum = rules.mapped_reads_bases.output.bases,
+            unum = rules.unique_reads_bases.output.reads,
+            ubnum = rules.unique_reads_bases.output.bases,
+            cov = rules.covstats.output.covj,
+            cutadapt = rules.collect_cutadapt_summary.output,
+            colpy=config["collect_stats"]
+        params:
+            sample_name="{sample}",
+            fthresh=config["female_threshold"]
+        output: "{sample}/{sample}.stats.json"
+        singularity: containers["vtools"]
+        shell: "python {input.colpy} --sample-name {params.sample_name} "
+               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
+               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
+               "--female-threshold {params.fthresh} "
+               "--cutadapt {input.cutadapt} "
+               "{input.cov} > {output}"
+else:
+    rule collectstats:
+        """Collect all stats for a particular sample without beds"""
+        input:
+            mnum = rules.mapped_reads_bases.output.reads,
+            mbnum = rules.mapped_reads_bases.output.bases,
+            unum = rules.unique_reads_bases.output.reads,
+            ubnum = rules.unique_reads_bases.output.bases,
+            cutadapt = rules.collect_cutadapt_summary.output,
+            colpy=config["collect_stats"]
+        params:
+            sample_name = "{sample}",
+            fthresh = config["female_threshold"]
+        output: "{sample}/{sample}.stats.json"
+        singularity: containers["vtools"]
+        shell: "python {input.colpy} --sample-name {params.sample_name} "
+               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
+               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
+               "--female-threshold {params.fthresh} "
+               "--cutadapt {input.cutadapt} "
+               "> {output}"
+
 rule merge_stats:
     """Merge all stats of all samples"""
     input:
         cols=expand("{sample}/{sample}.stats.json", sample=config['samples']),
         mpy=config["merge_stats"]
-    output:
-        stats="stats.json"
+    output: "stats.json"
     singularity: containers["vtools"]
     shell: "python {input.mpy} --collectstats {input.cols} "
-           "> {output.stats}"
+           "> {output}"
 
 
 rule stats_tsv:
     """Convert stats.json to tsv"""
     input:
-        stats="stats.json",
+        stats = rules.merge_stats.output,
         sc=config["stats_to_tsv"]
     output:
         stats="stats.tsv"
@@ -525,7 +521,6 @@ rule multiqc:
     params:
         odir=".",
         rdir="multiqc_report"
-    output:
-        "multiqc_report/multiqc_report.html"
+    output: "multiqc_report/multiqc_report.html"
     singularity: containers["multiqc"]
     shell: "multiqc --data-format json -f -o {params.rdir} {params.odir} || touch {output}"
