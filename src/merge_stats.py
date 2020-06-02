@@ -31,6 +31,20 @@ def parse_json(path):
         return json.load(handle)
 
 
+def add_picard_insertSize(data, filename):
+    """ Add the picard insertSize for each sample to data """
+    insert = parse_json(filename)
+
+    for sample in insert.values():
+        name = sample.pop('SAMPLE_NAME')
+        for d in data['sample_stats']:
+            if d['sample_name'] == name:
+                d['picard_insertSize'] = sample
+                break
+        else:
+            raise RuntimeError(f"Unknown sample {name}")
+
+
 def main(collectstats):
     data = dict()
     data["sample_stats"] = list()
@@ -38,6 +52,9 @@ def main(collectstats):
     for stats in collectstats:
         cs = parse_json(stats)
         data["sample_stats"].append(cs)
+
+    if args.picard_insertSize:
+        add_picard_insertSize(data, args.picard_insertSize)
     print(json.dumps(data))
 
 
@@ -48,5 +65,9 @@ if __name__ == "__main__":
                         nargs='+',
                         required=True,
                         help='Path to the collected stats for each sample')
+    parser.add_argument('--picard-insertSize',
+                        required=False,
+                        help=('Path to multiQC json summary for picard '
+                        'insertSize'))
     args = parser.parse_args()
     main(args.collectstats)

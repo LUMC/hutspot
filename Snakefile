@@ -437,26 +437,6 @@ rule collectstats:
            "--cutadapt {input.cutadapt} "
            "{input.cov} > {output}"
 
-rule merge_stats:
-    """Merge all stats of all samples"""
-    input:
-        cols = expand("{sample}/{sample}.stats.json",
-                      sample=config['samples']),
-        mpy = config["merge_stats"]
-    output: "stats.json"
-    container: containers["vtools"]
-    shell: "python {input.mpy} --collectstats {input.cols} "
-           "> {output}"
-
-rule stats_tsv:
-    """Convert stats.json to tsv"""
-    input:
-        stats = rules.merge_stats.output,
-        sc = config["stats_to_tsv"]
-    output: "stats.tsv"
-    container: containers["python3"]
-    shell: "python {input.sc} -i {input.stats} > {output}"
-
 rule multiple_metrics:
     """Run picard CollectMultipleMetrics"""
     input:
@@ -480,7 +460,6 @@ rule multiqc:
     Depends on stats.tsv to forcefully run at end of pipeline
     """
     input:
-        stats = rules.stats_tsv.output,
         bam = expand("{sample}/bams/{sample}.bam", sample=config["samples"]),
         metric = expand("{sample}/bams/{sample}.metrics",
                         sample=config["samples"]),
@@ -492,7 +471,36 @@ rule multiqc:
                 "{sample}/bams/{sample}.insert_size_metrics",
                 sample=config["samples"]
         ),
-    output: "multiqc_report/multiqc_report.html"
+        fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/"
+                      for read_group, sample in get_readgroup_per_sample()),
+
+        fastqc_trim = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/"
+                      for read_group, sample in get_readgroup_per_sample())
+    output:
+        html = "multiqc_report/multiqc_report.html",
+        insert = "multiqc_report/multiqc_data/multiqc_picard_insertSize.json"
     container: containers["multiqc"]
     shell: "multiqc --data-format json --force --outdir multiqc_report . "
            "|| touch {output}"
+
+rule merge_stats:
+    """Merge all stats of all samples"""
+    input:
+        cols = expand("{sample}/{sample}.stats.json",
+                      sample=config['samples']),
+        mpy = config["merge_stats"],
+        insertSize = rules.multiqc.output.insert
+    output: "stats.json"
+    container: containers["vtools"]
+    shell: "python {input.mpy} --collectstats {input.cols} "
+           "--picard-insertSize {input.insertSize} > {output}"
+
+rule stats_tsv:
+    """Convert stats.json to tsv"""
+    input:
+        stats = rules.merge_stats.output,
+        sc = config["stats_to_tsv"]
+    output: "stats.tsv"
+    container: containers["python3"]
+    shell: "python {input.sc} -i {input.stats} > {output}"
+

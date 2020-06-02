@@ -56,6 +56,10 @@
              - '"SAMPLE_NAME": "micro",'
      must_not_contain:
              - '"SAMPLE_NAME": "micro.markdup",'
+   - path: "stats.json"
+     contains:
+             - "MEDIAN_INSERT_SIZE"
+             - "WIDTH_OF_99_PERCENT"
 
 
 
