@@ -303,3 +303,8 @@
   files:
    - path: "micro/bams/micro.hs_metrics.txt"
    - path: "multiqc_report/multiqc_data/multiqc_picard_HsMetrics.json"
+   - path: "stats.json"
+     contains:
+      - "picard_HsMetrics"
+      - "BAIT_SET"
+      - "FOLD_80_BASE_PENALTY"

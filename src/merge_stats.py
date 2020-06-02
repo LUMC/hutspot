@@ -45,16 +45,32 @@ def add_picard_insertSize(data, filename):
             raise RuntimeError(f"Unknown sample {name}")
 
 
-def main(collectstats):
+def add_picard_HsMetrics(data, filename):
+    """ Add the picard HsMetrics for each sample to data """
+    HsMetrics = parse_json(filename)
+
+    for sample in HsMetrics:
+        for d in data['sample_stats']:
+            if d['sample_name'] == sample:
+                d['picard_HsMetrics'] = HsMetrics[sample]
+                break
+        else:
+            raise RuntimeError(f"Unknown sample {sample}")
+
+
+def main(args):
     data = dict()
     data["sample_stats"] = list()
 
-    for stats in collectstats:
+    for stats in args.collectstats:
         cs = parse_json(stats)
         data["sample_stats"].append(cs)
 
     if args.picard_insertSize:
         add_picard_insertSize(data, args.picard_insertSize)
+
+    if args.picard_HsMetrics:
+        add_picard_HsMetrics(data, args.picard_HsMetrics)
     print(json.dumps(data))
 
 
@@ -69,5 +85,10 @@ if __name__ == "__main__":
                         required=False,
                         help=('Path to multiQC json summary for picard '
                         'insertSize'))
+    parser.add_argument('--picard-HsMetrics',
+                        required=False,
+                        nargs='?',
+                        help=('Path to multiQC json summary for picard '
+                        'HsMetrics'))
     args = parser.parse_args()
-    main(args.collectstats)
+    main(args)
