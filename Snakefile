@@ -416,48 +416,26 @@ rule collect_cutadapt_summary:
     shell: "python {input.cutadapt_summary} --sample {wildcards.sample} "
            "--cutadapt-summary {input.cutadapt} > {output}"
 
-## collection
-if "bedfile" in config:
-    rule collectstats:
-        """Collect all stats for a particular sample with beds"""
-        input:
-            mnum = rules.mapped_reads_bases.output.reads,
-            mbnum = rules.mapped_reads_bases.output.bases,
-            unum = rules.unique_reads_bases.output.reads,
-            ubnum = rules.unique_reads_bases.output.bases,
-            cov = rules.covstats.output.covj,
-            cutadapt = rules.collect_cutadapt_summary.output,
-            colpy = config["collect_stats"]
-        params:
-            fthresh = config["female_threshold"]
-        output: "{sample}/{sample}.stats.json"
-        container: containers["vtools"]
-        shell: "python {input.colpy} --sample-name {wildcards.sample} "
-               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
-               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-               "--female-threshold {params.fthresh} "
-               "--cutadapt {input.cutadapt} "
-               "{input.cov} > {output}"
-else:
-    rule collectstats:
-        """Collect all stats for a particular sample without beds"""
-        input:
-            mnum = rules.mapped_reads_bases.output.reads,
-            mbnum = rules.mapped_reads_bases.output.bases,
-            unum = rules.unique_reads_bases.output.reads,
-            ubnum = rules.unique_reads_bases.output.bases,
-            cutadapt = rules.collect_cutadapt_summary.output,
-            colpy = config["collect_stats"]
-        params:
-            fthresh = config["female_threshold"]
-        output: "{sample}/{sample}.stats.json"
-        container: containers["vtools"]
-        shell: "python {input.colpy} --sample-name {wildcards.sample} "
-               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
-               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-               "--female-threshold {params.fthresh} "
-               "--cutadapt {input.cutadapt} "
-               "> {output}"
+rule collectstats:
+    """Collect all stats for a particular sample"""
+    input:
+        mnum = rules.mapped_reads_bases.output.reads,
+        mbnum = rules.mapped_reads_bases.output.bases,
+        unum = rules.unique_reads_bases.output.reads,
+        ubnum = rules.unique_reads_bases.output.bases,
+        cov = rules.covstats.output.covj if "bedfile" in config else ".",
+        cutadapt = rules.collect_cutadapt_summary.output,
+        colpy = config["collect_stats"]
+    params:
+        fthresh = config["female_threshold"]
+    output: "{sample}/{sample}.stats.json"
+    container: containers["python3"]
+    shell: "python {input.colpy} --sample-name {wildcards.sample} "
+           "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
+           "--unique-num {input.unum} --usable-basenum {input.ubnum} "
+           "--female-threshold {params.fthresh} "
+           "--cutadapt {input.cutadapt} "
+           "{input.cov} > {output}"
 
 rule merge_stats:
     """Merge all stats of all samples"""

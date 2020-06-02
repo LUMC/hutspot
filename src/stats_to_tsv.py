@@ -86,8 +86,7 @@ if __name__ == "__main__":
             "usable_bases": sample['n_usable_bases'],
         })
         if "covstats" in sample:
-            for cov_d in sample['covstats']:
-                sample_dict.update(get_covstats(cov_d))
+            sample_dict.update(get_covstats(sample['covstats']))
         sdicts.append(sample_dict)
 
     lens = [len(list(x.keys())) for x in sdicts]
