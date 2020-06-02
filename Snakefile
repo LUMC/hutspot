@@ -73,20 +73,6 @@ containers = {
     "vtools": "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
 }
 
-def get_forward(wildcards):
-    """Get the forward fastq file from the config"""
-    return (
-        config["samples"][wildcards.sample]["read_groups"]
-                [wildcards.read_group]["R1"]
-    )
-
-def get_reverse(wildcards):
-    """Get the reverse fastq file from the config"""
-    return (
-        config["samples"][wildcards.sample]["read_groups"]
-            [wildcards.read_group]["R2"]
-    )
-
 def get_readgroup(wildcards):
     return config["samples"][wildcards.sample]["read_groups"]
 
@@ -149,8 +135,8 @@ rule genome:
 rule cutadapt:
     """Clip fastq files"""
     input:
-        r1 = get_forward,
-        r2 = get_reverse
+        r1 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R1']),
+        r2 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R2']),
     output:
         r1 = "{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
         r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz",
@@ -192,6 +178,7 @@ rule markdup:
         ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(
             sample=wildcards.sample, read_group=rg)
             for rg in get_readgroup(wildcards)),
+        #bam = lambda wc: ('f{wc.sample}/bams/{wc.sample}-{readgroup}' for read_group in config['samples'][wc.sample}]['read_groups']),
         tmp = ancient("tmp")
     output:
         bam = "{sample}/bams/{sample}.bam",
@@ -379,8 +366,8 @@ rule unique_reads_bases:
 rule fastqc_raw:
     """Run fastqc on raw fastq files"""
     input:
-        r1 = get_forward,
-        r2 = get_reverse
+        r1 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R1']),
+        r2 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R2']),
     output:
         directory("{sample}/pre_process/raw-{sample}-{read_group}/")
     container: containers["fastqc"]
