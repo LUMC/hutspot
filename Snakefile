@@ -81,7 +81,6 @@ def get_readgroup_per_sample():
         for rg in config["samples"][sample]["read_groups"]:
             yield rg, sample
 
-
 def coverage_stats(wildcards):
     files = expand("{sample}/coverage/refFlat_coverage.tsv",
                    sample=config["samples"])
@@ -117,7 +116,6 @@ rule all:
         cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt"
                     for read_group, sample in get_readgroup_per_sample()),
         coverage_stats = coverage_stats,
-
 
 rule create_markdup_tmp:
     """Create tmp directory for mark duplicates"""
@@ -202,7 +200,6 @@ rule bai:
     container: containers["debian"]
     shell: "cp {input.bai} {output.bai}"
 
-
 def bqsr_bam_input(wildcards):
     """Generate the bam input string for each read group for BQSR"""
     template = "-I {sample}/bams/{sample}-{read_group}.sorted.bam"
@@ -243,7 +240,6 @@ checkpoint scatterregions:
            "biopet-scatterregions -Xmx24G "
            "--referenceFasta {input.ref} --scatterSize {params.size} "
            "--outputDir scatter"
-
 
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
@@ -308,18 +304,15 @@ rule genotype_scatter:
            "GenotypeGVCFs -R {input.ref} "
            "-V {input.gvcf} -o '{output.vcf}'"
 
-
 def aggregate_vcf(wildcards):
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
     return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz",
        i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
 
-
 def aggregate_vcf_tbi(wildcards):
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
     return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz.tbi",
        i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
-
 
 rule genotype_gather:
     """Gather all genotyping VCFs"""
@@ -334,7 +327,6 @@ rule genotype_gather:
            "--output {output.vcf} --output-type z && "
            "bcftools index --tbi --output-file {output.vcf_tbi} {output.vcf}"
 
-
 ## bam metrics
 rule mapped_reads_bases:
     """Calculate number of mapped reads"""
@@ -348,7 +340,6 @@ rule mapped_reads_bases:
     shell: "samtools view -F 4 {input.bam} | cut -f 10 | python {input.pywc} "
            "--reads {output.reads} --bases {output.bases}"
 
-
 rule unique_reads_bases:
     """Calculate number of unique reads"""
     input:
@@ -361,7 +352,6 @@ rule unique_reads_bases:
     shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f 10 | "
            "python {input.pywc} --reads {output.reads} --bases {output.bases}"
 
-
 ## fastqc
 rule fastqc_raw:
     """Run fastqc on raw fastq files"""
@@ -373,7 +363,6 @@ rule fastqc_raw:
     container: containers["fastqc"]
     shell: "fastqc --threads 4 --nogroup -o {output} {input.r1} {input.r2} "
 
-
 rule fastqc_postqc:
     """Run fastqc on fastq files post pre-processing"""
     input:
@@ -383,7 +372,6 @@ rule fastqc_postqc:
         directory("{sample}/pre_process/trimmed-{sample}-{read_group}/")
     container: containers["fastqc"]
     shell: "fastqc --threads 4 --nogroup -o {output} {input.r1} {input.r2} "
-
 
 ## coverage
 rule covstats:
@@ -404,7 +392,6 @@ rule covstats:
            "--title 'Targets coverage' --subtitle '{params.subt}' "
            "> {output.covj}"
 
-
 rule vtools_coverage:
     """Calculate coverage statistics per transcript"""
     input:
@@ -415,7 +402,6 @@ rule vtools_coverage:
         tsv = "{sample}/coverage/refFlat_coverage.tsv"
     container: containers["vtools"]
     shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
-
 
 rule collect_cutadapt_summary:
     """Colect cutadapt summary from each readgroup per sample """
@@ -429,7 +415,6 @@ rule collect_cutadapt_summary:
     container: containers["python3"]
     shell: "python {input.cutadapt_summary} --sample {wildcards.sample} "
            "--cutadapt-summary {input.cutadapt} > {output}"
-
 
 ## collection
 if "bedfile" in config:
@@ -485,7 +470,6 @@ rule merge_stats:
     shell: "python {input.mpy} --collectstats {input.cols} "
            "> {output}"
 
-
 rule stats_tsv:
     """Convert stats.json to tsv"""
     input:
@@ -494,7 +478,6 @@ rule stats_tsv:
     output: "stats.tsv"
     container: containers["python3"]
     shell: "python {input.sc} -i {input.stats} > {output}"
-
 
 rule multiple_metrics:
     """Run picard CollectMultipleMetrics"""
