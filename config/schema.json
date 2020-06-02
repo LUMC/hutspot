@@ -12,7 +12,8 @@
     "optional": [
         "scatter_size",
         "female_threshold",
-        "bedfile"
+        "bedfile",
+        "baitsfile"
     ],
     "properties": {
         "samples": {
@@ -60,6 +61,10 @@
     },
     "bedfile": {
         "description": "Bed file to calculate the coverage over",
+        "type": "string"
+    },
+    "baitsfile": {
+        "description": "Bed file of the baits of the capture kit",
         "type": "string"
     },
     "refflat": {

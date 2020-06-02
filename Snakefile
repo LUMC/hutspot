@@ -454,6 +454,43 @@ rule multiple_metrics:
            "PROGRAM=CollectAlignmentSummaryMetrics "
            "PROGRAM=CollectInsertSizeMetrics "
 
+rule bed_to_interval:
+    """Run picard BedToIntervalList
+
+    This is needed to convert the bed files for the capture kit to a format
+    picard can read
+    """
+    input:
+        targets = config.get("bedfile",""),
+        baits = config.get("baitsfile",""),
+        ref = config["reference"]
+    output:
+        target_interval = "target.interval",
+        baits_interval = "baits.interval"
+    output:
+    container: containers["picard"]
+    shell: "picard BedToIntervalList "
+            "I={input.targets} O={output.target_interval} "
+            "SD={input.ref} && "
+            "picard BedToIntervalList "
+            "I={input.baits} O={output.baits_interval} "
+            "SD={input.ref} "
+
+rule hs_metrics:
+    """Run picard CollectHsMetrics"""
+    input:
+        bam = rules.markdup.output.bam,
+        ref = config["reference"],
+        targets = rules.bed_to_interval.output.target_interval,
+        baits = rules.bed_to_interval.output.baits_interval,
+    output: "{sample}/bams/{sample}.hs_metrics.txt"
+    container: containers["picard"]
+    shell: "picard CollectHsMetrics "
+           "I={input.bam} O={output} "
+           "R={input.ref} "
+           "BAIT_INTERVALS={input.baits} "
+           "TARGET_INTERVALS={input.targets}"
+
 rule multiqc:
     """
     Create multiQC report
@@ -475,7 +512,11 @@ rule multiqc:
                       for read_group, sample in get_readgroup_per_sample()),
 
         fastqc_trim = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/"
-                      for read_group, sample in get_readgroup_per_sample())
+                      for read_group, sample in get_readgroup_per_sample()),
+
+        hs_metric = expand("{sample}/bams/{sample}.hs_metrics.txt",
+                           sample=config["samples"]) if "baitsfile" in config else []
+
     output:
         html = "multiqc_report/multiqc_report.html",
         insert = "multiqc_report/multiqc_data/multiqc_picard_insertSize.json"

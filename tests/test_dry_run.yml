@@ -21,3 +21,23 @@
       - "rror"
   tags:
     - dry-run
+
+- name: test-dry-run-target-baits
+  tags:
+    - dry-run
+  command: >
+    snakemake
+    -n -r -p -s Snakefile
+    --configfile tests/data/config/sample_config_target_baits.json
+  exit_code: 0
+  stdout:
+    contains:
+      - "Job counts"
+      - "localrule all:"
+      - "hs_metrics"
+      - "micro.hs_metrics.txt"
+    must_not_contain:
+      - "rror"
+  stderr:
+    must_not_contain:
+      - "rror"
