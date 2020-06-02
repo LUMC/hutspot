@@ -81,9 +81,8 @@ def main(args):
         "n_usable_bases": ubnum
     }
 
-    # "." is used to pass an 'empty' file from snakemake, since all snakemake
-    # inputs must be files or folders which exist
-    if args.covstats != ".":
+    # If a covstats file was specified
+    if args.covstats:
         # Read the json file
         covstats = parse_json_file(args.covstats)
         # Format the coverage data and determine the gender
@@ -116,7 +115,7 @@ if __name__ == "__main__":
                         help="Female threshold of X/all cov")
     parser.add_argument("--cutadapt", required=True,
                         help="Cutadapt summary output")
-    parser.add_argument("covstats",
+    parser.add_argument("--covstats", nargs="?",
                         help="Coverage statistics")
 
     args = parser.parse_args()

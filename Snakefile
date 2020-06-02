@@ -423,7 +423,7 @@ rule collectstats:
         mbnum = rules.mapped_reads_bases.output.bases,
         unum = rules.unique_reads_bases.output.reads,
         ubnum = rules.unique_reads_bases.output.bases,
-        cov = rules.covstats.output.covj if "bedfile" in config else ".",
+        cov = rules.covstats.output.covj if "bedfile" in config else [],
         cutadapt = rules.collect_cutadapt_summary.output,
         colpy = config["collect_stats"]
     params:
@@ -435,7 +435,7 @@ rule collectstats:
            "--unique-num {input.unum} --usable-basenum {input.ubnum} "
            "--female-threshold {params.fthresh} "
            "--cutadapt {input.cutadapt} "
-           "{input.cov} > {output}"
+           "--covstats {input.cov} > {output}"
 
 rule multiple_metrics:
     """Run picard CollectMultipleMetrics"""
