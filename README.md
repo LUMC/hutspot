@@ -145,8 +145,7 @@ The following configuration values are **required**:
 | `reference` | Absolute path to fasta file |
 | `samples` | One or more samples, with associated fastq files |
 | `dbsnp` | Path to dbSNP VCF file|
-| `known_sites` | Path to one or more VCF files with known sites. Can be the
-same as the `dbsnp` file|
+| `known_sites` | Path to one or more VCF files with known sites. Can be the same as the `dbsnp` file|
 
 
 The following configuration options are **optional**:
@@ -155,11 +154,8 @@ The following configuration options are **optional**:
 | ------------- | ----------- |
 | `targetsfile` | Bed file of the targets of the capture kit. Used to calculate coverage |
 | `baitsfile` | Bed file of the baits of the capture kit. Used to calculate picard HsMetrics |
-| `female_threshold` | Float between 0 and 1 that signifies the threshold of
-the ratio between coverage on X/overall coverage that 'calls' a sample as
-female. Default = 0.6 |
-| `scatter_size` | The size of chunks to divide the reference into for parallel
-execution. Default = 1000000000 |
+| `female_threshold` | Float between 0 and 1 that signifies the threshold of the ratio between coverage on X/overall coverage that 'calls' a sample as female. Default = 0.6 |
+| `scatter_size` | The size of chunks to divide the reference into for parallel execution. Default = 1000000000 |
 
 
 ## Cluster configuration
