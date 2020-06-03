@@ -1,50 +1,47 @@
 - name: test-no-reference
+  tags:
+    - sanity
   command: >
-    snakemake
-    -n -r -p -s Snakefile
-    --configfile tests/data/config/invalid_config_no_ref.json
+    snakemake -n -r -p -s Snakefile --configfile
+    tests/data/config/invalid_config_no_ref.json
   exit_code: 1
   stdout:
     contains:
-        - "Invalid --configfile: 'reference' is a required property"
-  tags:
-    - sanity
+      - 'Invalid --configfile: ''reference'' is a required property'
 
 - name: test-reference-does-not-exist
+  tags:
+    - sanity
   command: >
-    snakemake
-    -n -r -p -s Snakefile
-    --configfile tests/data/config/invalid_config_fake_ref.json
-
+    snakemake -n -r -p -s Snakefile --configfile
+    tests/data/config/invalid_config_fake_ref.json
   exit_code: 1
   stdout:
     contains:
-      - "Missing input files for rule align:"
-      - "/this/file/is/not/there"
-  tags:
-    - sanity
+      - Missing input files for rule align
+      - /this/file/is/not/there
 
 - name: test-snakemake
-  command: >
-    snakemake --version
   tags:
     - sanity
+  command: |
+    snakemake --version
 
 - name: test-singluarity-version
-  command: >
+  tags:
+    - sanity
+  command: |
     singularity --version
   stdout:
     contains:
-      - "singularity version 3"
-  tags:
-    - sanity
+      - singularity version 3
 
 - name: test-baits-only
   tags:
     - sanity
   command: >
-    snakemake -n Snakefile
-    --configfile tests/data/config/invalid_config_baitsfile_only.json
+    snakemake -n Snakefile --configfile
+    tests/data/config/invalid_config_baitsfile_only.json
   exit_code: 1
   stdout:
     contains:

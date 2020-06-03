@@ -1,43 +1,41 @@
 - name: test-dry-run
+  tags:
+    - dry-run
   command: >
-    snakemake
-    -n -r -p -s Snakefile
-    --configfile tests/data/config/sample_config.json
+    snakemake -n -r -p -s Snakefile --configfile
+    tests/data/config/sample_config.json
   exit_code: 0
   stdout:
     contains:
-      - "Job counts"
-      - "localrule all:"
-      - "output: micro/vcf/micro.vcf.gz"
-      - "output: micro/vcf/micro.g.vcf.gz"
-      - "multiple_metrics"
-      - "output: stats.tsv"
-      - "micro/bams/micro.alignment_summary_metrics"
-      - "micro/bams/micro.insert_size_metrics"
+      - Job counts
+      - 'localrule all:'
+      - 'output: micro/vcf/micro.vcf.gz'
+      - 'output: micro/vcf/micro.g.vcf.gz'
+      - multiple_metrics
+      - 'output: stats.tsv'
+      - micro/bams/micro.alignment_summary_metrics
+      - micro/bams/micro.insert_size_metrics
     must_not_contain:
-      - "rror"
+      - rror
   stderr:
     must_not_contain:
-      - "rror"
-  tags:
-    - dry-run
+      - rror
 
 - name: test-dry-run-target-baits
   tags:
     - dry-run
   command: >
-    snakemake
-    -n -r -p -s Snakefile
-    --configfile tests/data/config/sample_config_target_baits.json
+    snakemake -n -r -p -s Snakefile --configfile
+    tests/data/config/sample_config_target_baits.json
   exit_code: 0
   stdout:
     contains:
-      - "Job counts"
-      - "localrule all:"
-      - "hs_metrics"
-      - "micro.hs_metrics.txt"
+      - Job counts
+      - 'localrule all:'
+      - hs_metrics
+      - micro.hs_metrics.txt
     must_not_contain:
-      - "rror"
+      - rror
   stderr:
     must_not_contain:
-      - "rror"
+      - rror

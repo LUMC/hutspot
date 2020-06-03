@@ -2,308 +2,258 @@
   tags:
     - integration
   command: >
-    snakemake
-    --use-singularity
-    --singularity-args ' --cleanenv --bind /tmp'
-    --jobs 1 -w 120
-    -r -p -s Snakefile
-    --configfile tests/data/config/sample_config.json
+    snakemake --use-singularity --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120 -r -p -s Snakefile --configfile
+    tests/data/config/sample_config.json
   stderr:
     contains:
-      - "Job counts"
-      - "localrule all:"
-      - "(100%) done"
+      - Job counts
+      - 'localrule all:'
+      - (100%) done
     must_not_contain:
-      - "rror"
+      - rror
   files:
-   - path: "micro/vcf/micro.vcf.gz"
-     contains:
-             - "chrM\t152\t.\tT\tC\t3960"
-             - "GT:AD:DP:GQ:PL\t1/1:0,130:130:99:3989,388,0"
-
-             - "chrM\t263\t.\tA\tG\t3238"
-             - "GT:AD:DP:GQ:PL\t1/1:0,108:108:99:3267,323,0"
-
-
-             - "chrM\t4745\t.\tA\tG\t5689"
-             - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,134:135:99:1|1:4745_A_G:5718,407,0"
-
-             - "chrM\t4769\t.\tA\tG\t5182"
-             - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,120:121:99:1|1:4745_A_G:5211,363,0"
-
-             - "chrM\t16023\t.\tG\tA\t1906"
-             - "GT:AD:DP:GQ:PL\t0/1:74,74:148:99:1935,0,1903"
-
-
-   - path: "micro/vcf/micro.g.vcf.gz"
-     contains:
-             - "chrM\t1\t.\tG\t<NON_REF>\t.\t.\tEND=151\tGT:DP:GQ:MIN_DP:PL\t0/0:164:99:137:0,120,1800"
-
-             - "chrM\t152\t.\tT\tC,<NON_REF>\t3960"
-             - "GT:AD:DP:GQ:PL:SB\t1/1:0,130,0:130:99:3989,388,0,3989,388,3989:0,0,47,83"
-
-             - "chrM\t16023\t.\tG\tA,<NON_REF>\t1906"
-             - "GT:AD:DP:GQ:PL:SB\t0/1:74,74,0:148:99:1935,0,1903,2157,2123,4280:36,38,37,37"
-
-             - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:195:0:187:0,0,0"
-
-   - path: "multiqc_report/multiqc_data/multiqc_picard_dups.json"
-   - path: "multiqc_report/multiqc_data/multiqc_fastqc.json"
-   - path: "multiqc_report/multiqc_data/multiqc_picard_AlignmentSummaryMetrics.json"
-   - path: "multiqc_report/multiqc_data/multiqc_picard_insertSize.json"
-     contains:
-             - '"SAMPLE_NAME": "micro",'
-     must_not_contain:
-             - '"SAMPLE_NAME": "micro.markdup",'
-   - path: "stats.json"
-     contains:
-             - "MEDIAN_INSERT_SIZE"
-             - "WIDTH_OF_99_PERCENT"
-
-
+    - path: micro/vcf/micro.vcf.gz
+      contains:
+        - "chrM\t152\t.\tT\tC\t3960"
+        - "GT:AD:DP:GQ:PL\t1/1:0,130:130:99:3989,388,0"
+        - "chrM\t263\t.\tA\tG\t3238"
+        - "GT:AD:DP:GQ:PL\t1/1:0,108:108:99:3267,323,0"
+        - "chrM\t4745\t.\tA\tG\t5689"
+        - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,134:135:99:1|1:4745_A_G:5718,407,0"
+        - "chrM\t4769\t.\tA\tG\t5182"
+        - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,120:121:99:1|1:4745_A_G:5211,363,0"
+        - "chrM\t16023\t.\tG\tA\t1906"
+        - "GT:AD:DP:GQ:PL\t0/1:74,74:148:99:1935,0,1903"
+    - path: micro/vcf/micro.g.vcf.gz
+      contains:
+        - "chrM\t1\t.\tG\t<NON_REF>\t.\t.\tEND=151\tGT:DP:GQ:MIN_DP:PL\t0/0:164:99:137:0,120,1800"
+        - "chrM\t152\t.\tT\tC,<NON_REF>\t3960"
+        - "GT:AD:DP:GQ:PL:SB\t1/1:0,130,0:130:99:3989,388,0,3989,388,3989:0,0,47,83"
+        - "chrM\t16023\t.\tG\tA,<NON_REF>\t1906"
+        - "GT:AD:DP:GQ:PL:SB\t0/1:74,74,0:148:99:1935,0,1903,2157,2123,4280:36,38,37,37"
+        - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:195:0:187:0,0,0"
+    - path: multiqc_report/multiqc_data/multiqc_picard_dups.json
+    - path: multiqc_report/multiqc_data/multiqc_fastqc.json
+    - path: multiqc_report/multiqc_data/multiqc_picard_AlignmentSummaryMetrics.json
+    - path: multiqc_report/multiqc_data/multiqc_picard_insertSize.json
+      contains:
+        - '"SAMPLE_NAME": "micro",'
+      must_not_contain:
+        - '"SAMPLE_NAME": "micro.markdup",'
+    - path: stats.json
+      contains:
+        - MEDIAN_INSERT_SIZE
+        - WIDTH_OF_99_PERCENT
 
 - name: test-integration-small-scatter
   tags:
     - integration
   command: >
-    snakemake
-    --use-singularity
-    --singularity-args ' --cleanenv --bind /tmp'
-    --jobs 1 -w 120
-    -r -p -s Snakefile
-    --configfile tests/data/config/sample_config_scatter.json
+    snakemake --use-singularity --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120 -r -p -s Snakefile --configfile
+    tests/data/config/sample_config_scatter.json
   stderr:
     contains:
-      - "Job counts"
-      - "localrule all:"
-      - "(100%) done"
+      - Job counts
+      - localrule all
+      - (100%) done
     must_not_contain:
-      - "rror"
+      - rror
   files:
-   - path: "scatter/scatter-0.bed"
-   - path: "scatter/scatter-15.bed"
-   - path: "micro/vcf/micro.vcf.gz.tbi"
-   - path: "micro/vcf/micro.vcf.gz"
-     contains:
-             - "chrM\t152\t.\tT\tC\t3960"
-             - "GT:AD:DP:GQ:PL\t1/1:0,130:130:99:3989,388,0"
-
-             - "chrM\t263\t.\tA\tG\t323"
-             - "GT:AD:DP:GQ:PL\t1/1:0,108:108:99:3267,323,0"
-
-             - "chrM\t4745\t.\tA\tG\t56"
-             - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,134:135:99:1|1:4745_A_G:5718,407,0"
-
-             - "chrM\t4769\t.\tA\tG\t5182"
-             - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,120:121:99:1|1:4745_A_G:5211,363,0"
-
-             - "chrM\t16023\t.\tG\tA\t1906"
-             - "GT:AD:DP:GQ:PL\t0/1:74,74:148:99:1935,0,1903"
-
-
-   - path: "micro/vcf/micro.g.vcf.gz"
-     contains:
-             - "chrM\t1\t.\tG\t<NON_REF>\t.\t.\tEND=151\tGT:DP:GQ:MIN_DP:PL\t0/0:164:99:137:0,120,1800"
-
-             - "chrM\t152\t.\tT\tC,<NON_REF>\t3960"
-             - "GT:AD:DP:GQ:PL:SB\t1/1:0,130,0:130:99:3989,388,0,3989,388,3989:0,0,47,83"
-
-             - "chrM\t16023\t.\tG\tA,<NON_REF>\t1906"
-             - "GT:AD:DP:GQ:PL:SB\t0/1:74,74,0:148:99:1935,0,1903,2157,2123,4280:36,38,37,37"
-
-             - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:195:0:187:0,0,0"
-
-   - path: "micro/vcf/micro.g.vcf.gz.tbi"
-   - path: "micro/vcf/micro.0.vcf.gz"
-     should_exist: false
-   - path: "micro/vcf/micro.0.vcf.gz.tbi"
-     should_exist: false
+    - path: scatter/scatter-0.bed
+    - path: scatter/scatter-15.bed
+    - path: micro/vcf/micro.vcf.gz.tbi
+    - path: micro/vcf/micro.vcf.gz
+      contains:
+        - "chrM\t152\t.\tT\tC\t3960"
+        - "GT:AD:DP:GQ:PL\t1/1:0,130:130:99:3989,388,0"
+        - "chrM\t263\t.\tA\tG\t323"
+        - "GT:AD:DP:GQ:PL\t1/1:0,108:108:99:3267,323,0"
+        - "chrM\t4745\t.\tA\tG\t56"
+        - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,134:135:99:1|1:4745_A_G:5718,407,0"
+        - "chrM\t4769\t.\tA\tG\t5182"
+        - "GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,120:121:99:1|1:4745_A_G:5211,363,0"
+        - "chrM\t16023\t.\tG\tA\t1906"
+        - "GT:AD:DP:GQ:PL\t0/1:74,74:148:99:1935,0,1903"
+    - path: micro/vcf/micro.g.vcf.gz
+      contains:
+        - "chrM\t1\t.\tG\t<NON_REF>\t.\t.\tEND=151\tGT:DP:GQ:MIN_DP:PL\t0/0:164:99:137:0,120,1800"
+        - "chrM\t152\t.\tT\tC,<NON_REF>\t3960"
+        - "GT:AD:DP:GQ:PL:SB\t1/1:0,130,0:130:99:3989,388,0,3989,388,3989:0,0,47,83"
+        - "chrM\t16023\t.\tG\tA,<NON_REF>\t1906"
+        - "GT:AD:DP:GQ:PL:SB\t0/1:74,74,0:148:99:1935,0,1903,2157,2123,4280:36,38,37,37"
+        - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:195:0:187:0,0,0"
+    - path: micro/vcf/micro.g.vcf.gz.tbi
+    - path: micro/vcf/micro.0.vcf.gz
+      should_exist: false
+    - path: micro/vcf/micro.0.vcf.gz.tbi
+      should_exist: false
 
 - name: test-integration-refflat
   tags:
     - integration
   command: >
-    snakemake
-    --use-singularity
-    --singularity-args ' --cleanenv --bind /tmp'
-    --jobs 1 -w 120
-    -r -p -s Snakefile
-    --configfile tests/data/config/sample_config_refflat.json
+    snakemake --use-singularity --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120 -r -p -s Snakefile --configfile
+    tests/data/config/sample_config_refflat.json
   stderr:
     contains:
-      - "Job counts"
-      - "localrule all:"
-      - "(100%) done"
+      - Job counts
+      - localrule all
+      - (100%) done
     must_not_contain:
-      - "rror"
+      - rror
 
 - name: test-integration-all-on-target
   tags:
     - integration
   command: >
-    snakemake
-    --use-singularity
-    --singularity-args ' --cleanenv --bind /tmp'
-    --jobs 1 -w 120
-    -r -p -s Snakefile
-    --configfile tests/data/config/sample_config_bed_all.json
+    snakemake --use-singularity --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120 -r -p -s Snakefile --configfile
+    tests/data/config/sample_config_bed_all.json
   stderr:
     contains:
-      - "Job counts"
-      - "localrule all:"
-      - "(100%) done"
+      - Job counts
+      - localrule all
+      - (100%) done
     must_not_contain:
-      - "rror"
+      - rror
   files:
-   - path: "micro/coverage/covstats.png"
-   - path: "micro/coverage/covstats.json"
-     contains:
-       - "\"frac_min_100x\": 0.97"
-       - "\"mean\": 137"
-       - "\"width_nonzero\": 16569"
-   - path: "stats.tsv"
-     contains:
-       - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tusable_reads\tusable_bases\tmedian_coverage"
-       - "micro\t15440\t2276743\t15440\t2274413\t15558\t2280294\t15515\t2275470\t136"
+    - path: micro/coverage/covstats.png
+    - path: micro/coverage/covstats.json
+      contains:
+        - '"frac_min_100x": 0.97'
+        - '"mean": 137'
+        - '"width_nonzero": 16569'
+    - path: stats.tsv
+      contains:
+        - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tusable_reads\tusable_bases\tmedian_coverage"
+        - "micro\t15440\t2276743\t15440\t2274413\t15558\t2280294\t15515\t2275470\t136"
 
 - name: test-integration-gene-bedfile
   tags:
     - integration
   command: >
-    snakemake
-    --use-singularity
-    --singularity-args ' --cleanenv --bind /tmp'
-    --jobs 1 -w 120
-    -r -p -s Snakefile
-    --configfile tests/data/config/sample_config_bed_target.json
+    snakemake --use-singularity --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120 -r -p -s Snakefile --configfile
+    tests/data/config/sample_config_bed_target.json
   stderr:
     contains:
-      - "Job counts"
-      - "localrule all:"
-      - "(100%) done"
+      - Job counts
+      - localrule all
+      - (100%) done
     must_not_contain:
-      - "rror"
+      - rror
   files:
-   - path: "stats.tsv"
-     contains:
-      - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tusable_reads\tusable_bases\tmedian_coverage"
-      - "micro\t15440\t2276743\t15440\t2274413\t15558\t2280294\t15515\t2275470\t133.0"
+    - path: stats.tsv
+      contains:
+        - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tusable_reads\tusable_bases\tmedian_coverage"
+        - "micro\t15440\t2276743\t15440\t2274413\t15558\t2280294\t15515\t2275470\t133.0"
 
 - name: test-integration-two-known-sites
   tags:
     - integration
   command: >
-    snakemake
-    --use-singularity
-    --singularity-args ' --cleanenv --bind /tmp'
-    --jobs 1 -w 120
-    -r -p -s Snakefile
-    --configfile tests/data/config/sample_config_two_known_vcf.json
+    snakemake --use-singularity --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120 -r -p -s Snakefile --configfile
+    tests/data/config/sample_config_two_known_vcf.json
   stderr:
     contains:
-      - "Job counts"
-      - "localrule all:"
-      - "(100%) done"
-      - "-knownSites tests/data/reference/database.vcf.gz -knownSites tests/data/reference/database.vcf.gz"
+      - Job counts
+      - localrule all
+      - (100%) done
+      - >-
+        -knownSites tests/data/reference/database.vcf.gz -knownSites
+        tests/data/reference/database.vcf.gz
     must_not_contain:
-      - "rror"
+      - rror
 
 - name: test-integration-two-readgroups
   tags:
     - integration
   command: >
-    snakemake
-    --use-singularity
-    --singularity-args ' --cleanenv --bind /tmp'
-    --jobs 1 -w 120
-    -r -p -s Snakefile
-    --configfile tests/data/config/sample_config_two_readgroup.json
+    snakemake --use-singularity --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120 -r -p -s Snakefile --configfile
+    tests/data/config/sample_config_two_readgroup.json
   stderr:
     contains:
-      - "Job counts"
-      - "localrule all:"
-      - "(100%) done"
+      - Job counts
+      - localrule all
+      - (100%) done
     must_not_contain:
-      - "rror"
+      - rror
   files:
-   - path: "micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R1_fastqc.zip"
-   - path: "micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R2_fastqc.zip"
-   - path: "micro/pre_process/trimmed-micro-lib_02/micro-lib_02_R1_fastqc.zip"
-   - path: "micro/pre_process/trimmed-micro-lib_02/micro-lib_02_R2_fastqc.zip"
-   - path: "micro/pre_process/raw-micro-lib_01/micro_rg1_R1_fastqc.zip"
-   - path: "micro/pre_process/raw-micro-lib_01/micro_rg1_R2_fastqc.zip"
-   - path: "micro/pre_process/raw-micro-lib_02/micro_rg2_R1_fastqc.zip"
-   - path: "micro/pre_process/raw-micro-lib_02/micro_rg2_R2_fastqc.zip"
-   - path: "micro/pre_process/micro-lib_01.txt"
-   - path: "micro/pre_process/micro-lib_02.txt"
-   - path: "stats.tsv"
-   - path: "micro/pre_process/micro-lib_01.txt"
-     contains:
-       - "status\tin_reads\tin_bp\ttoo_short\ttoo_long\ttoo_many_n\tout_reads\tw/adapters\tqualtrim_bp\tout_bp\tw/adapters2\tqualtrim2_bp\tout2_bp"
-       - "OK\t3860\t1137566\t0\t0\t0\t3860\t4\t375\t573198\t10\t727\t563218"
-
-   - path: "micro/pre_process/micro-lib_02.txt"
-     contains:
-       - "status\tin_reads\tin_bp\ttoo_short\ttoo_long\ttoo_many_n\tout_reads\tw/adapters\tqualtrim_bp\tout_bp\tw/adapters2\tqualtrim2_bp\tout2_bp"
-       - "OK\t3860\t1139177\t0\t0\t0\t3860\t3\t416\t572845\t14\t711\t565152"
-
-   - path: "micro/bams/micro.baserecal.grp"
-     contains:
-       - "lib_01"
-       - "lib_02"
+    - path: micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R1_fastqc.zip
+    - path: micro/pre_process/trimmed-micro-lib_01/micro-lib_01_R2_fastqc.zip
+    - path: micro/pre_process/trimmed-micro-lib_02/micro-lib_02_R1_fastqc.zip
+    - path: micro/pre_process/trimmed-micro-lib_02/micro-lib_02_R2_fastqc.zip
+    - path: micro/pre_process/raw-micro-lib_01/micro_rg1_R1_fastqc.zip
+    - path: micro/pre_process/raw-micro-lib_01/micro_rg1_R2_fastqc.zip
+    - path: micro/pre_process/raw-micro-lib_02/micro_rg2_R1_fastqc.zip
+    - path: micro/pre_process/raw-micro-lib_02/micro_rg2_R2_fastqc.zip
+    - path: micro/pre_process/micro-lib_01.txt
+    - path: micro/pre_process/micro-lib_02.txt
+    - path: stats.tsv
+    - path: micro/pre_process/micro-lib_01.txt
+      contains:
+        - "status\tin_reads\tin_bp\ttoo_short\ttoo_long\ttoo_many_n\tout_reads\tw/adapters\tqualtrim_bp\tout_bp\tw/adapters2\tqualtrim2_bp\tout2_bp"
+        - "OK\t3860\t1137566\t0\t0\t0\t3860\t4\t375\t573198\t10\t727\t563218"
+    - path: micro/pre_process/micro-lib_02.txt
+      contains:
+        - "status\tin_reads\tin_bp\ttoo_short\ttoo_long\ttoo_many_n\tout_reads\tw/adapters\tqualtrim_bp\tout_bp\tw/adapters2\tqualtrim2_bp\tout2_bp"
+        - "OK\t3860\t1139177\t0\t0\t0\t3860\t3\t416\t572845\t14\t711\t565152"
+    - path: micro/bams/micro.baserecal.grp
+      contains:
+        - lib_01
+        - lib_02
 
 - name: test-integration-two-samples
   tags:
     - integration
   command: >
-    snakemake
-    --use-singularity
-    --singularity-args ' --cleanenv --bind /tmp'
-    --jobs 1 -w 120
-    -r -p -s Snakefile
-    --configfile tests/data/config/sample_config_two_samples.json
+    snakemake --use-singularity --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120 -r -p -s Snakefile --configfile
+    tests/data/config/sample_config_two_samples.json
   stderr:
     contains:
-      - "Job counts"
-      - "localrule all:"
-      - "(100%) done"
+      - Job counts
+      - localrule all
+      - (100%) done
     must_not_contain:
-      - "rror"
+      - rror
   files:
-   - path: "micro1/pre_process/micro1-lib_01.txt"
-   - path: "micro2/pre_process/micro2-lib_02.txt"
-   - path: "micro1/vcf/micro1.vcf.gz"
-   - path: "micro2/vcf/micro2.vcf.gz"
-   - path: "micro1/vcf/micro1.g.vcf.gz"
-   - path: "micro2/vcf/micro2.g.vcf.gz"
-   - path: "micro1/bams/micro1.bam"
-   - path: "micro2/bams/micro2.bam"
-   - path: "stats.tsv"
-     contains:
-      - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases"
-      - "micro1\t7720\t1137566\t7720\t1136416"
-      - "micro2\t7720\t1139177\t7720\t1137997"
-   - path: "stats.json"
-     contains:
-      - '"sample_name": "micro1",'
-      - '"sample_name": "micro2",'
+    - path: micro1/pre_process/micro1-lib_01.txt
+    - path: micro2/pre_process/micro2-lib_02.txt
+    - path: micro1/vcf/micro1.vcf.gz
+    - path: micro2/vcf/micro2.vcf.gz
+    - path: micro1/vcf/micro1.g.vcf.gz
+    - path: micro2/vcf/micro2.g.vcf.gz
+    - path: micro1/bams/micro1.bam
+    - path: micro2/bams/micro2.bam
+    - path: stats.tsv
+      contains:
+        - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases"
+        - "micro1\t7720\t1137566\t7720\t1136416"
+        - "micro2\t7720\t1139177\t7720\t1137997"
+    - path: stats.json
+      contains:
+        - '"sample_name": "micro1",'
+        - '"sample_name": "micro2",'
 
 - name: test-integration-target-baits
   tags:
     - integration
     - new
   command: >
-    snakemake
-    --use-singularity
-    --singularity-args ' --cleanenv --bind /tmp'
-    --jobs 1 -w 120
-    -r -p -s Snakefile
-    --configfile tests/data/config/sample_config_target_baits.json
+    snakemake --use-singularity --singularity-args ' --cleanenv --bind /tmp'
+    --jobs 1 -w 120 -r -p -s Snakefile --configfile
+    tests/data/config/sample_config_target_baits.json
   files:
-   - path: "micro/bams/micro.hs_metrics.txt"
-   - path: "multiqc_report/multiqc_data/multiqc_picard_HsMetrics.json"
-   - path: "stats.json"
-     contains:
-      - "picard_HsMetrics"
-      - "BAIT_SET"
-      - "FOLD_80_BASE_PENALTY"
+    - path: micro/bams/micro.hs_metrics.txt
+    - path: multiqc_report/multiqc_data/multiqc_picard_HsMetrics.json
+    - path: stats.json
+      contains:
+        - picard_HsMetrics
+        - BAIT_SET
+        - FOLD_80_BASE_PENALTY
