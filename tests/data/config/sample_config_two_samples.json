@@ -20,5 +20,5 @@
   "reference":"tests/data/reference/ref.fa",
   "dbsnp": "tests/data/reference/database.vcf.gz",
   "known_sites": ["tests/data/reference/database.vcf.gz"],
-  "bedfile": "tests/data/reference/full_chrM.bed"
+  "targetsfile": "tests/data/reference/full_chrM.bed"
 }

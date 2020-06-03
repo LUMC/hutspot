@@ -9,8 +9,8 @@
       }
     }
   },
-  "reference":"tests/data/reference/ref.fa",
   "dbsnp": "tests/data/reference/database.vcf.gz",
   "known_sites": ["tests/data/reference/database.vcf.gz"],
-  "targetsfile": "tests/data/reference/full_chrM.bed"
+  "reference": "tests/data/reference/ref.fa",
+  "baitsfile": "tests/data/reference/target_baits.bed"
 }

@@ -6,7 +6,7 @@
   exit_code: 1
   stdout:
     contains:
-        - "Invalid CONFIG_JSON: 'reference' is a required property"
+        - "Invalid --configfile: 'reference' is a required property"
   tags:
     - sanity
 
@@ -38,3 +38,14 @@
       - "singularity version 3"
   tags:
     - sanity
+
+- name: test-baits-only
+  tags:
+    - sanity
+  command: >
+    snakemake -n Snakefile
+    --configfile tests/data/config/invalid_config_baitsfile_only.json
+  exit_code: 1
+  stdout:
+    contains:
+      - 'Invalid --configfile: "baitsfile" specified without "targetsfile"'

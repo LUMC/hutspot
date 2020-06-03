@@ -1,5 +1,5 @@
 #   hutspot - a DNAseq variant calling pipeline
-#   Copyright (C) 2017-2019, Sander Bollen, Leiden University Medical Center
+#   Copyright (C) 2017-2019, Leiden University Medical Center
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -36,8 +36,13 @@ with open(srcdir('config/schema.json'), 'rt') as fin:
 try:
     jsonschema.validate(config, schema)
 except jsonschema.ValidationError as e:
-    raise jsonschema.ValidationError(f'Invalid CONFIG_JSON: {e}')
+    raise jsonschema.ValidationError(f'Invalid --configfile: {e.message}')
 
+# If you specify a baitsfile, you also have to specify a targets file for
+# picard
+if "baitsfile" in config and "targetsfile" not in config:
+    msg = 'Invalid --configfile: "baitsfile" specified without "targetsfile"'
+    raise jsonschema.ValidationError(msg)
 
 # Set default values
 def set_default(key, value):
@@ -380,7 +385,7 @@ rule covstats:
         bam = rules.markdup.output.bam,
         genome = "current.genome",
         covpy = config["covstats"],
-        bed = config.get("bedfile","")
+        bed = config.get("targetsfile","")
     params:
         subt = "Sample {sample}"
     output:
@@ -423,7 +428,7 @@ rule collectstats:
         mbnum = rules.mapped_reads_bases.output.bases,
         unum = rules.unique_reads_bases.output.reads,
         ubnum = rules.unique_reads_bases.output.bases,
-        cov = rules.covstats.output.covj if "bedfile" in config else [],
+        cov = rules.covstats.output.covj if "targetsfile" in config else [],
         cutadapt = rules.collect_cutadapt_summary.output,
         colpy = config["collect_stats"]
     params:
@@ -461,7 +466,7 @@ rule bed_to_interval:
     picard can read
     """
     input:
-        targets = config.get("bedfile",""),
+        targets = config.get("targetsfile",""),
         baits = config.get("baitsfile",""),
         ref = config["reference"]
     output:

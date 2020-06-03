@@ -110,10 +110,11 @@ The following reference files **must** be provided in the configuration:
 
 The following reference files **may** be provided:
 
-1. `bedfile`: A bedfile to calculate coverage cover the specified regions.
-2. `refflat`: A refFlat file to calculate coverage over transcripts.
-3. `scatter_size`: Size of the chunks to split the variant calling into.
-4. `female_threshold`: Fraction of reads between X and the autosomes to call as
+1. `targetsfile`: Bed file of the targets of the capture kit. Used to calculate coverage.
+2. `baitsfile`: Bed file of the baits of the capture kit. Used to calculate picard HsMetric.
+3. `refflat`: A refFlat file to calculate coverage over transcripts.
+4. `scatter_size`: Size of the chunks to split the variant calling into.
+5. `female_threshold`: Fraction of reads between X and the autosomes to call as
     female.
 
 
@@ -152,7 +153,8 @@ The following configuration options are **optional**:
 
 | configuration | description |
 | ------------- | ----------- |
-| `bed` | Comma-separate list of paths to BED files of interest |
+| `targetsfile` | Bed file of the targets of the capture kit. Used to calculate coverage |
+| `baitsfile` | Bed file of the baits of the capture kit. Used to calculate picard HsMetrics |
 | `female_threshold` | Float between 0 and 1 that signifies the threshold of
 the ratio between coverage on X/overall coverage that 'calls' a sample as
 female. Default = 0.6 |

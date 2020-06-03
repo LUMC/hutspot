@@ -59,12 +59,12 @@
         "description": "Fraction of reads between X and the autosomes to call as female",
         "type": "number"
     },
-    "bedfile": {
-        "description": "Bed file to calculate the coverage over",
+    "targetsfile": {
+        "description": "Bed file of the targets of the capture kit. Used to calculate coverage",
         "type": "string"
     },
     "baitsfile": {
-        "description": "Bed file of the baits of the capture kit",
+        "description": "Bed file of the baits of the capture kit. Used to calculate picard HsMetrics",
         "type": "string"
     },
     "refflat": {
