@@ -39,6 +39,7 @@
       contains:
         - MEDIAN_INSERT_SIZE
         - WIDTH_OF_99_PERCENT
+        - picard_AlignmentSummaryMetrics
 
 - name: test-integration-small-scatter
   tags:

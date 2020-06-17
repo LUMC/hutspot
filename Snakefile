@@ -525,6 +525,7 @@ rule multiqc:
     output:
         html = "multiqc_report/multiqc_report.html",
         insert = "multiqc_report/multiqc_data/multiqc_picard_insertSize.json",
+        AlignmentMetrics = "multiqc_report/multiqc_data/multiqc_picard_AlignmentSummaryMetrics.json",
         HsMetrics = "multiqc_report/multiqc_data/multiqc_picard_HsMetrics.json" if "baitsfile" in config else []
     container: containers["multiqc"]
     shell: "multiqc --data-format json --force --outdir multiqc_report . "
@@ -537,11 +538,13 @@ rule merge_stats:
                       sample=config['samples']),
         mpy = config["merge_stats"],
         insertSize = rules.multiqc.output.insert,
+        AlignmentMetrics = rules.multiqc.output.AlignmentMetrics,
         HsMetrics = rules.multiqc.output.HsMetrics
     output: "stats.json"
     container: containers["vtools"]
     shell: "python {input.mpy} --collectstats {input.cols} "
            "--picard-insertSize {input.insertSize} "
+           "--picard-AlignmentMetrics {input.AlignmentMetrics} "
            "--picard-HsMetrics {input.HsMetrics} > {output}"
 
 rule stats_tsv:

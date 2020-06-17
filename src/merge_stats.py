@@ -58,6 +58,18 @@ def add_picard_HsMetrics(data, filename):
             raise RuntimeError(f"Unknown sample {sample}")
 
 
+def add_picard_AlignmentMetrics(data, filename):
+    AlignmentMetrics = parse_json(filename)
+
+    for sample in AlignmentMetrics:
+        for d in data['sample_stats']:
+            if d['sample_name'] == sample:
+                d['picard_AlignmentSummaryMetrics'] = AlignmentMetrics[sample]
+                break
+        else:
+            raise RuntimeError(f"Unknown sample {sample}")
+
+
 def main(args):
     data = dict()
     data["sample_stats"] = list()
@@ -71,6 +83,11 @@ def main(args):
 
     if args.picard_HsMetrics:
         add_picard_HsMetrics(data, args.picard_HsMetrics)
+
+    if args.picard_AlignmentMetrics:
+        add_picard_AlignmentMetrics(data,
+                args.picard_AlignmentMetrics)
+
     print(json.dumps(data))
 
 
@@ -90,5 +107,10 @@ if __name__ == "__main__":
                         nargs='?',
                         help=('Path to multiQC json summary for picard '
                         'HsMetrics'))
+    parser.add_argument('--picard-AlignmentMetrics',
+                        required=False,
+                        nargs='?',
+                        help=('Path to multiQC json summary for picard '
+                        'AlignmentSummaryMetrics'))
     args = parser.parse_args()
     main(args)
