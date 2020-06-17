@@ -38,6 +38,7 @@
     - path: stats.json
       contains:
         - MEDIAN_INSERT_SIZE
+        - MODE_INSERT_SIZE
         - WIDTH_OF_99_PERCENT
         - picard_AlignmentSummaryMetrics
 
