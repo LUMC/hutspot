@@ -44,7 +44,7 @@ def get_vcf_stats(sample_name, vcfstats):
 
 
 def get_covstats(cov_d):
-    s_d = cov_d['covstats']['stats']['coverage']['_all']
+    s_d = cov_d['_all']
     return {
         'median_coverage': s_d['median'],
         'mean_coverage': s_d['mean'],
@@ -56,7 +56,6 @@ def get_covstats(cov_d):
         'coverage_frac_min_30x': s_d['frac_min_30x'],
         'coverage_frac_min_40x': s_d['frac_min_40x'],
         'coverage_frac_min_50x': s_d['frac_min_50x'],
-        'determined_gender': cov_d['gender']
     }
 
 
@@ -85,8 +84,8 @@ if __name__ == "__main__":
             "usable_reads": sample['n_usable_reads'],
             "usable_bases": sample['n_usable_bases'],
         })
-        if "covstats" in sample:
-            sample_dict.update(get_covstats(sample['covstats']))
+        if 'coverage' in sample:
+            sample_dict.update(get_covstats(sample['coverage']))
         sdicts.append(sample_dict)
 
     lens = [len(list(x.keys())) for x in sdicts]

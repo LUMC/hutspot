@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import pathlib
 import pytest
 import os
@@ -108,3 +109,17 @@ def test_stats_file_preqc_bases(workflow_dir):
     data = dict(zip(header, values))
 
     assert data['preqc_bases'] == '2276743'
+
+
+@pytest.mark.parametrize("json_field", [
+    ('sample_name'), ('gender'), ('coverage'), ('picard_insertSize'),
+    ('picard_AlignmentSummaryMetrics')])
+@pytest.mark.workflow('test-integration-gene-bedfile')
+def test_stats_file_preqc_bases(workflow_dir, json_field):
+    """ Read in the stats json file """
+    stats_file = 'stats.json'
+    full_path = workflow_dir / pathlib.Path(stats_file)
+    json_data = json.load(open(full_path))
+
+    for sample in json_data['sample_stats']:
+        assert json_field in sample

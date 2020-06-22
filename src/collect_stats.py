@@ -85,15 +85,14 @@ def main(args):
     if args.covstats:
         # Read the json file
         covstats = parse_json_file(args.covstats)
-        # Format the coverage data and determine the gender
-        cov_data = {
-            "name": basename(args.covstats),
-            "gender": determine_gender(covstats, args.female_threshold),
-            "covstats": covstats
-        }
-        # Add the coverage data
-        d["covstats"] = cov_data
 
+        # Determine the gender from the coverage data
+        gender = determine_gender(covstats, args.female_threshold)
+        d['gender'] = gender
+
+        # Add the per chromosome coverage to the stats file
+        chromosome_coverage = covstats['stats']['coverage']
+        d['coverage'] = chromosome_coverage
 
     print(json.dumps(d))
 
