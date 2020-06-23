@@ -40,9 +40,20 @@
   tags:
     - sanity
   command: >
-    snakemake -n Snakefile --configfile
+    snakemake -s Snakefile -n --configfile
     tests/data/config/invalid_config_baitsfile_only.json
   exit_code: 1
   stdout:
     contains:
       - 'Invalid --configfile: "baitsfile" specified without "targetsfile"'
+
+- name: test-samples-overlapping-name
+  tags:
+    - sanity
+  command: >
+    snakemake -s Snakefile -n --configfile
+    tests/data/config/invalid_config_two_samples.json
+  exit_code: 1
+  stdout:
+    contains:
+      - 'Invalid --configfile: sample names should not overlap ("micro1" is contained in "micro12")'

@@ -3,11 +3,11 @@
 This is a multi sample DNA variant calling pipeline based on Snakemake, bwa and
 the GATK HaplotypeCaller.
 
-## Features 
+## Features
 * Any number of samples is supported
-* Whole-genome calling, regardless of wet-lab library preparation. 
+* Whole-genome calling, regardless of wet-lab library preparation.
 * Follows modern best practices
-    * Each sample is individually called as as a GVCF. 
+    * Each sample is individually called as as a GVCF.
     * A VCF is then produced by genotyping the individual GVCFs separately
       for each sample.
 * Data parallelization for calling and genotyping steps.
@@ -19,7 +19,7 @@ the GATK HaplotypeCaller.
     * 96 exomes in < 24 hours.
 * No unnecessary jobs
 * Calculate coverage metrics if a `bedfile` is specified.
-* Fully containerized rules through singularity and biocontainers. Legacy 
+* Fully containerized rules through singularity and biocontainers. Legacy
 conda environments are no long available.
 
 # Installation
@@ -29,13 +29,13 @@ To run this pipeline you will need the following at minimum:
 * python 3.6
 * snakemake 5.2.0 or newer
 
-This repository contains a [conda](https://conda.io/docs/) 
-environment file that you can use to install all minimum dependencies in a 
+This repository contains a [conda](https://conda.io/docs/)
+environment file that you can use to install all minimum dependencies in a
 conda environment:
 
 ```bash
 conda env create -f environment.yml
-``` 
+```
 
 Alternatively, you can set up a python virtualenv and run
 
@@ -43,47 +43,46 @@ Alternatively, you can set up a python virtualenv and run
 pip install -r requirements.txt
 ```
 
-## Singularity 
+## Singularity
 
-We highly recommend the user of the containerized rules through 
+We highly recommend the user of the containerized rules through
 [singularity](https://www.sylabs.io/singularity/).
 
 This option does require you to install singularity on your system. As this
 usually requires administrative privileges, singularity is not contained
 within our provided conda environment file.
 
-If you want to use singularity, make sure you install version 3 or higher. 
+If you want to use singularity, make sure you install version 3 or higher.
 
 ### Debian
 If you happen to use Debian buster, singularity 3.0.3 comes straight out
 of the box with a simple:
 
 ```bash
-sudo apt install singularity-container 
+sudo apt install singularity-container
 ```
 
 ### Docker
 
-You can run singularity within a docker container. Please note that 
-the container **MUST** run in privileged mode for this to work. 
+You can run singularity within a docker container. Please note that
+the container **MUST** run in privileged mode for this to work.
 
 We have provided our own container that includes singularity and snakemake
-[here](https://hub.docker.com/r/lumc/singularity-snakemake). 
+[here](https://hub.docker.com/r/lumc/singularity-snakemake).
 
 ### Manual install
 
 If you don't use Debian buster and cannot run a privileged docker container,
-you - unfortunately :-( - will have to install singularity manually. 
-Please see the installation instructions 
+you - unfortunately :-( - will have to install singularity manually.
+Please see the installation instructions
 [here](https://github.com/sylabs/singularity/blob/master/INSTALL.md) on how
-to do that. 
+to do that.
 
 
 ## Operating system
 
 Hutspot was tested on Ubuntu 16.04 only.
-It should reasonably work on most modern Linux distributions. 
-   
+It should reasonably work on most modern Linux distributions.
 
 # Requirements
 
@@ -92,10 +91,10 @@ readgroups in fastq format. They must be compressed with either `gzip` or
 `bgzip`.
 
 The configuration must be passed to the pipeline through a configuration file.
-This is a json file listing the samples and their associated readgroups 
+This is a json file listing the samples and their associated readgroups
 as well as the other settings to be used.
 An example config json can be found [here](config/example.json), and a
-json schema describing the configuration file can be found [here](config/schema.json). 
+json schema describing the configuration file can be found [here](config/schema.json).
 This json schema can also be used to validate your configuration file.
 
 ## Reference files
@@ -163,12 +162,12 @@ The following configuration options are **optional**:
 To run on a cluster, snakemake needs to be called with some extra arguments.
 Additionally, it needs a cluster yaml file describing resources per job.
 
-If you run on a cluster with drmaa support,an environment variable named 
-`DRMAA_LIBRARY_PATH` must be in the executing shell environment. This variable 
+If you run on a cluster with drmaa support,an environment variable named
+`DRMAA_LIBRARY_PATH` must be in the executing shell environment. This variable
 points to the `.so` file of the DRMAA library.
 
-An sge-cluster.yml is bundled with this pipeline in the cluster directory. 
-It is optimized for SGE clusters, where the default vmem limit is 4G. 
+An sge-cluster.yml is bundled with this pipeline in the cluster directory.
+It is optimized for SGE clusters, where the default vmem limit is 4G.
 If you run SLURM, or any other cluster system, you will have to write your own
 cluster yaml file. Please see the [snakemake documentation](http://snakemake.readthedocs.io/en/stable/snakefiles/configuration.html#cluster-configuration)
 for details on how to do so. Given the provided sge-cluster.yml, activating the
@@ -180,23 +179,29 @@ snakemake -s Snakefile \
 --drmaa ' -pe <PE_NAME> {cluster.threads} -q all.q -l h_vmem={cluster.vmem} -cwd -V -N hutspot' \
 ```
 
+## Limitations
+Sample names should be unique, and not overlap (such as `sample1` and
+`sample10`). This is due to the way output files are parsed by multiQC,
+when sample names overlap, the json output for picard DuplicationMetrics cannot
+be parsed unambiguously.
+
 ## Binding additional directories under singularity
 
-In singularity mode, snakemake binds the location of itself in the container. 
-The current working directory is also visible directly in the container. 
+In singularity mode, snakemake binds the location of itself in the container.
+The current working directory is also visible directly in the container.
 
 In many cases, this is not enough, and will result in `FileNotFoundError`s.
-E.g., suppose you run your pipeline in `/runs`, but your fastq files live in 
+E.g., suppose you run your pipeline in `/runs`, but your fastq files live in
 `/fastq` and your reference genome lives in `/genomes`. We would have to bind
-`/fastq` and `/genomes` in the container. 
+`/fastq` and `/genomes` in the container.
 
-This can be accomplished with `--singularity-args`, which accepts a simple 
+This can be accomplished with `--singularity-args`, which accepts a simple
 string of arguments passed to singularity. E.g. in the above example,
 we could do:
 
 ```bash
 snakemake -S Snakefile \
---use-singularity  \ 
+--use-singularity  \
 --singularity-args ' --bind /fastq:/fastq --bind /genomes:/genomes '
 ```
 
@@ -224,7 +229,7 @@ Below you can see the rule graph of the pipeline. The main variant calling flow
 is highlighted in red. This only shows dependencies
 between rules, and not between jobs. The actual job graph is considerably
 more complex, as nearly all rules are duplicated by sample and some
-(the scatter jobs) additionally by chunk. 
+(the scatter jobs) additionally by chunk.
 
 As a rough estimate of the total number of jobs in pipeline you can use
 the following formula:
@@ -316,7 +321,7 @@ digraph snakemake_dag {
 	24 -> 23
 	14 -> 25
 	15 -> 25
-}            
+}
 ```
 
 LICENSE

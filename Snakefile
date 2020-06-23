@@ -44,6 +44,13 @@ if "baitsfile" in config and "targetsfile" not in config:
     msg = 'Invalid --configfile: "baitsfile" specified without "targetsfile"'
     raise jsonschema.ValidationError(msg)
 
+# A sample name cannot be a substring of another sample, since that breaks picard
+# metrics parsing by multiqc
+msg = 'Invalid --configfile: sample names should not overlap ("{s1}" is contained in "{s2}")'
+for s1, s2 in itertools.permutations(config['samples'], 2):
+    if s1 in s2:
+        raise jsonschema.ValidationError(msg.format(s1=s1, s2=s2))
+
 # Set default values
 def set_default(key, value):
     """Set default config values"""
@@ -160,7 +167,7 @@ rule align:
         ref = config["reference"],
         tmp = ancient("tmp")
     params:
-        rg = "@RG\\tID:{read_group}\\tSM:{sample}\\tPL:ILLUMINA"
+        rg = "@RG\\tID:{sample}-library-{read_group}\\tSM:{sample}\\tLB:library\\tPL:ILLUMINA"
     output: "{sample}/bams/{sample}-{read_group}.sorted.bam"
     container: containers["bwa-0.7.17-picard-2.18.7"]
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
@@ -181,7 +188,6 @@ rule markdup:
         ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(
             sample=wildcards.sample, read_group=rg)
             for rg in get_readgroup(wildcards)),
-        #bam = lambda wc: ('f{wc.sample}/bams/{wc.sample}-{readgroup}' for read_group in config['samples'][wc.sample}]['read_groups']),
         tmp = ancient("tmp")
     output:
         bam = "{sample}/bams/{sample}.bam",
@@ -526,6 +532,7 @@ rule multiqc:
         html = "multiqc_report/multiqc_report.html",
         insert = "multiqc_report/multiqc_data/multiqc_picard_insertSize.json",
         AlignmentMetrics = "multiqc_report/multiqc_data/multiqc_picard_AlignmentSummaryMetrics.json",
+        DuplicationMetrics = "multiqc_report/multiqc_data/multiqc_picard_dups.json",
         HsMetrics = "multiqc_report/multiqc_data/multiqc_picard_HsMetrics.json" if "baitsfile" in config else []
     container: containers["multiqc"]
     shell: "multiqc --data-format json --force --outdir multiqc_report . "
@@ -539,12 +546,14 @@ rule merge_stats:
         mpy = config["merge_stats"],
         insertSize = rules.multiqc.output.insert,
         AlignmentMetrics = rules.multiqc.output.AlignmentMetrics,
+        DuplicationMetrics = rules.multiqc.output.DuplicationMetrics,
         HsMetrics = rules.multiqc.output.HsMetrics
     output: "stats.json"
     container: containers["vtools"]
     shell: "python {input.mpy} --collectstats {input.cols} "
            "--picard-insertSize {input.insertSize} "
            "--picard-AlignmentMetrics {input.AlignmentMetrics} "
+           "--picard-DuplicationMetrics {input.DuplicationMetrics} "
            "--picard-HsMetrics {input.HsMetrics} > {output}"
 
 rule stats_tsv:

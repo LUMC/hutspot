@@ -70,6 +70,18 @@ def add_picard_AlignmentMetrics(data, filename):
             raise RuntimeError(f"Unknown sample {sample}")
 
 
+def add_picard_DuplicationMetrics(data, filename):
+    DuplicationMetrics = parse_json(filename)
+
+    for sample in DuplicationMetrics:
+        for d in data['sample_stats']:
+            if sample.startswith(d['sample_name']):
+                d['picard_DuplicationMetrics'] = DuplicationMetrics[sample]
+                break
+        else:
+            raise RuntimeError(f"Unknown sample {sample}")
+
+
 def main(args):
     data = dict()
     data["sample_stats"] = list()
@@ -87,6 +99,9 @@ def main(args):
     if args.picard_AlignmentMetrics:
         add_picard_AlignmentMetrics(data,
                 args.picard_AlignmentMetrics)
+
+    if args.picard_DuplicationMetrics:
+        add_picard_DuplicationMetrics(data, args.picard_DuplicationMetrics)
 
     print(json.dumps(data))
 
@@ -112,5 +127,10 @@ if __name__ == "__main__":
                         nargs='?',
                         help=('Path to multiQC json summary for picard '
                         'AlignmentSummaryMetrics'))
+    parser.add_argument('--picard-DuplicationMetrics',
+                        required=False,
+                        nargs='?',
+                        help=('Path to multiQC json summary for picard '
+                        'DuplicationMetrics'))
     args = parser.parse_args()
     main(args)
