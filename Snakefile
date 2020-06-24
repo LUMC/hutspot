@@ -457,7 +457,7 @@ rule multiple_metrics:
         prefix = "{sample}/bams/{sample}",
     output:
         alignment = "{sample}/bams/{sample}.alignment_summary_metrics",
-        insert = "{sample}/bams/{sample}.insert_size_metrics"
+        insertMetrics = "{sample}/bams/{sample}.insert_size_metrics"
     container: containers["picard"]
     shell: "picard CollectMultipleMetrics "
            "I={input.bam} O={params.prefix} "
@@ -530,7 +530,7 @@ rule multiqc:
 
     output:
         html = "multiqc_report/multiqc_report.html",
-        insert = "multiqc_report/multiqc_data/multiqc_picard_insertSize.json",
+        insertSize = "multiqc_report/multiqc_data/multiqc_picard_insertSize.json",
         AlignmentMetrics = "multiqc_report/multiqc_data/multiqc_picard_AlignmentSummaryMetrics.json",
         DuplicationMetrics = "multiqc_report/multiqc_data/multiqc_picard_dups.json",
         HsMetrics = "multiqc_report/multiqc_data/multiqc_picard_HsMetrics.json" if "baitsfile" in config else []
@@ -544,7 +544,7 @@ rule merge_stats:
         cols = expand("{sample}/{sample}.stats.json",
                       sample=config['samples']),
         mpy = config["merge_stats"],
-        insertSize = rules.multiqc.output.insert,
+        insertSize = rules.multiqc.output.insertSize,
         AlignmentMetrics = rules.multiqc.output.AlignmentMetrics,
         DuplicationMetrics = rules.multiqc.output.DuplicationMetrics,
         HsMetrics = rules.multiqc.output.HsMetrics
