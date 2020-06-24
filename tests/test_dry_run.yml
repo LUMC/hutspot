@@ -40,7 +40,7 @@
     must_not_contain:
       - rror
 
-- name: test-bed-coverage-output
+- name: test-bed-coverage-dry-run
   tags:
     - dry-run
   command: >

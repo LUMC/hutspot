@@ -11,6 +11,6 @@
   },
   "reference":"tests/data/reference/ref.fa",
   "dbsnp": "tests/data/reference/database.vcf.gz",
-  "coverage_threshold": [10, 20, 30, 50],
+  "coverage_threshold": [10, 60, 120, 196],
   "known_sites": ["tests/data/reference/database.vcf.gz"]
 }

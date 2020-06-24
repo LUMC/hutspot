@@ -576,4 +576,4 @@ rule gvcf2coverage:
     input: rules.gvcf_gather.output.gvcf
     output: "{sample}/vcf/{sample}_{threshold}.bed"
     container: containers["gvcf2coverage"]
-    shell: "gvcf2coverage -t {wildcards.threshold} < {input} > {output}"
+    shell: "gvcf2coverage -t {wildcards.threshold} < {input} | cut -f 1,2,3 > {output}"
