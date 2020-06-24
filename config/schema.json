@@ -13,6 +13,7 @@
         "scatter_size",
         "female_threshold",
         "bedfile",
+        "coverage_threshold",
         "baitsfile"
     ],
     "properties": {
@@ -66,6 +67,11 @@
     "baitsfile": {
         "description": "Bed file of the baits of the capture kit. Used to calculate picard HsMetrics",
         "type": "string"
+    },
+    "coverage_threshold": {
+        "description": "One or more thresholds to calculate coverage for, one bedfile per value per sample",
+        "type": "array",
+        "minItems": 1
     },
     "refflat": {
         "description": "RefFlat file with transcripts",

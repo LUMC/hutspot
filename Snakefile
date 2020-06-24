@@ -78,6 +78,7 @@ containers = {
     "debian": "docker://debian:buster-slim",
     "fastqc": "docker://quay.io/biocontainers/fastqc:0.11.7--4",
     "gatk": "docker://broadinstitute/gatk3:3.7-0",
+    "gvcf2coverage": "docker://quay.io/biocontainers/gvcf2coverage:0.1--hfb13731_0",
     "multiqc": "docker://quay.io/biocontainers/multiqc:1.8--py_2",
     "picard": "docker://quay.io/biocontainers/picard:2.22.8--0",
     "python3": "docker://python:3.6-slim",
@@ -128,6 +129,10 @@ rule all:
         cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt"
                     for read_group, sample in get_readgroup_per_sample()),
         coverage_stats = coverage_stats,
+        coverage_files = (f"{sample}/vcf/{sample}_{threshold}.bed"
+                          for sample, threshold in itertools.product(
+                              config['samples'], config['coverage_threshold'])
+                          ) if 'coverage_threshold' in config else []
 
 rule create_markdup_tmp:
     """Create tmp directory for mark duplicates"""
@@ -565,3 +570,10 @@ rule stats_tsv:
     container: containers["python3"]
     shell: "python {input.sc} -i {input.stats} > {output}"
 
+
+rule gvcf2coverage:
+    """ Determine coverage from gvcf files """
+    input: rules.gvcf_gather.output.gvcf
+    output: "{sample}/vcf/{sample}_{threshold}.bed"
+    container: containers["gvcf2coverage"]
+    shell: "gvcf2coverage -t {wildcards.threshold} < {input} > {output}"
