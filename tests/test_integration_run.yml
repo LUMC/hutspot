@@ -252,7 +252,7 @@
         - BAIT_SET
         - FOLD_80_BASE_PENALTY
 
-- name: test-bed-coverage-output
+- name: test-integration-bed-coverage
   tags:
     - dry-run
   command: >
