@@ -238,7 +238,6 @@
 - name: test-integration-target-baits
   tags:
     - integration
-    - new
   command: >
     snakemake --use-singularity --singularity-args ' --cleanenv --bind /tmp'
     --jobs 1 -w 120 -r -p -s Snakefile --configfile
@@ -251,3 +250,30 @@
         - picard_HsMetrics
         - BAIT_SET
         - FOLD_80_BASE_PENALTY
+
+- name: test-integration-bed-coverage
+  tags:
+    - integration
+  command: >
+    snakemake --use-singularity --singularity-args ' --containall --bind /tmp '
+    --jobs 1 -w 120 -r -p
+    --configfile tests/data/config/sample_config_bed_coverage.json
+  files:
+    - path: 'micro/vcf/micro_10.bed'
+      must_not_contain:
+        - "chrM\t0\t16569\t2"
+      contains:
+        - "chrM\t0\t16569"
+    - path: 'micro/vcf/micro_60.bed'
+      contains:
+        - "chrM\t0\t16569"
+    - path: 'micro/vcf/micro_120.bed'
+      contains:
+        - "chrM\t0\t262"
+        - "chrM\t750\t3571"
+        - "chrM\t3590\t10934"
+        - "chrM\t10946\t13679"
+        - "chrM\t13680\t16569"
+    - path: 'micro/vcf/micro_196.bed'
+      contains:
+        - "(null)\t0\t0"

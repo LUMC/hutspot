@@ -78,6 +78,7 @@ containers = {
     "debian": "docker://debian:buster-slim",
     "fastqc": "docker://quay.io/biocontainers/fastqc:0.11.7--4",
     "gatk": "docker://broadinstitute/gatk3:3.7-0",
+    "gvcf2coverage": "docker://quay.io/biocontainers/gvcf2coverage:0.1--hfb13731_0",
     "multiqc": "docker://quay.io/biocontainers/multiqc:1.8--py_2",
     "picard": "docker://quay.io/biocontainers/picard:2.22.8--0",
     "python3": "docker://python:3.6-slim",
@@ -128,6 +129,10 @@ rule all:
         cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt"
                     for read_group, sample in get_readgroup_per_sample()),
         coverage_stats = coverage_stats,
+        coverage_files = (f"{sample}/vcf/{sample}_{threshold}.bed"
+                          for sample, threshold in itertools.product(
+                              config['samples'], config['coverage_threshold'])
+                          ) if 'coverage_threshold' in config else []
 
 rule create_markdup_tmp:
     """Create tmp directory for mark duplicates"""
@@ -457,7 +462,7 @@ rule multiple_metrics:
         prefix = "{sample}/bams/{sample}",
     output:
         alignment = "{sample}/bams/{sample}.alignment_summary_metrics",
-        insert = "{sample}/bams/{sample}.insert_size_metrics"
+        insertMetrics = "{sample}/bams/{sample}.insert_size_metrics"
     container: containers["picard"]
     shell: "picard CollectMultipleMetrics "
            "I={input.bam} O={params.prefix} "
@@ -530,7 +535,7 @@ rule multiqc:
 
     output:
         html = "multiqc_report/multiqc_report.html",
-        insert = "multiqc_report/multiqc_data/multiqc_picard_insertSize.json",
+        insertSize = "multiqc_report/multiqc_data/multiqc_picard_insertSize.json",
         AlignmentMetrics = "multiqc_report/multiqc_data/multiqc_picard_AlignmentSummaryMetrics.json",
         DuplicationMetrics = "multiqc_report/multiqc_data/multiqc_picard_dups.json",
         HsMetrics = "multiqc_report/multiqc_data/multiqc_picard_HsMetrics.json" if "baitsfile" in config else []
@@ -544,7 +549,7 @@ rule merge_stats:
         cols = expand("{sample}/{sample}.stats.json",
                       sample=config['samples']),
         mpy = config["merge_stats"],
-        insertSize = rules.multiqc.output.insert,
+        insertSize = rules.multiqc.output.insertSize,
         AlignmentMetrics = rules.multiqc.output.AlignmentMetrics,
         DuplicationMetrics = rules.multiqc.output.DuplicationMetrics,
         HsMetrics = rules.multiqc.output.HsMetrics
@@ -565,3 +570,10 @@ rule stats_tsv:
     container: containers["python3"]
     shell: "python {input.sc} -i {input.stats} > {output}"
 
+
+rule gvcf2coverage:
+    """ Determine coverage from gvcf files """
+    input: rules.gvcf_gather.output.gvcf
+    output: "{sample}/vcf/{sample}_{threshold}.bed"
+    container: containers["gvcf2coverage"]
+    shell: "gvcf2coverage -t {wildcards.threshold} < {input} | cut -f 1,2,3 > {output}"

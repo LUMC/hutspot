@@ -39,3 +39,16 @@
   stderr:
     must_not_contain:
       - rror
+
+- name: test-bed-coverage-dry-run
+  tags:
+    - dry-run
+  command: >
+    snakemake -s Snakefile -n --configfile
+    tests/data/config/sample_config_bed_coverage.json
+  stdout:
+    contains:
+    - 'output: micro/vcf/micro_10.bed'
+    - 'output: micro/vcf/micro_60.bed'
+    - 'output: micro/vcf/micro_120.bed'
+    - 'output: micro/vcf/micro_196.bed'
