@@ -73,7 +73,7 @@ containers = {
     "bcftools": "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4",
     "bedtools-2.26-python-2.7": "docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0",
     "biopet-scatterregions": "docker://quay.io/biocontainers/biopet-scatterregions:0.2--0",
-    "bwa-0.7.17-picard-2.18.7": "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:43ec6124f9f4f875515f9548733b8b4e5fed9aa6-0",
+    "bwa-0.7.17-picard-2.22.8": "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:76d16eabff506ac13338d7f14644a0ad301b9d7e-0",
     "cutadapt": "docker://quay.io/biocontainers/cutadapt:2.9--py37h516909a_0",
     "debian": "docker://debian:buster-slim",
     "fastqc": "docker://quay.io/biocontainers/fastqc:0.11.7--4",
@@ -174,7 +174,7 @@ rule align:
     params:
         rg = "@RG\\tID:{sample}-library-{read_group}\\tSM:{sample}\\tLB:library\\tPL:ILLUMINA"
     output: "{sample}/bams/{sample}-{read_group}.sorted.bam"
-    container: containers["bwa-0.7.17-picard-2.18.7"]
+    container: containers["bwa-0.7.17-picard-2.22.8"]
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
            "| picard -Xmx4G -Djava.io.tmpdir={input.tmp} SortSam "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
