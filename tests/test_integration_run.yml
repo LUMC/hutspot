@@ -269,11 +269,17 @@
         - "chrM\t0\t16569"
     - path: 'micro/vcf/micro_120.bed'
       contains:
-        - "chrM\t0\t262"
-        - "chrM\t750\t3571"
-        - "chrM\t3590\t10934"
-        - "chrM\t10946\t13679"
-        - "chrM\t13680\t16569"
+        - "chrM\t0\t152"
+        - "chrM\t750\t1438"
+        - "chrM\t2258\t2259"
+        - "chrM\t3084\t3107"
+        - "chrM\t4744\t4769"
+        - "chrM\t7336\t7337"
+        - "chrM\t8859\t8860"
+        - "chrM\t13325\t13326"
+        - "chrM\t14830\t15326"
+        - "chrM\t16022\t16023"
+        - "chrM\t16559\t16569"
     - path: 'micro/vcf/micro_196.bed'
       contains:
         - "(null)\t0\t0"
