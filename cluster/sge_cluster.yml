@@ -6,6 +6,9 @@ __default__:
 align:
   threads: 8
   vmem: 4G
+bed_to_interval:
+  threads: 1
+  vmem: 16G
 markdup:
   vmem: 20G
 baserecal:
