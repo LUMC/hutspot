@@ -477,7 +477,7 @@ rule bed_to_interval:
         baits_interval = "baits.interval"
     output:
     container: containers["picard"]
-    shell: "picard BedToIntervalList "
+    shell: "picard -Xmx4G BedToIntervalList "
             "I={input.targets} O={output.target_interval} "
             "SD={input.ref} && "
             "picard BedToIntervalList "
