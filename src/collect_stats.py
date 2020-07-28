@@ -67,7 +67,6 @@ def main(args):
     unum = parse_num_file(args.unique_num)
     ubnum = parse_num_file(args.usable_basenum)
     cutadapt = parse_json_file(args.cutadapt)
-    
 
     d = {
         "sample_name": args.sample_name,
@@ -110,7 +109,7 @@ if __name__ == "__main__":
                         help="Unique num file")
     parser.add_argument("--usable-basenum", required=True,
                         help="Usable basenum")
-    parser.add_argument("--female-threshold", default=0.6, 
+    parser.add_argument("--female-threshold", default=0.6, type=float,
                         help="Female threshold of X/all cov")
     parser.add_argument("--cutadapt", required=True,
                         help="Cutadapt summary output")
