@@ -1,0 +1,68 @@
+__default__:
+  job_name: hutspot
+  threads: 1
+  vmem: 4G
+  queue: all
+  time: 00:30:00
+
+align:
+  threads: 8
+  vmem: 4G
+  time: 0-2
+
+baserecal:
+  threads: 8
+  vmem: 6G
+  time: 0-2
+
+covstats:
+  vmem: 6G
+
+cutadapt:
+  time: 0-2
+
+fastqc_raw:
+  threads: 4
+  time: 0-1
+
+fastqc_merged:
+  threads: 4
+  time: 0-1
+
+fastqc_postqc:
+  threads: 4
+  time: 0-1
+
+fqcount_postqc:
+  time: 0-1
+
+gvcf_scatter:
+  vmem: 20G
+  time: 0-1
+
+gvcf_gather:
+  vmem: 10G
+
+genotype_scatter:
+  vmem: 20G
+  time: 0-1
+
+genotype_gather:
+  vmem: 10G
+
+markdup:
+  vmem: 20G
+  time: 0-1
+
+multiqc:
+  vmem: 30G
+  time: 0-1
+
+sickle:
+  time: 0-1
+
+split_vcf:
+  vmem: 20G
+
+vcfstats:
+  time: 0-1
