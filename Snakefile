@@ -464,7 +464,7 @@ rule multiple_metrics:
         alignment = "{sample}/bams/{sample}.alignment_summary_metrics",
         insertMetrics = "{sample}/bams/{sample}.insert_size_metrics"
     container: containers["picard"]
-    shell: "picard CollectMultipleMetrics "
+    shell: "picard -Xmx8G -XX:CompressedClassSpaceSize=256m CollectMultipleMetrics "
            "I={input.bam} O={params.prefix} "
            "R={input.ref} "
            "PROGRAM=CollectAlignmentSummaryMetrics "
@@ -501,7 +501,7 @@ rule hs_metrics:
         baits = rules.bed_to_interval.output.baits_interval,
     output: "{sample}/bams/{sample}.hs_metrics.txt"
     container: containers["picard"]
-    shell: "picard CollectHsMetrics "
+    shell: "picard -Xmx8G -XX:CompressedClassSpaceSize=256m CollectHsMetrics "
            "I={input.bam} O={output} "
            "R={input.ref} "
            "BAIT_INTERVALS={input.baits} "

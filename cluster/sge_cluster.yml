@@ -9,7 +9,13 @@ align:
 bed_to_interval:
   threads: 1
   vmem: 16G
+hs_metrics:
+  threads: 1
+  vmem: 20G
 markdup:
+  vmem: 20G
+multiple_metrics:
+  threads: 1
   vmem: 20G
 baserecal:
   threads: 8
