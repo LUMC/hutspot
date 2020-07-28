@@ -134,6 +134,12 @@ rule all:
                               config['samples'], config['coverage_threshold'])
                           ) if 'coverage_threshold' in config else []
 
+rule create_markdup_tmp:
+    """Create tmp directory for mark duplicates"""
+    output: directory("tmp")
+    container: containers["debian"]
+    shell: "mkdir -p {output}"
+
 rule genome:
     """Create genome file as used by bedtools"""
     input: config["reference"]
@@ -164,13 +170,14 @@ rule align:
         r1 = rules.cutadapt.output.r1,
         r2 = rules.cutadapt.output.r2,
         ref = config["reference"],
+        tmp = ancient("tmp")
     params:
         rg = "@RG\\tID:{sample}-library-{read_group}\\tSM:{sample}\\tLB:library\\tPL:ILLUMINA"
     output: "{sample}/bams/{sample}-{read_group}.sorted.bam"
     container: containers["bwa-0.7.17-picard-2.22.8"]
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
-           "| picard -Xmx4G SortSam "
-           "CREATE_INDEX=TRUE "
+           "| picard -Xmx4G -Djava.io.tmpdir={input.tmp} SortSam "
+           "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate"
 
 def markdup_bam_input(wildcards):
@@ -186,6 +193,7 @@ rule markdup:
         ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(
             sample=wildcards.sample, read_group=rg)
             for rg in get_readgroup(wildcards)),
+        tmp = ancient("tmp")
     output:
         bam = "{sample}/bams/{sample}.bam",
         bai = "{sample}/bams/{sample}.bai",
@@ -193,8 +201,8 @@ rule markdup:
     params:
         bams=markdup_bam_input
     container: containers["picard"]
-    shell: "picard -Xmx4G MarkDuplicates "
-           "CREATE_INDEX=TRUE "
+    shell: "picard -Xmx4G -Djava.io.tmpdir={input.tmp} MarkDuplicates "
+           "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "{params.bams} OUTPUT={output.bam} "
            "METRICS_FILE={output.metrics} "
            "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
