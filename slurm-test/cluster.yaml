@@ -3,5 +3,5 @@ __default__:
   queue: short
   vmem: 4G
   threads: 1
-  time: 00:10:00
+  time: 00:30:00
   tmp: 1G
