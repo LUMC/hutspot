@@ -524,10 +524,10 @@ rule multiqc:
                 "{sample}/bams/{sample}.insert_size_metrics",
                 sample=config["samples"]
         ),
-        fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/"
+        fastqc_raw = (directory(f"{sample}/pre_process/raw-{sample}-{read_group}/")
                       for read_group, sample in get_readgroup_per_sample()),
 
-        fastqc_trim = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/"
+        fastqc_trim = (directory(f"{sample}/pre_process/trimmed-{sample}-{read_group}/")
                       for read_group, sample in get_readgroup_per_sample()),
 
         hs_metric = expand("{sample}/bams/{sample}.hs_metrics.txt",
