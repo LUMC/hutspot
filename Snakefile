@@ -160,6 +160,7 @@ rule cutadapt:
     container: containers["cutadapt"]
     shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG "
            "--minimum-length 1 --quality-cutoff=20,20 "
+           "--compression-level=1 -j 8 "
            "--output {output.r1} --paired-output {output.r2} -Z "
            "{input.r1} {input.r2} "
            "--report=minimal > {log}"

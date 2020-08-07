@@ -19,6 +19,7 @@ covstats:
   vmem: 6G
 
 cutadapt:
+  threads: 8
   time: 0-2
 
 fastqc_raw:
