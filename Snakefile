@@ -237,11 +237,13 @@ rule baserecal:
         known_sites = " ".join(
                 expand("-knownSites {vcf}", vcf=config["known_sites"])
         ),
+        region = "-L "+ config["restrict_BQSR"] if "restrict_BQSR" in config else "",
         bams = bqsr_bam_input
     container: containers["gatk"]
     shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
            "BaseRecalibrator {params.bams} -o {output} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
+           "{params.region} "
            "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
 
 checkpoint scatterregions:

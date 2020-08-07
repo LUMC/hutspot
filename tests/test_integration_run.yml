@@ -12,6 +12,8 @@
       - (100%) done
     must_not_contain:
       - rror
+    must_not_contain_regex:
+      - 'BaseRecalibrator.* -L '
   files:
     - path: micro/vcf/micro.vcf.gz
       contains_regex:
@@ -283,3 +285,14 @@
     - path: 'micro/vcf/micro_196.bed'
       contains:
         - "(null)\t0\t0"
+
+- name: test-integration-restrict-BQSR
+  tags:
+    - integration
+  command: >
+    snakemake --use-singularity --singularity-args ' --containall --bind /tmp '
+    --jobs 1 -w 120 -r -p
+    --configfile tests/data/config/sample_config_restrict_BQSR.json
+  stderr:
+    contains_regex:
+      - 'BaseRecalibrator.* -L chrM '
