@@ -120,10 +120,10 @@ rule all:
         gvcf_tbi = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",
                           sample=config["samples"]),
 
-        fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/"
+        fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/.done"
                       for read_group, sample in get_readgroup_per_sample()),
 
-        fastqc_trim = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/"
+        fastqc_trim = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/.done"
                       for read_group, sample in get_readgroup_per_sample()),
 
         cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt"
@@ -377,20 +377,26 @@ rule fastqc_raw:
     input:
         r1 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R1']),
         r2 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R2']),
+    params:
+        folder = "{sample}/pre_process/raw-{sample}-{read_group}"
     output:
-        directory("{sample}/pre_process/raw-{sample}-{read_group}/")
+        done = "{sample}/pre_process/raw-{sample}-{read_group}/.done"
     container: containers["fastqc"]
-    shell: "fastqc --threads 4 --nogroup -o {output} {input.r1} {input.r2} "
+    shell: "fastqc --threads 4 --nogroup -o {params.folder} {input.r1} {input.r2} && "
+           "touch {output.done}"
 
 rule fastqc_postqc:
     """Run fastqc on fastq files post pre-processing"""
     input:
         r1 = rules.cutadapt.output.r1,
         r2 = rules.cutadapt.output.r2
+    params:
+        folder = "{sample}/pre_process/trimmed-{sample}-{read_group}"
     output:
-        directory("{sample}/pre_process/trimmed-{sample}-{read_group}/")
+        done = "{sample}/pre_process/trimmed-{sample}-{read_group}/.done"
     container: containers["fastqc"]
-    shell: "fastqc --threads 4 --nogroup -o {output} {input.r1} {input.r2} "
+    shell: "fastqc --threads 4 --nogroup -o {params.folder} {input.r1} {input.r2} && "
+           "touch {output.done}"
 
 ## coverage
 rule covstats:
@@ -527,10 +533,10 @@ rule multiqc:
                 "{sample}/bams/{sample}.insert_size_metrics",
                 sample=config["samples"]
         ),
-        fastqc_raw = (directory(f"{sample}/pre_process/raw-{sample}-{read_group}/")
+        fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/.done"
                       for read_group, sample in get_readgroup_per_sample()),
 
-        fastqc_trim = (directory(f"{sample}/pre_process/trimmed-{sample}-{read_group}/")
+        fastqc_trim = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/.done"
                       for read_group, sample in get_readgroup_per_sample()),
 
         hs_metric = expand("{sample}/bams/{sample}.hs_metrics.txt",
