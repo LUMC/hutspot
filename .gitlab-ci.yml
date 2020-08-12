@@ -10,7 +10,7 @@ variables:
   before_script:
     - export BASETEMP=$RUN_BASE_DIR/$CI_COMMIT_REF_NAME/$CI_JOB_ID
     - source ${CONDA_SH}
-    - conda activate hutspot-pipeline
+    - conda activate hutspot-pipeline || conda create -n hutspot-pipeline --file requirements.txt --file requirements-dev.txt -y && conda activate hutspot-pipeline
     - export PATH=${PATH}:${SINGULARITY_PATH}
     - echo "#!/usr/bin/env bash" > snakemake
     - echo "$(which snakemake) --profile slurm-test \"\$@\"" >> snakemake
