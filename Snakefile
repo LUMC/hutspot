@@ -158,9 +158,11 @@ rule cutadapt:
     log:
         "{sample}/pre_process/{sample}-{read_group}.txt"
     container: containers["cutadapt"]
+    resources:
+        threads = 8
     shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG "
            "--minimum-length 1 --quality-cutoff=20,20 "
-           "--compression-level=1 -j 8 "
+           "--compression-level=1 -j {resources.threads} "
            "--output {output.r1} --paired-output {output.r2} -Z "
            "{input.r1} {input.r2} "
            "--report=minimal > {log}"
@@ -176,6 +178,8 @@ rule align:
         rg = "@RG\\tID:{sample}-library-{read_group}\\tSM:{sample}\\tLB:library\\tPL:ILLUMINA"
     output: "{sample}/bams/{sample}-{read_group}.sorted.bam"
     container: containers["bwa-0.7.17-picard-2.22.8"]
+    resources:
+        threads = 9
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
            "| picard -Xmx4G -Djava.io.tmpdir={input.tmp} SortSam "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
@@ -240,8 +244,11 @@ rule baserecal:
         region = "-L "+ config["restrict_BQSR"] if "restrict_BQSR" in config else "",
         bams = bqsr_bam_input
     container: containers["gatk"]
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 6000,
+        threads = 8
     shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
-           "BaseRecalibrator {params.bams} -o {output} -nct 8 "
+           "BaseRecalibrator {params.bams} -o {output} -nct {resources.threads} "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
            "{params.region} "
            "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
@@ -255,6 +262,8 @@ checkpoint scatterregions:
     output:
         directory("scatter")
     container: containers["biopet-scatterregions"]
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 10000
     shell: "mkdir -p {output} && "
            "biopet-scatterregions -Xmx24G "
            "--referenceFasta {input.ref} --scatterSize {params.size} "
@@ -318,6 +327,8 @@ rule genotype_scatter:
     wildcard_constraints:
         chunk = "[0-9]+"
     container: containers["gatk"]
+    resources:
+        mem_mb = 6000
     shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 "
            "/usr/GenomeAnalysisTK.jar -T "
            "GenotypeGVCFs -R {input.ref} "
@@ -382,7 +393,9 @@ rule fastqc_raw:
     output:
         done = "{sample}/pre_process/raw-{sample}-{read_group}/.done"
     container: containers["fastqc"]
-    shell: "fastqc --threads 4 --nogroup -o {params.folder} {input.r1} {input.r2} && "
+    resources:
+        threads = 4
+    shell: "fastqc --threads {threads} --nogroup -o {params.folder} {input.r1} {input.r2} && "
            "touch {output.done}"
 
 rule fastqc_postqc:
@@ -395,7 +408,9 @@ rule fastqc_postqc:
     output:
         done = "{sample}/pre_process/trimmed-{sample}-{read_group}/.done"
     container: containers["fastqc"]
-    shell: "fastqc --threads 4 --nogroup -o {params.folder} {input.r1} {input.r2} && "
+    resources:
+        threads = 4
+    shell: "fastqc --threads {threads} --nogroup -o {params.folder} {input.r1} {input.r2} && "
            "touch {output.done}"
 
 ## coverage
@@ -412,6 +427,9 @@ rule covstats:
         covj = "{sample}/coverage/covstats.json",
         covp = "{sample}/coverage/covstats.png"
     container: containers["bedtools-2.26-python-2.7"]
+    resources:
+        threads = 2,
+        mem_mb = 6000
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
            "-b {input.bam} -d  | python {input.covpy} - --plot {output.covp} "
            "--title 'Targets coverage' --subtitle '{params.subt}' "
