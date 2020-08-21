@@ -236,7 +236,7 @@ rule baserecal:
         known_sites = " ".join(
                 expand("-knownSites {vcf}", vcf=config["known_sites"])
         ),
-        region = "-L "+ config["restrict_BQSR"] if "restrict_BQSR" in config else "",
+        region = f"-L {config['restrict_BQSR']}" if "restrict_BQSR" in config else "",
         gatk_jar = config["gatk_jar"],
         bams = bqsr_bam_input
     container: containers["gatk"]
