@@ -57,3 +57,9 @@
   stdout:
     contains:
       - 'Invalid --configfile: sample names should not overlap ("micro1" is contained in "micro12")'
+
+- name: snakemake-lint
+  tags:
+    - sanity
+  command: >
+    snakemake --lint --configfile tests/data/config/sample_config.json
