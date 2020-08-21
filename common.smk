@@ -127,3 +127,14 @@ def gather_vcf_tbi(wildcards):
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
     return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz.tbi",
        i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+def sample_cutadapt_files(wildcards):
+    """ Determine the cutadapt log files files for a sample (one for each
+    readgroup).
+    """
+    files = list()
+    sample = config['samples'][wildcards.sample]
+    sample_name = wildcards.sample
+    for readgroup in sample['read_groups']:
+        files.append(f'{sample_name}/pre_process/{sample_name}-{readgroup}.txt')
+    return files

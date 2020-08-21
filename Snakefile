@@ -330,10 +330,7 @@ rule vtools_coverage:
 rule collect_cutadapt_summary:
     """Colect cutadapt summary from each readgroup per sample """
     input:
-        cutadapt = lambda wildcards:
-        ("{sample}/pre_process/{sample}-{read_group}.txt".format(
-            sample=wildcards.sample, read_group=read_group)
-            for read_group in get_readgroup(wildcards)),
+        cutadapt = sample_cutadapt_files,
         cutadapt_summary= config["cutadapt_summary"]
     output: "{sample}/cutadapt.json"
     log: "log/{sample}/collect_cutadapt_summary.log"
