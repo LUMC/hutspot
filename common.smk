@@ -61,6 +61,12 @@ def process_config():
     set_default('py_wordcount', srcdir('src/pywc.py'))
     set_default('cutadapt_summary', srcdir('src/cutadapt_summary.py'))
 
+
+def coverage_stats(wildcards):
+    files = expand("{sample}/coverage/refFlat_coverage.tsv",
+                   sample=config["samples"])
+    return files if "refflat" in config else []
+
 def coverage_files(wildcards):
     """ Return a list of all coverage files
 

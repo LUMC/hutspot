@@ -32,19 +32,6 @@ include: "common.smk"
 
 process_config()
 
-def get_readgroup(wildcards):
-    return config["samples"][wildcards.sample]["read_groups"]
-
-def get_readgroup_per_sample():
-    for sample in config["samples"]:
-        for rg in config["samples"][sample]["read_groups"]:
-            yield rg, sample
-
-def coverage_stats(wildcards):
-    files = expand("{sample}/coverage/refFlat_coverage.tsv",
-                   sample=config["samples"])
-    return files if "refflat" in config else []
-
 rule all:
     input:
         multiqc = "multiqc_report/multiqc_report.html",
@@ -447,8 +434,7 @@ rule multiqc:
 rule merge_stats:
     """Merge all stats of all samples"""
     input:
-        cols = expand("{sample}/{sample}.stats.json",
-                      sample=config['samples']),
+        cols = expand("{sample}/{sample}.stats.json", sample=config['samples']),
         mpy = config["merge_stats"],
         insertSize = rules.multiqc.output.insertSize,
         AlignmentMetrics = rules.multiqc.output.AlignmentMetrics,
