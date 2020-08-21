@@ -15,6 +15,7 @@
         "bedfile",
         "coverage_threshold",
         "restrict_BQSR",
+        "gatk_jar",
         "baitsfile"
     ],
     "properties": {
