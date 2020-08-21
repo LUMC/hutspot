@@ -108,19 +108,10 @@ rule align:
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate 2> {log}"
 
-def markdup_bam_input(wildcards):
-    """Generate the INPUT for each bam file """
-    return ["INPUT={sample}/bams/{sample}-{read_group}.sorted.bam".format(
-                sample=wildcards.sample, read_group=rg)
-            for rg in get_readgroup(wildcards)]
-
 rule markdup:
     """Mark duplicates in BAM file"""
     input:
-        bam = lambda wildcards:
-        ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(
-            sample=wildcards.sample, read_group=rg)
-            for rg in get_readgroup(wildcards)),
+        bam = markdup_input_files,
         tmp = ancient("tmp")
     output:
         bam = "{sample}/bams/{sample}.bam",
@@ -128,7 +119,7 @@ rule markdup:
         metrics = "{sample}/bams/{sample}.metrics"
     log: "log/{sample}/markdup.log"
     params:
-        bams=markdup_bam_input
+        bams=markdup_input_string
     container: containers["picard"]
     shell: "picard -Xmx4G -Djava.io.tmpdir={input.tmp} MarkDuplicates "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
