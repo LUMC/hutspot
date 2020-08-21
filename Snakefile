@@ -424,25 +424,13 @@ rule multiqc:
     Depends on stats.tsv to forcefully run at end of pipeline
     """
     input:
-        bam = expand("{sample}/bams/{sample}.bam", sample=config["samples"]),
-        metric = expand("{sample}/bams/{sample}.metrics",
-                        sample=config["samples"]),
-        alignment_metrics = expand(
-                "{sample}/bams/{sample}.alignment_summary_metrics",
-                sample=config["samples"]
-        ),
-        insert_metrics = expand(
-                "{sample}/bams/{sample}.insert_size_metrics",
-                sample=config["samples"]
-        ),
-        fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/.done"
-                      for read_group, sample in get_readgroup_per_sample()),
-
-        fastqc_trim = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/.done"
-                      for read_group, sample in get_readgroup_per_sample()),
-
-        hs_metric = expand("{sample}/bams/{sample}.hs_metrics.txt",
-                           sample=config["samples"]) if "baitsfile" in config else []
+        bam = expand("{s}/bams/{s}.bam", s=config["samples"]),
+        metric = expand("{s}/bams/{s}.metrics", s=config["samples"]),
+        alignment_metrics = expand("{s}/bams/{s}.alignment_summary_metrics", s=config["samples"]),
+        insert_metrics = expand("{s}/bams/{s}.insert_size_metrics", s=config["samples"]),
+        fastqc_raw = all_raw_fastqc,
+        fastqc_trim = all_trimmed_fastqc,
+        hs_metric = expand("{s}/bams/{s}.hs_metrics.txt", s=config["samples"]) if "baitsfile" in config else []
 
     output:
         html = "multiqc_report/multiqc_report.html",

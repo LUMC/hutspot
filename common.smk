@@ -87,8 +87,8 @@ def sample_bamfiles(wildcards):
     files = list()
     sample = config['samples'][wildcards.sample]
     sample_name = wildcards.sample
-    for readgroup in sample['read_groups']:
-        files.append(f'{sample_name}/bams/{sample_name}-{readgroup}.sorted.bam')
+    for read_group in sample['read_groups']:
+        files.append(f'{sample_name}/bams/{sample_name}-{read_group}.sorted.bam')
     return files
 
 def gather_gvcf(wildcards):
@@ -135,6 +135,22 @@ def sample_cutadapt_files(wildcards):
     files = list()
     sample = config['samples'][wildcards.sample]
     sample_name = wildcards.sample
-    for readgroup in sample['read_groups']:
-        files.append(f'{sample_name}/pre_process/{sample_name}-{readgroup}.txt')
+    for read_group in sample['read_groups']:
+        files.append(f'{sample_name}/pre_process/{sample_name}-{read_group}.txt')
     return files
+
+def all_raw_fastqc(wildcards):
+    """ Determine the raw fastq files for each sample """
+    fastq_files = list()
+    for sample in config['samples']:
+        for read_group in config['samples'][sample]['read_groups']:
+            fastq_files.append(f"{sample}/pre_process/raw-{sample}-{read_group}/.done")
+    return fastq_files
+
+def all_trimmed_fastqc(wildcards):
+    """ Determine the raw fastq files for each sample """
+    fastq_files = list()
+    for sample in config['samples']:
+        for read_group in config['samples'][sample]['read_groups']:
+            fastq_files.append(f"{sample}/pre_process/trimmed-{sample}-{read_group}/.done")
+    return fastq_files
