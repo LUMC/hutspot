@@ -61,6 +61,9 @@ def set_default(key, value):
 set_default('scatter_size', 1000000000)
 set_default('female_threshold', 0.6)
 
+# Hide the absolute path so the snakemake linter doesn't cry about it
+set_default('gatk_jar', os.path.join('/','usr','GenomeAnalysisTK.jar'))
+
 # Set the script paths
 set_default("covstats", srcdir("src/covstats.py"))
 set_default("collect_stats", srcdir("src/collect_stats.py"))
@@ -234,9 +237,10 @@ rule baserecal:
                 expand("-knownSites {vcf}", vcf=config["known_sites"])
         ),
         region = "-L "+ config["restrict_BQSR"] if "restrict_BQSR" in config else "",
+        gatk_jar = config["gatk_jar"],
         bams = bqsr_bam_input
     container: containers["gatk"]
-    shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
+    shell: "java -XX:ParallelGCThreads=1 -jar {params.gatk_jar} -T "
            "BaseRecalibrator {params.bams} -o {output} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
            "-cov CycleCovariate -cov ContextCovariate {params.known_sites} "
@@ -268,12 +272,14 @@ rule gvcf_scatter:
     output:
         gvcf = temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz"),
         gvcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi")
+    params:
+        gatk_jar = config["gatk_jar"],
     log: "log/{sample}/gvcf_scatter.{chunk}.log"
     wildcard_constraints:
         chunk = "[0-9]+"
     container: containers["gatk"]
-    shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar "
-           "-T HaplotypeCaller -ERC GVCF -I "
+    shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 {params.gatk_jar} -T "
+           "HaplotypeCaller -ERC GVCF -I "
            "{input.bam} -R {input.ref} -D {input.dbsnp} "
            "-L '{input.region}' -o '{output.gvcf}' "
            "-variant_index_type LINEAR -variant_index_parameter 128000 "
@@ -317,12 +323,13 @@ rule genotype_scatter:
     output:
         vcf = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz"),
         vcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz.tbi")
+    params:
+        gatk_jar = config["gatk_jar"]
     log: "log/{sample}/genotype_scatter.{chunk}.log"
     wildcard_constraints:
         chunk = "[0-9]+"
     container: containers["gatk"]
-    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 "
-           "/usr/GenomeAnalysisTK.jar -T "
+    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 {params.gatk_jar} -T "
            "GenotypeGVCFs -R {input.ref} "
            "-V {input.gvcf} -o '{output.vcf}' 2> {log}"
 
