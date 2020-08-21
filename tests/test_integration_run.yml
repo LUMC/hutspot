@@ -177,6 +177,9 @@
       - Job counts
       - localrule all
       - (100%) done
+      - BaseRecalibrator -I micro/bams/micro-lib_01.sorted.bam -I micro/bams/micro-lib_02.sorted.bam
+    contains_regex:
+      - MarkDuplicates.*INPUT=micro/bams/micro-lib_01.sorted.bam INPUT=micro/bams/micro-lib_02.sorted.bam
     must_not_contain:
       - rror
   files:

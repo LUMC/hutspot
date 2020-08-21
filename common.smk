@@ -81,10 +81,8 @@ def coverage_files(wildcards):
         files.append(f'{sample}/vcf/{sample}_{threshold}.bed')
     return files
 
-def markdup_input_files(wildcards):
-    """ Determine the input files for markduplicaates
-
-    This is the step where we merge the different per-readgroup bam files
+def sample_bamfiles(wildcards):
+    """ Determine the bam files for a sample (one for each readgroup)
     """
     files = list()
     sample = config['samples'][wildcards.sample]
@@ -92,7 +90,3 @@ def markdup_input_files(wildcards):
     for readgroup in sample['read_groups']:
         files.append(f'{sample_name}/bams/{sample_name}-{readgroup}.sorted.bam')
     return files
-
-def markdup_input_string(wildcards):
-    """Generate the INPUT for each bam file """
-    return [f'INPUT={file} ' for file in markdup_input_files(wildcards)]

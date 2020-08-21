@@ -111,7 +111,7 @@ rule align:
 rule markdup:
     """Mark duplicates in BAM file"""
     input:
-        bam = markdup_input_files,
+        bam = sample_bamfiles,
         tmp = ancient("tmp")
     output:
         bam = "{sample}/bams/{sample}.bam",
@@ -119,7 +119,7 @@ rule markdup:
         metrics = "{sample}/bams/{sample}.metrics"
     log: "log/{sample}/markdup.log"
     params:
-        bams=markdup_input_string
+        bams = lambda wc: expand('INPUT={bam}', bam=sample_bamfiles(wc))
     container: containers["picard"]
     shell: "picard -Xmx4G -Djava.io.tmpdir={input.tmp} MarkDuplicates "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
@@ -136,21 +136,16 @@ def bqsr_bam_input(wildcards):
 rule baserecal:
     """Base recalibrated BAM files"""
     input:
-        bam = lambda wildcards:
-        ("{sample}/bams/{sample}-{read_group}.sorted.bam".format(
-            sample=wildcards.sample, read_group=rg)
-            for rg in get_readgroup(wildcards)),
+        bam = sample_bamfiles,
         ref = config["reference"],
         vcfs = config["known_sites"]
     output: "{sample}/bams/{sample}.baserecal.grp"
     log: "log/{sample}/baserecal.log"
     params:
-        known_sites = " ".join(
-                expand("-knownSites {vcf}", vcf=config["known_sites"])
-        ),
+        known_sites = expand("-knownSites {vcf}", vcf=config["known_sites"]),
         region = f"-L {config['restrict_BQSR']}" if "restrict_BQSR" in config else "",
         gatk_jar = config["gatk_jar"],
-        bams = bqsr_bam_input
+        bams = lambda wc: expand("-I {bam}", bam=sample_bamfiles(wc))
     container: containers["gatk"]
     shell: "java -XX:ParallelGCThreads=1 -jar {params.gatk_jar} -T "
            "BaseRecalibrator {params.bams} -o {output} -nct 8 "
