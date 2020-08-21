@@ -1,3 +1,8 @@
+import itertools
+import json
+import jsonschema
+import os
+
 containers = {
    'bcftools': 'docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4',
    'bedtools-2.26-python-2.7': 'docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0',

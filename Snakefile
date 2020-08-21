@@ -21,13 +21,6 @@ Main Snakefile for the pipeline.
 :license: AGPL-3.0
 """
 
-import json
-import jsonschema
-from functools import partial
-from os.path import join, basename
-from pathlib import Path
-import itertools
-
 include: "common.smk"
 
 process_config()
