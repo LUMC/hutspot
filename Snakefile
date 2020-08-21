@@ -137,15 +137,17 @@ rule all:
 rule create_markdup_tmp:
     """Create tmp directory for mark duplicates"""
     output: directory("tmp")
+    log: "log/create_markdup_tmp.log"
     container: containers["debian"]
-    shell: "mkdir -p {output}"
+    shell: "mkdir -p {output} 2> {log}"
 
 rule genome:
     """Create genome file as used by bedtools"""
     input: config["reference"]
     output: "current.genome"
+    log: "log/genome.log"
     container: containers["debian"]
-    shell: "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output}"
+    shell: "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output} 2> {log}"
 
 rule cutadapt:
     """Clip fastq files"""
@@ -175,11 +177,12 @@ rule align:
     params:
         rg = "@RG\\tID:{sample}-library-{read_group}\\tSM:{sample}\\tLB:library\\tPL:ILLUMINA"
     output: "{sample}/bams/{sample}-{read_group}.sorted.bam"
+    log: "log/{sample}/align.{read_group}.log"
     container: containers["bwa-0.7.17-picard-2.22.8"]
     shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
            "| picard -Xmx4G -Djava.io.tmpdir={input.tmp} SortSam "
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
-           "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate"
+           "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate 2> {log}"
 
 def markdup_bam_input(wildcards):
     """Generate the INPUT for each bam file """
@@ -199,6 +202,7 @@ rule markdup:
         bam = "{sample}/bams/{sample}.bam",
         bai = "{sample}/bams/{sample}.bai",
         metrics = "{sample}/bams/{sample}.metrics"
+    log: "log/{sample}/markdup.log"
     params:
         bams=markdup_bam_input
     container: containers["picard"]
@@ -206,16 +210,7 @@ rule markdup:
            "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
            "{params.bams} OUTPUT={output.bam} "
            "METRICS_FILE={output.metrics} "
-           "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
-
-rule bai:
-    """Copy bai files as some genome browsers can only .bam.bai files"""
-    input:
-        bai = rules.markdup.output.bai
-    output:
-        bai = "{sample}/bams/{sample}.bam.bai"
-    container: containers["debian"]
-    shell: "cp {input.bai} {output.bai}"
+           "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500 2> {log}"
 
 def bqsr_bam_input(wildcards):
     """Generate the bam input string for each read group for BQSR"""
@@ -233,6 +228,7 @@ rule baserecal:
         ref = config["reference"],
         vcfs = config["known_sites"]
     output: "{sample}/bams/{sample}.baserecal.grp"
+    log: "log/{sample}/baserecal.log"
     params:
         known_sites = " ".join(
                 expand("-knownSites {vcf}", vcf=config["known_sites"])
@@ -243,8 +239,8 @@ rule baserecal:
     shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
            "BaseRecalibrator {params.bams} -o {output} -nct 8 "
            "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
-           "{params.region} "
-           "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
+           "-cov CycleCovariate -cov ContextCovariate {params.known_sites} "
+           "{params.region} 2> {log}"
 
 checkpoint scatterregions:
     """Scatter the reference genome"""
@@ -254,11 +250,12 @@ checkpoint scatterregions:
         size = config['scatter_size']
     output:
         directory("scatter")
+    log: "log/scatterregions.log"
     container: containers["biopet-scatterregions"]
     shell: "mkdir -p {output} && "
            "biopet-scatterregions -Xmx24G "
            "--referenceFasta {input.ref} --scatterSize {params.size} "
-           "--outputDir scatter"
+           "--outputDir scatter 2> {log}"
 
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
@@ -271,6 +268,7 @@ rule gvcf_scatter:
     output:
         gvcf = temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz"),
         gvcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi")
+    log: "log/{sample}/gvcf_scatter.{chunk}.log"
     wildcard_constraints:
         chunk = "[0-9]+"
     container: containers["gatk"]
@@ -281,7 +279,7 @@ rule gvcf_scatter:
            "-variant_index_type LINEAR -variant_index_parameter 128000 "
            "-BQSR {input.bqsr} "
            "--GVCFGQBands 20 --GVCFGQBands 40 --GVCFGQBands 60 "
-           "--GVCFGQBands 80 --GVCFGQBands 100 "
+           "--GVCFGQBands 80 --GVCFGQBands 100 2> {log}"
 
 def aggregate_gvcf(wildcards):
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
@@ -301,10 +299,12 @@ rule gvcf_gather:
     output:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz",
         gvcf_tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
+    log: "log/{sample}/gvcf_gather.log"
     container: containers["bcftools"]
     shell: "bcftools concat {input.gvcfs} --allow-overlaps "
-           "--output {output.gvcf} --output-type z && "
-           "bcftools index --tbi --output-file {output.gvcf_tbi} {output.gvcf}"
+           "--output {output.gvcf} --output-type z 2> {log} && "
+           "bcftools index --tbi --output-file {output.gvcf_tbi} "
+           "{output.gvcf} 2>> {log}"
 
 rule genotype_scatter:
     """Run GATK's GenotypeGVCFs by chunk"""
@@ -315,13 +315,14 @@ rule genotype_scatter:
     output:
         vcf = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz"),
         vcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz.tbi")
+    log: "log/{sample}/genotype_scatter.{chunk}.log"
     wildcard_constraints:
         chunk = "[0-9]+"
     container: containers["gatk"]
     shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 "
            "/usr/GenomeAnalysisTK.jar -T "
            "GenotypeGVCFs -R {input.ref} "
-           "-V {input.gvcf} -o '{output.vcf}'"
+           "-V {input.gvcf} -o '{output.vcf}' 2> {log}"
 
 def aggregate_vcf(wildcards):
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
@@ -341,9 +342,10 @@ rule genotype_gather:
     output:
         vcf = "{sample}/vcf/{sample}.vcf.gz",
         vcf_tbi = "{sample}/vcf/{sample}.vcf.gz.tbi"
+    log: "log/{sample}/genotype_gather.log"
     container: containers["bcftools"]
     shell: "bcftools concat {input.vcfs} --allow-overlaps "
-           "--output {output.vcf} --output-type z && "
+           "--output {output.vcf} --output-type z 2> {log} && "
            "bcftools index --tbi --output-file {output.vcf_tbi} {output.vcf}"
 
 ## bam metrics
@@ -355,8 +357,9 @@ rule mapped_reads_bases:
     output:
         reads = "{sample}/bams/{sample}.mapped.num",
         bases = "{sample}/bams/{sample}.mapped.basenum"
+    log: "log/{sample}/mapped_reads_bases.log"
     container: containers["samtools-1.7-python-3.6"]
-    shell: "samtools view -F 4 {input.bam} | cut -f 10 | python {input.pywc} "
+    shell: "samtools view -F 4 {input.bam} 2> {log} | cut -f 10 | python {input.pywc} "
            "--reads {output.reads} --bases {output.bases}"
 
 rule unique_reads_bases:
@@ -367,9 +370,11 @@ rule unique_reads_bases:
     output:
         reads = "{sample}/bams/{sample}.unique.num",
         bases = "{sample}/bams/{sample}.usable.basenum"
+    log: "log/{sample}/unique_reads_bases.log"
     container: containers["samtools-1.7-python-3.6"]
-    shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f 10 | "
-           "python {input.pywc} --reads {output.reads} --bases {output.bases}"
+    shell: "samtools view -F 4 -F 1024 {input.bam} 2> {log} | cut -f 10 | "
+           "python {input.pywc} --reads {output.reads} "
+           "--bases {output.bases} 2>> {log}"
 
 ## fastqc
 rule fastqc_raw:
@@ -381,8 +386,10 @@ rule fastqc_raw:
         folder = "{sample}/pre_process/raw-{sample}-{read_group}"
     output:
         done = "{sample}/pre_process/raw-{sample}-{read_group}/.done"
+    log: "log/{sample}/fastqc_raw.{read_group}.log"
     container: containers["fastqc"]
-    shell: "fastqc --threads 4 --nogroup -o {params.folder} {input.r1} {input.r2} && "
+    shell: "fastqc --threads 4 --nogroup -o {params.folder} "
+           "{input.r1} {input.r2} 2> {log} && "
            "touch {output.done}"
 
 rule fastqc_postqc:
@@ -394,8 +401,10 @@ rule fastqc_postqc:
         folder = "{sample}/pre_process/trimmed-{sample}-{read_group}"
     output:
         done = "{sample}/pre_process/trimmed-{sample}-{read_group}/.done"
+    log: "log/{sample}/fastqc_postqc.{read_group}.log"
     container: containers["fastqc"]
-    shell: "fastqc --threads 4 --nogroup -o {params.folder} {input.r1} {input.r2} && "
+    shell: "fastqc --threads 4 --nogroup -o {params.folder} "
+           "{input.r1} {input.r2} 2> {log} && "
            "touch {output.done}"
 
 ## coverage
@@ -411,11 +420,12 @@ rule covstats:
     output:
         covj = "{sample}/coverage/covstats.json",
         covp = "{sample}/coverage/covstats.png"
+    log: "log/{sample}/covstats.log"
     container: containers["bedtools-2.26-python-2.7"]
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
-           "-b {input.bam} -d  | python {input.covpy} - --plot {output.covp} "
-           "--title 'Targets coverage' --subtitle '{params.subt}' "
-           "> {output.covj}"
+           "-b {input.bam} -d  2> {log} | python {input.covpy} - "
+           "--plot {output.covp} --title 'Targets coverage' "
+           "--subtitle '{params.subt}' > {output.covj} 2>> {log}"
 
 rule vtools_coverage:
     """Calculate coverage statistics per transcript"""
@@ -423,10 +433,11 @@ rule vtools_coverage:
         gvcf = rules.gvcf_gather.output.gvcf,
         tbi = rules.gvcf_gather.output.gvcf_tbi,
         ref = config.get('refflat', "")
-    output:
-        tsv = "{sample}/coverage/refFlat_coverage.tsv"
+    output: "{sample}/coverage/refFlat_coverage.tsv"
+    log: "log/{sample}/vtools_coverage.log"
     container: containers["vtools"]
-    shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
+    shell: "vtools-gcoverage -I {input.gvcf} "
+           "-R {input.ref} > {output} 2> {log}"
 
 rule collect_cutadapt_summary:
     """Colect cutadapt summary from each readgroup per sample """
@@ -437,6 +448,7 @@ rule collect_cutadapt_summary:
             for read_group in get_readgroup(wildcards)),
         cutadapt_summary= config["cutadapt_summary"]
     output: "{sample}/cutadapt.json"
+    log: "log/{sample}/collect_cutadapt_summary.log"
     container: containers["python3"]
     shell: "python {input.cutadapt_summary} --sample {wildcards.sample} "
            "--cutadapt-summary {input.cutadapt} > {output}"
@@ -454,13 +466,14 @@ rule collectstats:
     params:
         fthresh = config["female_threshold"]
     output: "{sample}/{sample}.stats.json"
+    log: "log/{sample}/collectstats.log"
     container: containers["python3"]
     shell: "python {input.colpy} --sample-name {wildcards.sample} "
            "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
            "--unique-num {input.unum} --usable-basenum {input.ubnum} "
            "--female-threshold {params.fthresh} "
            "--cutadapt {input.cutadapt} "
-           "--covstats {input.cov} > {output}"
+           "--covstats {input.cov} > {output} 2> {log}"
 
 rule multiple_metrics:
     """Run picard CollectMultipleMetrics"""
@@ -472,12 +485,13 @@ rule multiple_metrics:
     output:
         alignment = "{sample}/bams/{sample}.alignment_summary_metrics",
         insertMetrics = "{sample}/bams/{sample}.insert_size_metrics"
+    log: "log/{sample}/multiple_metrics.log"
     container: containers["picard"]
     shell: "picard -Xmx8G -XX:CompressedClassSpaceSize=256m CollectMultipleMetrics "
            "I={input.bam} O={params.prefix} "
            "R={input.ref} "
            "PROGRAM=CollectAlignmentSummaryMetrics "
-           "PROGRAM=CollectInsertSizeMetrics "
+           "PROGRAM=CollectInsertSizeMetrics 2> {log}"
 
 rule bed_to_interval:
     """Run picard BedToIntervalList
@@ -492,14 +506,14 @@ rule bed_to_interval:
     output:
         target_interval = "target.interval",
         baits_interval = "baits.interval"
-    output:
+    log: "log/bed_to_interval.log"
     container: containers["picard"]
     shell: "picard -Xmx4G BedToIntervalList "
             "I={input.targets} O={output.target_interval} "
-            "SD={input.ref} && "
+            "SD={input.ref} 2> {log} && "
             "picard BedToIntervalList "
             "I={input.baits} O={output.baits_interval} "
-            "SD={input.ref} "
+            "SD={input.ref} 2>> {log}"
 
 rule hs_metrics:
     """Run picard CollectHsMetrics"""
@@ -509,6 +523,7 @@ rule hs_metrics:
         targets = rules.bed_to_interval.output.target_interval,
         baits = rules.bed_to_interval.output.baits_interval,
     output: "{sample}/bams/{sample}.hs_metrics.txt"
+    log: "log/{sample}/hs_metrics.log"
     container: containers["picard"]
     shell: "picard -Xmx8G -XX:CompressedClassSpaceSize=256m CollectHsMetrics "
            "I={input.bam} O={output} "
@@ -548,8 +563,10 @@ rule multiqc:
         AlignmentMetrics = "multiqc_report/multiqc_data/multiqc_picard_AlignmentSummaryMetrics.json",
         DuplicationMetrics = "multiqc_report/multiqc_data/multiqc_picard_dups.json",
         HsMetrics = "multiqc_report/multiqc_data/multiqc_picard_HsMetrics.json" if "baitsfile" in config else []
+    log: "log/multiqc.log"
     container: containers["multiqc"]
-    shell: "multiqc --data-format json --force --outdir multiqc_report . "
+    shell: "multiqc --data-format json --force "
+           "--outdir multiqc_report . 2> {log} "
            "|| touch {output}"
 
 rule merge_stats:
@@ -563,12 +580,13 @@ rule merge_stats:
         DuplicationMetrics = rules.multiqc.output.DuplicationMetrics,
         HsMetrics = rules.multiqc.output.HsMetrics
     output: "stats.json"
+    log: "log/stats.tsv.log"
     container: containers["vtools"]
     shell: "python {input.mpy} --collectstats {input.cols} "
            "--picard-insertSize {input.insertSize} "
            "--picard-AlignmentMetrics {input.AlignmentMetrics} "
            "--picard-DuplicationMetrics {input.DuplicationMetrics} "
-           "--picard-HsMetrics {input.HsMetrics} > {output}"
+           "--picard-HsMetrics {input.HsMetrics} > {output} 2> {log}"
 
 rule stats_tsv:
     """Convert stats.json to tsv"""
@@ -576,13 +594,15 @@ rule stats_tsv:
         stats = rules.merge_stats.output,
         sc = config["stats_to_tsv"]
     output: "stats.tsv"
+    log: "log/stats.tsv.log"
     container: containers["python3"]
-    shell: "python {input.sc} -i {input.stats} > {output}"
+    shell: "python {input.sc} -i {input.stats} > {output} 2> {log}"
 
 
 rule gvcf2coverage:
     """ Determine coverage from gvcf files """
     input: rules.gvcf_gather.output.gvcf
     output: "{sample}/vcf/{sample}_{threshold}.bed"
+    log: "log/{sample}/gvcf2coverage.{threshold}.log"
     container: containers["gvcf2coverage"]
-    shell: "gvcf2coverage -t {wildcards.threshold} < {input} | cut -f 1,2,3 > {output}"
+    shell: "gvcf2coverage -t {wildcards.threshold} < {input} 2> {log} | cut -f 1,2,3 > {output}"
