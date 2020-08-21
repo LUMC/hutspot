@@ -50,35 +50,13 @@ rule all:
         multiqc = "multiqc_report/multiqc_report.html",
         stats = "stats.json",
         stats_tsv = "stats.tsv",
-
-        bam = expand("{sample}/bams/{sample}.bam",
-                     sample=config["samples"]),
-
-        vcfs = expand("{sample}/vcf/{sample}.vcf.gz",
-                      sample=config["samples"]),
-
-        vcf_tbi = expand("{sample}/vcf/{sample}.vcf.gz.tbi",
-                         sample=config["samples"]),
-
-        gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz",
-                       sample=config["samples"]),
-
-        gvcf_tbi = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",
-                          sample=config["samples"]),
-
-        fastqc_raw = (f"{sample}/pre_process/raw-{sample}-{read_group}/.done"
-                      for read_group, sample in get_readgroup_per_sample()),
-
-        fastqc_trim = (f"{sample}/pre_process/trimmed-{sample}-{read_group}/.done"
-                      for read_group, sample in get_readgroup_per_sample()),
-
-        cutadapt = (f"{sample}/pre_process/{sample}-{read_group}.txt"
-                    for read_group, sample in get_readgroup_per_sample()),
+        bam = expand("{s}/bams/{s}.bam", s=config["samples"]),
+        vcfs = expand("{s}/vcf/{s}.vcf.gz", s=config["samples"]),
+        vcf_tbi = expand("{s}/vcf/{s}.vcf.gz.tbi", s=config["samples"]),
+        gvcfs = expand("{s}/vcf/{s}.g.vcf.gz", s=config["samples"]),
+        gvcf_tbi = expand("{s}/vcf/{s}.g.vcf.gz.tbi", s=config["samples"]),
         coverage_stats = coverage_stats,
-        coverage_files = (f"{sample}/vcf/{sample}_{threshold}.bed"
-                          for sample, threshold in itertools.product(
-                              config['samples'], config['coverage_threshold'])
-                          ) if 'coverage_threshold' in config else []
+        coverage_files = coverage_files
 
 rule create_markdup_tmp:
     """Create tmp directory for mark duplicates"""

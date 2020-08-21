@@ -15,13 +15,13 @@ containers = {
     "vtools": "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
 }
 
-def set_default(key, value):
-    """Set default config values"""
-    if key not in config:
-        config[key] = value
-
 def process_config():
     """ Process the config file and set the default values """
+
+    def set_default(key, value):
+        """Set default config values"""
+        if key not in config:
+            config[key] = value
 
     # Read the json schema
     with open(srcdir('config/schema.json'), 'rt') as fin:
@@ -60,3 +60,21 @@ def process_config():
     set_default("stats_to_tsv", srcdir("src/stats_to_tsv.py"))
     set_default("py_wordcount", srcdir("src/pywc.py"))
     set_default("cutadapt_summary", srcdir("src/cutadapt_summary.py"))
+
+def coverage_files(wildcards):
+    """ Return a list of all coverage files
+
+    The coverage is calculated for each sample, for each specified threshold
+    """
+
+    # We only calculate the coverage when this is specified in the
+    # configuration
+    if 'coverage_threshold' not in config:
+        return list()
+
+    samples = config['samples']
+    thresholds = config['coverage_threshold']
+    files = list()
+    for sample, threshold in itertools.product(samples, thresholds):
+        files.append(f'{sample}/vcf/{sample}_{threshold}.bed')
+    return files
