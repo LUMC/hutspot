@@ -1,2 +1,2 @@
-snakemake>=5.11
+snakemake>=5.22
 jsonschema
