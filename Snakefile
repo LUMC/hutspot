@@ -391,13 +391,11 @@ rule fastqc_raw:
     input:
         r1 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R1']),
         r2 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R2']),
-    params:
-        folder = "{sample}/pre_process/raw-{sample}-{read_group}"
     output:
         done = "{sample}/pre_process/raw-{sample}-{read_group}/.done"
     log: "log/{sample}/fastqc_raw.{read_group}.log"
     container: containers["fastqc"]
-    shell: "fastqc --threads 4 --nogroup -o {params.folder} "
+    shell: "fastqc --threads 4 --nogroup -o $(dirname {output.done}) "
            "{input.r1} {input.r2} 2> {log} && "
            "touch {output.done}"
 
@@ -406,13 +404,11 @@ rule fastqc_postqc:
     input:
         r1 = rules.cutadapt.output.r1,
         r2 = rules.cutadapt.output.r2
-    params:
-        folder = "{sample}/pre_process/trimmed-{sample}-{read_group}"
     output:
         done = "{sample}/pre_process/trimmed-{sample}-{read_group}/.done"
     log: "log/{sample}/fastqc_postqc.{read_group}.log"
     container: containers["fastqc"]
-    shell: "fastqc --threads 4 --nogroup -o {params.folder} "
+    shell: "fastqc --threads 4 --nogroup -o $(dirname {output.done}) "
            "{input.r1} {input.r2} 2> {log} && "
            "touch {output.done}"
 
@@ -492,7 +488,7 @@ rule multiple_metrics:
         bam = rules.markdup.output.bam,
         ref = config["reference"],
     params:
-        prefix = "{sample}/bams/{sample}",
+        prefix = lambda wildcards, output: output.alignment[:-26]
     output:
         alignment = "{sample}/bams/{sample}.alignment_summary_metrics",
         insertMetrics = "{sample}/bams/{sample}.insert_size_metrics"
