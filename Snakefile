@@ -127,12 +127,6 @@ rule markdup:
            "METRICS_FILE={output.metrics} "
            "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500 2> {log}"
 
-def bqsr_bam_input(wildcards):
-    """Generate the bam input string for each read group for BQSR"""
-    template = "-I {sample}/bams/{sample}-{read_group}.sorted.bam"
-    return " ".join([template.format(sample=wildcards.sample,
-            read_group=rg) for rg in get_readgroup(wildcards)])
-
 rule baserecal:
     """Base recalibrated BAM files"""
     input:
@@ -194,21 +188,11 @@ rule gvcf_scatter:
            "--GVCFGQBands 20 --GVCFGQBands 40 --GVCFGQBands 60 "
            "--GVCFGQBands 80 --GVCFGQBands 100 2> {log}"
 
-def aggregate_gvcf(wildcards):
-    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
-    return expand("{{sample}}/vcf/{{sample}}.{i}.g.vcf.gz",
-       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
-
-def aggregate_gvcf_tbi(wildcards):
-    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
-    return expand("{{sample}}/vcf/{{sample}}.{i}.g.vcf.gz.tbi",
-       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
-
 rule gvcf_gather:
     """Join the gvcf files together"""
     input:
-        gvcfs = aggregate_gvcf,
-        tbis = aggregate_gvcf_tbi,
+        gvcfs = gather_gvcf,
+        tbis = gather_gvcf_tbi,
     output:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz",
         gvcf_tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
@@ -240,21 +224,11 @@ rule genotype_scatter:
            "GenotypeGVCFs -R {input.ref} "
            "-V {input.gvcf} -o '{output.vcf}' 2> {log}"
 
-def aggregate_vcf(wildcards):
-    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
-    return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz",
-       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
-
-def aggregate_vcf_tbi(wildcards):
-    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
-    return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz.tbi",
-       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
-
 rule genotype_gather:
     """Gather all genotyping VCFs"""
     input:
-        vcfs = aggregate_vcf,
-        vcfs_tbi = aggregate_vcf_tbi
+        vcfs = gather_vcf,
+        vcfs_tbi = gather_vcf_tbi
     output:
         vcf = "{sample}/vcf/{sample}.vcf.gz",
         vcf_tbi = "{sample}/vcf/{sample}.vcf.gz.tbi"

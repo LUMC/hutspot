@@ -90,3 +90,40 @@ def sample_bamfiles(wildcards):
     for readgroup in sample['read_groups']:
         files.append(f'{sample_name}/bams/{sample_name}-{readgroup}.sorted.bam')
     return files
+
+def gather_gvcf(wildcards):
+    """ Gather the gvcf files based on the scatterregions checkpoint
+
+    This is depends on the 'scatter_size' parameter and the reference genome
+    used
+    """
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("{{sample}}/vcf/{{sample}}.{i}.g.vcf.gz",
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+def gather_gvcf_tbi(wildcards):
+    """ Gather the gvcf index files based on the scatterregions checkpoint
+    This is depends on the 'scatter_size' parameter and the reference genome
+    used
+    """
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("{{sample}}/vcf/{{sample}}.{i}.g.vcf.gz.tbi",
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+def gather_vcf(wildcards):
+    """ Gather the vcf files based on the scatterregions checkpoint
+    This is depends on the 'scatter_size' parameter and the reference genome
+    used
+    """
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz",
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+def gather_vcf_tbi(wildcards):
+    """ Gather the vcf index files based on the scatterregions checkpoint
+    This is depends on the 'scatter_size' parameter and the reference genome
+    used
+    """
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz.tbi",
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
