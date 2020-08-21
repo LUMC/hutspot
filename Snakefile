@@ -299,12 +299,14 @@ rule gvcf_gather:
     output:
         gvcf = "{sample}/vcf/{sample}.g.vcf.gz",
         gvcf_tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
-    log: "log/{sample}/gvcf_gather.log"
+    log:
+        concat = "log/{sample}/gvcf_gather_concat.log",
+        index = "log/{sample}/gvcf_gather_index.log"
     container: containers["bcftools"]
     shell: "bcftools concat {input.gvcfs} --allow-overlaps "
-           "--output {output.gvcf} --output-type z 2> {log} && "
+           "--output {output.gvcf} --output-type z 2> {log.concat} && "
            "bcftools index --tbi --output-file {output.gvcf_tbi} "
-           "{output.gvcf} 2>> {log}"
+           "{output.gvcf} 2> {log.index}"
 
 rule genotype_scatter:
     """Run GATK's GenotypeGVCFs by chunk"""
@@ -420,12 +422,14 @@ rule covstats:
     output:
         covj = "{sample}/coverage/covstats.json",
         covp = "{sample}/coverage/covstats.png"
-    log: "log/{sample}/covstats.log"
+    log:
+        bedtools = "log/{sample}/covstats_bedtools.log",
+        covpy = "log/{sample}/covstats_covpy.log"
     container: containers["bedtools-2.26-python-2.7"]
     shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
-           "-b {input.bam} -d  2> {log} | python {input.covpy} - "
+           "-b {input.bam} -d  2> {log.bedtools} | python {input.covpy} - "
            "--plot {output.covp} --title 'Targets coverage' "
-           "--subtitle '{params.subt}' > {output.covj} 2>> {log}"
+           "--subtitle '{params.subt}' > {output.covj} 2> {log.covpy}"
 
 rule vtools_coverage:
     """Calculate coverage statistics per transcript"""
@@ -506,14 +510,16 @@ rule bed_to_interval:
     output:
         target_interval = "target.interval",
         baits_interval = "baits.interval"
-    log: "log/bed_to_interval.log"
+    log:
+        target = "log/bed_to_interval_target.log",
+        baits = "log/bed_to_interval_target.log"
     container: containers["picard"]
     shell: "picard -Xmx4G BedToIntervalList "
             "I={input.targets} O={output.target_interval} "
-            "SD={input.ref} 2> {log} && "
+            "SD={input.ref} 2> {log.target} && "
             "picard BedToIntervalList "
             "I={input.baits} O={output.baits_interval} "
-            "SD={input.ref} 2>> {log}"
+            "SD={input.ref} 2> {log.baits}"
 
 rule hs_metrics:
     """Run picard CollectHsMetrics"""
