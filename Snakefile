@@ -74,6 +74,8 @@ rule cutadapt:
         "{sample}/pre_process/{sample}-{read_group}.txt"
     container:
         containers["cutadapt"]
+    threads:
+        8
     shell:
         "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG "
         "--minimum-length 1 --quality-cutoff=20,20 "
@@ -98,8 +100,10 @@ rule align:
         picard = "log/{sample}/align.{read_group}.picard.log"
     container:
         containers["bwa-0.7.17-picard-2.22.8"]
+    threads:
+        8
     shell:
-        "bwa mem -t 8 -R '{params.rg}' {input.ref} "
+        "bwa mem -t {threads} -R '{params.rg}' {input.ref} "
         "{input.r1} {input.r2} 2> {log.bwa} | "
         "picard -Xmx4G -Djava.io.tmpdir={input.tmp} SortSam "
         "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
@@ -145,9 +149,13 @@ rule baserecal:
         "log/{sample}/baserecal.log"
     container:
         containers["gatk"]
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 6000,
+    threads:
+        8
     shell:
         "java -XX:ParallelGCThreads=1 -jar {params.gatk_jar} -T "
-        "BaseRecalibrator {params.bams} -o {output} -nct 8 "
+        "BaseRecalibrator {params.bams} -o {output} -nct {threads} "
         "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
         "-cov CycleCovariate -cov ContextCovariate {params.known_sites} "
         "{params.region} 2> {log}"
@@ -164,6 +172,8 @@ checkpoint scatterregions:
         "log/scatterregions.log"
     container:
         containers["biopet-scatterregions"]
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 10000
     shell:
         "mkdir -p {output} && "
         "biopet-scatterregions -Xmx24G "
@@ -231,6 +241,8 @@ rule genotype_scatter:
         "log/{sample}/genotype_scatter.{chunk}.log"
     container:
         containers["gatk"]
+    resources:
+        mem_mb = 6000
     shell:
         "java -jar -Xmx15G -XX:ParallelGCThreads=1 {params.gatk_jar} -T "
         "GenotypeGVCFs -R {input.ref} "
@@ -297,8 +309,10 @@ rule fastqc_raw:
         "log/{sample}/fastqc_raw.{read_group}.log"
     container:
         containers["fastqc"]
+    threads:
+        4
     shell:
-        "fastqc --threads 4 --nogroup -o $(dirname {output.done}) "
+        "fastqc --threads {threads} --nogroup -o $(dirname {output.done}) "
         "{input.r1} {input.r2} 2> {log} && "
         "touch {output.done}"
 
@@ -313,8 +327,10 @@ rule fastqc_postqc:
         "log/{sample}/fastqc_postqc.{read_group}.log"
     container:
         containers["fastqc"]
+    threads:
+        4
     shell:
-        "fastqc --threads 4 --nogroup -o $(dirname {output.done}) "
+        "fastqc --threads {threads} --nogroup -o $(dirname {output.done}) "
         "{input.r1} {input.r2} 2> {log} && "
         "touch {output.done}"
 
@@ -335,6 +351,10 @@ rule covstats:
         covpy = "log/{sample}/covstats_covpy.log"
     container:
         containers["bedtools-2.26-python-2.7"]
+    resources:
+        mem_mb = 6000
+    threads:
+        2
     shell:
         "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
         "-b {input.bam} -d  2> {log.bedtools} | python {input.covpy} - "
