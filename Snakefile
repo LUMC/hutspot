@@ -270,39 +270,6 @@ rule genotype_gather:
         "--output {output.vcf} --output-type z 2> {log} && "
         "bcftools index --tbi --output-file {output.vcf_tbi} {output.vcf}"
 
-rule mapped_reads_bases:
-    """Calculate number of mapped reads"""
-    input:
-        bam = rules.markdup.output.bam,
-        pywc = config["py_wordcount"]
-    output:
-        reads = "{sample}/bams/{sample}.mapped.num",
-        bases = "{sample}/bams/{sample}.mapped.basenum"
-    log:
-        "log/{sample}/mapped_reads_bases.log"
-    container:
-        containers["samtools-1.7-python-3.6"]
-    shell:
-        "samtools view -F 4 {input.bam} 2> {log} | cut -f 10 | python {input.pywc} "
-        "--reads {output.reads} --bases {output.bases}"
-
-rule unique_reads_bases:
-    """Calculate number of unique reads"""
-    input:
-        bam = rules.markdup.output.bam,
-        pywc = config["py_wordcount"]
-    output:
-        reads = "{sample}/bams/{sample}.unique.num",
-        bases = "{sample}/bams/{sample}.usable.basenum"
-    log:
-        "log/{sample}/unique_reads_bases.log"
-    container:
-        containers["samtools-1.7-python-3.6"]
-    shell:
-        "samtools view -F 4 -F 1024 {input.bam} 2> {log} | cut -f 10 | "
-        "python {input.pywc} --reads {output.reads} "
-        "--bases {output.bases} 2>> {log}"
-
 rule fastqc_raw:
     """Run fastqc on raw fastq files"""
     input:
@@ -400,10 +367,6 @@ rule collect_cutadapt_summary:
 rule collectstats:
     """Collect all stats for a particular sample"""
     input:
-        mnum = rules.mapped_reads_bases.output.reads,
-        mbnum = rules.mapped_reads_bases.output.bases,
-        unum = rules.unique_reads_bases.output.reads,
-        ubnum = rules.unique_reads_bases.output.bases,
         cov = rules.covstats.output.covj if "targetsfile" in config else [],
         cutadapt = rules.collect_cutadapt_summary.output,
         colpy = config["collect_stats"]
@@ -417,8 +380,6 @@ rule collectstats:
         containers["python3"]
     shell:
         "python {input.colpy} --sample-name {wildcards.sample} "
-        "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
-        "--unique-num {input.unum} --usable-basenum {input.ubnum} "
         "--female-threshold {params.fthresh} "
         "--cutadapt {input.cutadapt} "
         "--covstats {input.cov} > {output} 2> {log}"

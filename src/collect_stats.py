@@ -62,10 +62,6 @@ def determine_gender(covstat, fthresh):
 
 
 def main(args):
-    mpnum = parse_num_file(args.mapped_num)
-    mpbnum = parse_num_file(args.mapped_basenum)
-    unum = parse_num_file(args.unique_num)
-    ubnum = parse_num_file(args.usable_basenum)
     cutadapt = parse_json_file(args.cutadapt)
 
     d = {
@@ -73,11 +69,7 @@ def main(args):
         "preqc_reads": cutadapt["preqc_reads"],
         "preqc_bases": cutadapt["preqc_bases"],
         "postqc_reads": cutadapt["postqc_reads"],
-        "postqc_bases": cutadapt["postqc_bases"],
-        "n_mapped_reads": mpnum,
-        "n_mapped_bases": mpbnum,
-        "n_usable_reads": unum,
-        "n_usable_bases": ubnum
+        "postqc_bases": cutadapt["postqc_bases"]
     }
 
     # If a covstats file was specified
@@ -101,14 +93,6 @@ if __name__ == "__main__":
 
     parser.add_argument("--sample-name", required=True,
                         help="Sample name")
-    parser.add_argument("--mapped-num", required=True,
-                        help="Mapped num file")
-    parser.add_argument("--mapped-basenum", required=True,
-                        help="Mapped basenum file")
-    parser.add_argument("--unique-num", required=True,
-                        help="Unique num file")
-    parser.add_argument("--usable-basenum", required=True,
-                        help="Usable basenum")
     parser.add_argument("--female-threshold", default=0.6, type=float,
                         help="Female threshold of X/all cov")
     parser.add_argument("--cutadapt", required=True,

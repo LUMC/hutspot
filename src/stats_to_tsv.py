@@ -28,21 +28,6 @@ from collections import OrderedDict
 from pathlib import Path
 
 
-def get_vcf_stats(sample_name, vcfstats):
-    vcf_sample = next(x for x in vcfstats['samples'] if x['name'] == sample_name)
-    return {
-        "total_variants": vcf_sample['total_variants'],
-        "snps": vcf_sample['variant_types']['snps'],
-        "insertions": vcf_sample['variant_types']['insertions'],
-        "deletions": vcf_sample['variant_types']['deletions'],
-        "transversions": vcf_sample['transversions'],
-        "transitions": vcf_sample['transitions'],
-        "ti_tv_ratio": vcf_sample['ti_tv_ratio'],
-        "homozygous_variants": vcf_sample['genotypes']['hom_alt'],
-        "heterozygous_variants": vcf_sample['genotypes']['het']
-    }
-
-
 def get_covstats(cov_d):
     s_d = cov_d['_all']
     return {
@@ -79,10 +64,8 @@ if __name__ == "__main__":
             "preqc_bases" : sample['preqc_bases'],
             "postqc_reads": sample['postqc_reads'],
             "postqc_bases": sample['postqc_bases'],
-            "mapped_reads": sample['n_mapped_reads'],
-            "mapped_bases": sample['n_mapped_bases'],
-            "usable_reads": sample['n_usable_reads'],
-            "usable_bases": sample['n_usable_bases'],
+            "mapped_reads": int(sample['picard_AlignmentSummaryMetrics']['PF_HQ_ALIGNED_READS']),
+            "mapped_bases": int(sample['picard_AlignmentSummaryMetrics']['PF_HQ_ALIGNED_BASES'])
         })
         if 'coverage' in sample:
             sample_dict.update(get_covstats(sample['coverage']))

@@ -123,8 +123,8 @@
         - '"width_nonzero": 16569'
     - path: stats.tsv
       contains:
-        - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tusable_reads\tusable_bases\tmedian_coverage"
-        - "micro\t15440\t2276743\t15440\t2274413\t15558\t2280294\t15515\t2275470\t136"
+        - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tmedian_coverage"
+        - "micro\t15440\t2276743\t15440\t2274413\t15424\t2262944\t136"
 
 - name: test-integration-gene-bedfile
   tags:
@@ -143,8 +143,8 @@
   files:
     - path: stats.tsv
       contains:
-        - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tusable_reads\tusable_bases\tmedian_coverage"
-        - "micro\t15440\t2276743\t15440\t2274413\t15558\t2280294\t15515\t2275470\t133.0"
+        - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tmedian_coverage"
+        - "micro\t15440\t2276743\t15440\t2274413\t15424\t2262944\t133.0"
 
 - name: test-integration-two-known-sites
   tags:

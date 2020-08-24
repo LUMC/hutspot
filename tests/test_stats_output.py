@@ -38,7 +38,7 @@ def test_stats_file_mapped_reads(workflow_dir):
         values = next(fin).strip().split('\t')
     data = dict(zip(header, values))
 
-    assert data['mapped_reads'] == '15558'
+    assert data['mapped_reads'] == '15424'
 
 
 @pytest.mark.workflow('test-integration-no-cluster')
@@ -52,35 +52,7 @@ def test_stats_file_mapped_bases(workflow_dir):
         values = next(fin).strip().split('\t')
     data = dict(zip(header, values))
 
-    assert data['mapped_bases'] == '2280294'
-
-
-@pytest.mark.workflow('test-integration-no-cluster')
-def test_stats_file_usable_reads(workflow_dir):
-    """ Read in the stats file and do some tests """
-    stats_file = 'stats.tsv'
-    full_path = workflow_dir / pathlib.Path(stats_file)
-    # Since we only have two lines in the test stats file, this works
-    with open(full_path, 'r') as fin:
-        header = next(fin).strip().split('\t')
-        values = next(fin).strip().split('\t')
-    data = dict(zip(header, values))
-
-    assert data['usable_reads'] == '15515'
-
-
-@pytest.mark.workflow('test-integration-no-cluster')
-def test_stats_file_usable_bases(workflow_dir):
-    """ Read in the stats file and do some tests """
-    stats_file = 'stats.tsv'
-    full_path = workflow_dir / pathlib.Path(stats_file)
-    # Since we only have two lines in the test stats file, this works
-    with open(full_path, 'r') as fin:
-        header = next(fin).strip().split('\t')
-        values = next(fin).strip().split('\t')
-    data = dict(zip(header, values))
-
-    assert data['usable_bases'] == '2275470'
+    assert data['mapped_bases'] == '2262944'
 
 
 @pytest.mark.workflow('test-integration-no-cluster')
