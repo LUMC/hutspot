@@ -270,25 +270,7 @@ rule genotype_gather:
         "--output {output.vcf} --output-type z 2> {log} && "
         "bcftools index --tbi --output-file {output.vcf_tbi} {output.vcf}"
 
-rule fastqc_raw:
-    """Run fastqc on raw fastq files"""
-    input:
-        r1 = lambda wc: config["samples"][wc.sample]["read_groups"][wc.read_group]["R1"],
-        r2 = lambda wc: config["samples"][wc.sample]["read_groups"][wc.read_group]["R2"]
-    output:
-        done = "{sample}/pre_process/raw-{sample}-{read_group}/.done"
-    log:
-        "log/{sample}/fastqc_raw.{read_group}.log"
-    container:
-        containers["fastqc"]
-    threads:
-        4
-    shell:
-        "fastqc --threads {threads} --nogroup -o $(dirname {output.done}) "
-        "{input.r1} {input.r2} 2> {log} && "
-        "touch {output.done}"
-
-rule fastqc_postqc:
+rule fastqc:
     """Run fastqc on fastq files post pre-processing"""
     input:
         r1 = rules.cutadapt.output.r1,
@@ -296,7 +278,7 @@ rule fastqc_postqc:
     output:
         done = "{sample}/pre_process/trimmed-{sample}-{read_group}/.done"
     log:
-        "log/{sample}/fastqc_postqc.{read_group}.log"
+        "log/{sample}/fastqc.{read_group}.log"
     container:
         containers["fastqc"]
     threads:
@@ -461,8 +443,7 @@ rule multiqc:
         metric = expand("{s}/bams/{s}.metrics", s=config["samples"]),
         alignment_metrics = expand("{s}/bams/{s}.alignment_summary_metrics", s=config["samples"]),
         insert_metrics = expand("{s}/bams/{s}.insert_size_metrics", s=config["samples"]),
-        fastqc_raw = all_raw_fastqc,
-        fastqc_trim = all_trimmed_fastqc,
+        fastqc = all_trimmed_fastqc,
         hs_metric = expand("{s}/bams/{s}.hs_metrics.txt", s=config["samples"]) if "baitsfile" in config else []
     output:
         html = "multiqc_report/multiqc_report.html",

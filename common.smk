@@ -149,16 +149,8 @@ def sample_cutadapt_files(wildcards):
         files.append(f'{sample_name}/pre_process/{sample_name}-{read_group}.txt')
     return files
 
-def all_raw_fastqc(wildcards):
-    """ Determine the raw fastq files for each sample """
-    fastq_files = list()
-    for sample in config['samples']:
-        for read_group in config['samples'][sample]['read_groups']:
-            fastq_files.append(f"{sample}/pre_process/raw-{sample}-{read_group}/.done")
-    return fastq_files
-
 def all_trimmed_fastqc(wildcards):
-    """ Determine the raw fastq files for each sample """
+    """ Determine the trimmed fastq files for each sample """
     fastq_files = list()
     for sample in config['samples']:
         for read_group in config['samples'][sample]['read_groups']:
