@@ -94,21 +94,26 @@ rule align:
     output:
         "{sample}/bams/{sample}-{read_group}.sorted.bam"
     params:
+        bwa_threads = 8,
+        samtools_threads = 3,
+        compression_level = 1,
         rg = "@RG\\tID:{sample}-library-{read_group}\\tSM:{sample}\\tLB:library\\tPL:ILLUMINA"
+
     log:
         bwa = "log/{sample}/align.{read_group}.bwa.log",
-        picard = "log/{sample}/align.{read_group}.picard.log"
+        samtools = "log/{sample}/align.{read_group}.samtools.log"
     container:
-        containers["bwa-0.7.17-picard-2.22.8"]
+        containers["bwa-0.7.17-samtools-1.10"]
     threads:
-        8
+        11
     shell:
-        "bwa mem -t {threads} -R '{params.rg}' {input.ref} "
+        "set -eo pipefail;"
+        "bwa mem -t {params.bwa_threads} -R '{params.rg}' {input.ref} "
         "{input.r1} {input.r2} 2> {log.bwa} | "
-        "picard -Xmx4G -Djava.io.tmpdir={input.tmp} SortSam "
-        "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
-        "INPUT=/dev/stdin OUTPUT={output} "
-        "SORT_ORDER=coordinate 2> {log.picard}"
+        "samtools sort -@ {params.samtools_threads} "
+        "-l {params.compression_level} "
+        "- -o {output} 2> {log.samtools};"
+        "samtools index {output}"
 
 rule markdup:
     """Mark duplicates in BAM file"""
