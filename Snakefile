@@ -25,6 +25,14 @@ include: "common.smk"
 
 process_config()
 
+localrules:
+    collectstats,
+    create_markdup_tmp,
+    cutadapt_summary,
+    merge_stats,
+    multiqc,
+    stats_tsv
+
 rule all:
     input:
         multiqc = "multiqc_report/multiqc_report.html",
@@ -331,7 +339,7 @@ rule vtools_coverage:
         "vtools-gcoverage -I {input.gvcf} "
         "-R {input.ref} > {output} 2> {log}"
 
-rule collect_cutadapt_summary:
+rule cutadapt_summary:
     """Colect cutadapt summary from each readgroup per sample """
     input:
         cutadapt = sample_cutadapt_files,
@@ -339,7 +347,7 @@ rule collect_cutadapt_summary:
     output:
         "{sample}/cutadapt.json"
     log:
-        "log/{sample}/collect_cutadapt_summary.log"
+        "log/{sample}/cutadapt_summary.log"
     container:
         containers["python3"]
     shell:
@@ -350,7 +358,7 @@ rule collectstats:
     """Collect all stats for a particular sample"""
     input:
         cov = rules.covstats.output.covj if "targetsfile" in config else [],
-        cutadapt = rules.collect_cutadapt_summary.output,
+        cutadapt = rules.cutadapt_summary.output,
         colpy = config["collect_stats"]
     output:
         "{sample}/{sample}.stats.json"
