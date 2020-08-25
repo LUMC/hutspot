@@ -111,12 +111,12 @@ rule align:
         bwa = "log/{sample}/align.{read_group}.bwa.log",
         samtools = "log/{sample}/align.{read_group}.samtools.log"
     container:
-        containers["bwa-0.7.17-samtools-1.10"]
+        containers["bwa2-2.0-samtools-1.10"]
     threads:
         11
     shell:
         "set -eo pipefail;"
-        "bwa mem -t {params.bwa_threads} -R '{params.rg}' {input.ref} "
+        "bwa-mem2 mem -t {params.bwa_threads} -R '{params.rg}' {input.ref} "
         "{input.r1} {input.r2} 2> {log.bwa} | "
         "samtools sort -@ {params.samtools_threads} "
         "-l {params.compression_level} "
