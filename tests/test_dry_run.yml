@@ -1,4 +1,4 @@
-- name: test-dry-run
+- name: dry-run-vanilla
   tags:
     - dry-run
   command: >
@@ -21,7 +21,7 @@
     must_not_contain:
       - rror
 
-- name: test-dry-run-target-baits
+- name: dry-run-target-baits
   tags:
     - dry-run
   command: >
@@ -40,7 +40,7 @@
     must_not_contain:
       - rror
 
-- name: test-bed-coverage-dry-run
+- name: dry-run-bed-coverage
   tags:
     - dry-run
   command: >

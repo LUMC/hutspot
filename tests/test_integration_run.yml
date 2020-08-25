@@ -1,4 +1,4 @@
-- name: test-integration-no-cluster
+- name: integration-vanilla
   tags:
     - integration
   command: >
@@ -47,7 +47,7 @@
         - picard_AlignmentSummaryMetrics
         - picard_DuplicationMetrics
 
-- name: test-integration-small-scatter
+- name: integration-small-scatter
   tags:
     - integration
   command: >
@@ -85,7 +85,7 @@
     - path: micro/vcf/micro.0.vcf.gz.tbi
       should_exist: false
 
-- name: test-integration-refflat
+- name: integration-refflat
   tags:
     - integration
   command: >
@@ -100,7 +100,7 @@
     must_not_contain:
       - rror
 
-- name: test-integration-all-on-target
+- name: integration-all-on-target
   tags:
     - integration
   command: >
@@ -126,7 +126,7 @@
         - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tmedian_coverage"
         - "micro\t15440\t2276743\t15440\t2274413\t15424\t2262944\t136"
 
-- name: test-integration-gene-bedfile
+- name: integration-gene-bedfile
   tags:
     - integration
   command: >
@@ -146,7 +146,7 @@
         - "sample_name\tpreqc_reads\tpreqc_bases\tpostqc_reads\tpostqc_bases\tmapped_reads\tmapped_bases\tmedian_coverage"
         - "micro\t15440\t2276743\t15440\t2274413\t15424\t2262944\t133.0"
 
-- name: test-integration-two-known-sites
+- name: integration-two-known-sites
   tags:
     - integration
   command: >
@@ -164,7 +164,7 @@
     must_not_contain:
       - rror
 
-- name: test-integration-two-readgroups
+- name: integration-two-readgroups
   tags:
     - integration
   command: >
@@ -203,7 +203,7 @@
         - lib_01
         - lib_02
 
-- name: test-integration-two-samples
+- name: integration-two-samples
   tags:
     - integration
   command: >
@@ -236,7 +236,7 @@
         - '"sample_name": "micro1",'
         - '"sample_name": "micro2",'
 
-- name: test-integration-target-baits
+- name: integration-target-baits
   tags:
     - integration
   command: >
@@ -252,7 +252,7 @@
         - BAIT_SET
         - FOLD_80_BASE_PENALTY
 
-- name: test-integration-bed-coverage
+- name: integration-bed-coverage
   tags:
     - integration
   command: >
@@ -285,7 +285,7 @@
       contains:
         - "(null)\t0\t0"
 
-- name: test-integration-restrict-BQSR
+- name: integration-restrict-BQSR
   tags:
     - integration
   command: >

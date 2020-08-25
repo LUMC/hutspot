@@ -1,4 +1,4 @@
-- name: test-no-reference
+- name: sanity-no-reference
   tags:
     - sanity
   command: >
@@ -9,7 +9,7 @@
     contains:
       - 'Invalid --configfile: ''reference'' is a required property'
 
-- name: test-reference-does-not-exist
+- name: sanity-reference-does-not-exist
   tags:
     - sanity
   command: >
@@ -21,13 +21,13 @@
       - Missing input files for rule align
       - /this/file/is/not/there
 
-- name: test-snakemake
+- name: sanity-snakemake
   tags:
     - sanity
   command: |
     snakemake --version
 
-- name: test-singluarity-version
+- name: sanity-singularity
   tags:
     - sanity
   command: |
@@ -36,7 +36,7 @@
     contains:
       - singularity version 3
 
-- name: test-baits-only
+- name: sanity-baits-only
   tags:
     - sanity
   command: >
@@ -47,7 +47,7 @@
     contains:
       - 'Invalid --configfile: "baitsfile" specified without "targetsfile"'
 
-- name: test-samples-overlapping-name
+- name: sanity-samples-overlapping-name
   tags:
     - sanity
   command: >
@@ -58,7 +58,7 @@
     contains:
       - 'Invalid --configfile: sample names should not overlap ("micro1" is contained in "micro12")'
 
-- name: snakemake-lint
+- name: sanity-snakemake-lint
   tags:
     - sanity
   command: >

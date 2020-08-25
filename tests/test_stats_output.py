@@ -6,14 +6,14 @@ import pytest
 import os
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
+@pytest.mark.workflow('integration-vanilla')
 def test_stats_file_exists(workflow_dir):
     stats_file = 'stats.tsv'
     full_path = workflow_dir / pathlib.Path(stats_file)
     assert os.path.exists(full_path)
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
+@pytest.mark.workflow('integration-vanilla')
 def test_stats_file_name(workflow_dir):
     """ Read in the stats file and do some tests """
     stats_file = 'stats.tsv'
@@ -27,7 +27,7 @@ def test_stats_file_name(workflow_dir):
     assert data['sample_name'] == 'micro'
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
+@pytest.mark.workflow('integration-vanilla')
 def test_stats_file_mapped_reads(workflow_dir):
     """ Read in the stats file and do some tests """
     stats_file = 'stats.tsv'
@@ -41,7 +41,7 @@ def test_stats_file_mapped_reads(workflow_dir):
     assert data['mapped_reads'] == '15424'
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
+@pytest.mark.workflow('integration-vanilla')
 def test_stats_file_mapped_bases(workflow_dir):
     """ Read in the stats file and do some tests """
     stats_file = 'stats.tsv'
@@ -55,7 +55,7 @@ def test_stats_file_mapped_bases(workflow_dir):
     assert data['mapped_bases'] == '2262944'
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
+@pytest.mark.workflow('integration-vanilla')
 def test_stats_file_preqc_reads(workflow_dir):
     """ Read in the stats file and do some tests """
     stats_file = 'stats.tsv'
@@ -69,7 +69,7 @@ def test_stats_file_preqc_reads(workflow_dir):
     assert data['preqc_reads'] == '15440'
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
+@pytest.mark.workflow('integration-vanilla')
 def test_stats_file_preqc_bases(workflow_dir):
     """ Read in the stats file and do some tests """
     stats_file = 'stats.tsv'
