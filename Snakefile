@@ -301,7 +301,7 @@ rule covstats:
     input:
         bam = rules.markdup.output.bam,
         genome = "current.genome",
-        covpy = config["covstats"],
+        covstats = "src/covstats.py",
         bed = config.get("targetsfile", "")
     output:
         covj = "{sample}/coverage/covstats.json",
@@ -310,7 +310,7 @@ rule covstats:
         subt = "Sample {sample}"
     log:
         bedtools = "log/{sample}/covstats_bedtools.log",
-        covpy = "log/{sample}/covstats_covpy.log"
+        covstats = "log/{sample}/covstats_covstats.log"
     container:
         containers["bedtools-2.26-python-2.7"]
     resources:
@@ -319,9 +319,9 @@ rule covstats:
         2
     shell:
         "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
-        "-b {input.bam} -d  2> {log.bedtools} | python {input.covpy} - "
+        "-b {input.bam} -d  2> {log.bedtools} | python {input.covstats} - "
         "--plot {output.covp} --title 'Targets coverage' "
-        "--subtitle '{params.subt}' > {output.covj} 2> {log.covpy}"
+        "--subtitle '{params.subt}' > {output.covj} 2> {log.covstats}"
 
 rule vtools_coverage:
     """Calculate coverage statistics per transcript"""
@@ -343,7 +343,7 @@ rule cutadapt_summary:
     """Colect cutadapt summary from each readgroup per sample """
     input:
         cutadapt = sample_cutadapt_files,
-        cutadapt_summary = config["cutadapt_summary"]
+        cutadapt_summary = "src/cutadapt_summary.py"
     output:
         "{sample}/cutadapt.json"
     log:
@@ -359,7 +359,7 @@ rule collectstats:
     input:
         cov = rules.covstats.output.covj if "targetsfile" in config else [],
         cutadapt = rules.cutadapt_summary.output,
-        colpy = config["collect_stats"]
+        collect_stats = "src/collect_stats.py"
     output:
         "{sample}/{sample}.stats.json"
     params:
@@ -369,7 +369,7 @@ rule collectstats:
     container:
         containers["python3"]
     shell:
-        "python {input.colpy} --sample-name {wildcards.sample} "
+        "python {input.collect_stats} --sample-name {wildcards.sample} "
         "--female-threshold {params.fthresh} "
         "--cutadapt {input.cutadapt} "
         "--covstats {input.cov} > {output} 2> {log}"
@@ -472,7 +472,7 @@ rule merge_stats:
     """Merge all stats of all samples"""
     input:
         cols = expand("{sample}/{sample}.stats.json", sample=config["samples"]),
-        mpy = config["merge_stats"],
+        merge_stats = "src/merge_stats.py",
         insertSize = rules.multiqc.output.insertSize,
         AlignmentMetrics = rules.multiqc.output.AlignmentMetrics,
         DuplicationMetrics = rules.multiqc.output.DuplicationMetrics,
@@ -484,7 +484,7 @@ rule merge_stats:
     container:
         containers["vtools"]
     shell:
-        "python {input.mpy} --collectstats {input.cols} "
+        "python {input.merge_stats} --collectstats {input.cols} "
         "--picard-insertSize {input.insertSize} "
         "--picard-AlignmentMetrics {input.AlignmentMetrics} "
         "--picard-DuplicationMetrics {input.DuplicationMetrics} "
@@ -494,7 +494,7 @@ rule stats_tsv:
     """Convert stats.json to tsv"""
     input:
         stats = rules.merge_stats.output,
-        sc = config["stats_to_tsv"]
+        stats_to_tsv = "src/stats_to_tsv.py"
     output:
         "stats.tsv"
     log:
@@ -502,7 +502,7 @@ rule stats_tsv:
     container:
         containers["python3"]
     shell:
-        "python {input.sc} -i {input.stats} > {output} 2> {log}"
+        "python {input.stats_to_tsv} -i {input.stats} > {output} 2> {log}"
 
 rule gvcf2coverage:
     """ Determine coverage from gvcf files """

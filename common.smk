@@ -50,21 +50,12 @@ def process_config():
         if s1 in s2:
             raise jsonschema.ValidationError(msg.format(s1=s1, s2=s2))
 
-    # Set the default config
+    # Set the default config values
     set_default('scatter_size', 1000000000)
     set_default('female_threshold', 0.6)
 
     # Hide the absolute path so the snakemake linter doesn't cry about it
     set_default('gatk_jar', os.path.join(os.path.sep,'usr','GenomeAnalysisTK.jar'))
-
-    # Set the script paths
-    set_default('covstats', srcdir('src/covstats.py'))
-    set_default('collect_stats', srcdir('src/collect_stats.py'))
-    set_default('merge_stats', srcdir('src/merge_stats.py'))
-    set_default('stats_to_tsv', srcdir('src/stats_to_tsv.py'))
-    set_default('py_wordcount', srcdir('src/pywc.py'))
-    set_default('cutadapt_summary', srcdir('src/cutadapt_summary.py'))
-
 
 def coverage_stats(wildcards):
     files = expand("{sample}/coverage/refFlat_coverage.tsv",
