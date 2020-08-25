@@ -301,7 +301,7 @@ rule covstats:
     input:
         bam = rules.markdup.output.bam,
         genome = "current.genome",
-        covstats = "src/covstats.py",
+        covstats = srcdir("src/covstats.py"),
         bed = config.get("targetsfile", "")
     output:
         covj = "{sample}/coverage/covstats.json",
@@ -343,7 +343,7 @@ rule cutadapt_summary:
     """Colect cutadapt summary from each readgroup per sample """
     input:
         cutadapt = sample_cutadapt_files,
-        cutadapt_summary = "src/cutadapt_summary.py"
+        cutadapt_summary = srcdir("src/cutadapt_summary.py")
     output:
         "{sample}/cutadapt.json"
     log:
@@ -359,7 +359,7 @@ rule collectstats:
     input:
         cov = rules.covstats.output.covj if "targetsfile" in config else [],
         cutadapt = rules.cutadapt_summary.output,
-        collect_stats = "src/collect_stats.py"
+        collect_stats = srcdir("src/collect_stats.py")
     output:
         "{sample}/{sample}.stats.json"
     params:
@@ -472,7 +472,7 @@ rule merge_stats:
     """Merge all stats of all samples"""
     input:
         cols = expand("{sample}/{sample}.stats.json", sample=config["samples"]),
-        merge_stats = "src/merge_stats.py",
+        merge_stats = srcdir("src/merge_stats.py"),
         insertSize = rules.multiqc.output.insertSize,
         AlignmentMetrics = rules.multiqc.output.AlignmentMetrics,
         DuplicationMetrics = rules.multiqc.output.DuplicationMetrics,
@@ -494,7 +494,7 @@ rule stats_tsv:
     """Convert stats.json to tsv"""
     input:
         stats = rules.merge_stats.output,
-        stats_to_tsv = "src/stats_to_tsv.py"
+        stats_to_tsv = srcdir("src/stats_to_tsv.py")
     output:
         "stats.tsv"
     log:
