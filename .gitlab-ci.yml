@@ -46,7 +46,7 @@ test_dry_run:
 test_integration:
   <<: *singularity_before_script_anchor
   script:
-    - pytest --tag integration --basetemp ${BASETEMP} --keep-workflow-wd --workflow-threads 8
+    - pytest --tag integration --basetemp ${BASETEMP} --keep-workflow-wd
   tags:
     - slurm
   stage: integration
