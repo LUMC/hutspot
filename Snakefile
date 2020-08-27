@@ -102,8 +102,6 @@ rule align:
     output:
         "{sample}/bams/{sample}-{read_group}.sorted.bam"
     params:
-        bwa_threads = 8,
-        samtools_threads = 3,
         compression_level = 1,
         rg = "@RG\\tID:{sample}-library-{read_group}\\tSM:{sample}\\tLB:library\\tPL:ILLUMINA"
 
@@ -113,12 +111,12 @@ rule align:
     container:
         containers["bwa-0.7.17-samtools-1.10"]
     threads:
-        11
+        8
     shell:
         "set -eo pipefail;"
-        "bwa mem -t {params.bwa_threads} -R '{params.rg}' {input.ref} "
+        "bwa mem -t {threads} -R '{params.rg}' {input.ref} "
         "{input.r1} {input.r2} 2> {log.bwa} | "
-        "samtools sort -@ {params.samtools_threads} "
+        "samtools sort "
         "-l {params.compression_level} "
         "- -o {output} 2> {log.samtools};"
         "samtools index {output}"
