@@ -7,7 +7,7 @@ containers = {
    'bcftools': 'docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4',
    'bedtools-2.26-python-2.7': 'docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0',
    'biopet-scatterregions': 'docker://quay.io/biocontainers/biopet-scatterregions:0.2--0',
-   'bwa2-2.0-samtools-1.10': 'docker://quay.io/biocontainers/mulled-v2-6a15c99309c82b345497d24489bee67bbb76c2f6:1c9c3227b9bf825a8dc9726a25701aa23c0b1f12-0',
+   'bwa-0.7.17-samtools-1.10': 'docker://quay.io/biocontainers/mulled-v2-ad317f19f5881324e963f6a6d464d696a2825ab6:c59b7a73c87a9fe81737d5d628e10a3b5807f453-0',
    'cutadapt': 'docker://quay.io/biocontainers/cutadapt:2.9--py37h516909a_0',
    'debian': 'docker://debian:buster-slim',
    'fastqc': 'docker://quay.io/biocontainers/fastqc:0.11.7--4',
