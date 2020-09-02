@@ -43,6 +43,12 @@ def process_config():
         msg = 'Invalid --configfile: "baitsfile" specified without "targetsfile"'
         raise jsonschema.ValidationError(msg)
 
+    # If you specify a target file but no baitsfile, we use the targets as
+    # baits. This is needed because picard HsMetrics needs both a baitfile and
+    # targets file as input
+    if 'targetsfile' in config and 'baitsfile' not in config:
+        set_default('baitsfile', config['targetsfile'])
+
     # A sample name cannot be a substring of another sample, since that breaks picard
     # metrics parsing by multiqc
     msg = 'Invalid --configfile: sample names should not overlap ("{s1}" is contained in "{s2}")'

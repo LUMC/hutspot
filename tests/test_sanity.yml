@@ -47,6 +47,16 @@
     contains:
       - 'Invalid --configfile: "baitsfile" specified without "targetsfile"'
 
+- name: sanity-targets-only
+  tags:
+    - sanity
+  command: >
+    snakemake -s Snakefile -n --configfile
+    tests/data/config/sample_config_targets_only.json
+  stdout:
+    contains:
+      - rule hs_metrics
+
 - name: sanity-samples-overlapping-name
   tags:
     - sanity
