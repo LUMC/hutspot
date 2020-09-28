@@ -138,6 +138,7 @@ rule markdup:
         containers["picard"]
     shell:
         "picard -Xmx4G -Djava.io.tmpdir={input.tmp} MarkDuplicates "
+        "PROGRAM_RECORD_ID=null "
         "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
         "{params.bams} OUTPUT={output.bam} "
         "METRICS_FILE={output.metrics} "
