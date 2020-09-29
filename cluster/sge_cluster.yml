@@ -36,11 +36,8 @@ multiqc:
   vmem: 30G
 split_vcf:
   vmem: 20G
-fastqc_raw:
+fastqc:
   threads: 4
-fastqc_merged:
-  threads: 4
-fastqc_postqc:
-  threads: 4
+  vem: 8G
 scatterregions:
   vmem: 30G
