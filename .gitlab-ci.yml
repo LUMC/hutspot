@@ -52,6 +52,7 @@ test_integration:
     - source ${CONDA_SH}
     - conda activate hutspot-pipeline
     - export PATH=${PATH}:${CONDA_EXTRA_PATH}
+    - export PATH:${PATH}:${SINGULARITY_PATH}
     - py.test --tag integration --basetemp ${BASETEMP} --keep-workflow-wd
   tags:
     - slurm
@@ -64,6 +65,7 @@ test_functional:
     - source ${CONDA_SH}
     - conda activate hutspot-pipeline
     - export PATH=${PATH}:${CONDA_EXTRA_PATH}
+    - export PATH:${PATH}:${SINGULARITY_PATH}
     - py.test --tag functional --basetemp ${BASETEMP} --keep-workflow-wd
   tags:
     - slurm
