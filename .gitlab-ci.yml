@@ -35,7 +35,7 @@ test_dry_run:
 # most docker runners will not do this
 test_integration_singularity:
   before_script:
-    - apt update -y && apt install -y python3-pip
+    - apt update -y --allow-releaseinfo-change && apt install -y python3-pip
     - pip3 install pyfaidx
     - pip3 install -r requirements-dev.txt
   script:
