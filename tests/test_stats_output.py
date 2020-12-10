@@ -86,7 +86,7 @@ def test_stats_file_preqc_bases(workflow_dir):
 @pytest.mark.parametrize("json_field", [
     ('sample_name'), ('gender'), ('coverage'), ('picard_insertSize'),
     ('picard_AlignmentSummaryMetrics')])
-@pytest.mark.workflow('test-integration-gene-bedfile')
+@pytest.mark.workflow('integration-gene-bedfile')
 def test_stats_file_preqc_bases(workflow_dir, json_field):
     """ Read in the stats json file """
     stats_file = 'stats.json'
