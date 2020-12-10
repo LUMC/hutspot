@@ -27,10 +27,9 @@ process_config()
 
 localrules:
     collectstats,
-    create_markdup_tmp,
+    create_tmp,
     cutadapt_summary,
     merge_stats,
-    multiqc,
     stats_tsv
 
 rule all:
@@ -46,12 +45,16 @@ rule all:
         coverage_stats = coverage_stats,
         coverage_files = coverage_files
 
-rule create_markdup_tmp:
-    """Create tmp directory for mark duplicates"""
+rule create_tmp:
+    """
+    Create a local tmp directory to use. This is useful when executing the
+    pipeline in an HPC environment, where execution nodes might have limited
+    space in /tmp.
+    """
     output:
         directory("tmp")
     log:
-        "log/create_markdup_tmp.log"
+        "log/create_tmp.log"
     container:
         containers["debian"]
     shell:
@@ -98,7 +101,7 @@ rule align:
         r1 = rules.cutadapt.output.r1,
         r2 = rules.cutadapt.output.r2,
         ref = config["reference"],
-        tmp = ancient("tmp")
+        tmp = rules.create_tmp.output
     output:
         "{sample}/bams/{sample}-{read_group}.sorted.bam"
     params:
@@ -125,7 +128,7 @@ rule markdup:
     """Mark duplicates in BAM file"""
     input:
         bam = sample_bamfiles,
-        tmp = ancient("tmp")
+        tmp = rules.create_tmp.output
     output:
         bam = "{sample}/bams/{sample}.bam",
         bai = "{sample}/bams/{sample}.bai",
@@ -442,8 +445,8 @@ rule hs_metrics:
 
 rule multiqc:
     """
-    Create multiQC report
-    Depends on stats.tsv to forcefully run at end of pipeline
+    Create MultiQC report by parsing the current folder. Inputs are only used
+    to make sure that MultiQC is ran when all other tasks have been completed.
     """
     input:
         bam = expand("{s}/bams/{s}.bam", s=config["samples"]),
@@ -451,6 +454,7 @@ rule multiqc:
         alignment_metrics = expand("{s}/bams/{s}.alignment_summary_metrics", s=config["samples"]),
         insert_metrics = expand("{s}/bams/{s}.insert_size_metrics", s=config["samples"]),
         fastqc = all_trimmed_fastqc,
+        tmp = rules.create_tmp.output,
         hs_metric = expand("{s}/bams/{s}.hs_metrics.txt", s=config["samples"]) if "baitsfile" in config else []
     output:
         html = "multiqc_report/multiqc_report.html",
@@ -463,6 +467,7 @@ rule multiqc:
     container:
         containers["multiqc"]
     shell:
+        "export TMPDIR={input.tmp}; "
         "multiqc --data-format json --force "
         "--outdir multiqc_report . 2> {log} "
         "|| touch {output}"
