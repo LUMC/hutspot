@@ -43,7 +43,8 @@ rule all:
         gvcfs = expand("{s}/vcf/{s}.g.vcf.gz", s=config["samples"]),
         gvcf_tbi = expand("{s}/vcf/{s}.g.vcf.gz.tbi", s=config["samples"]),
         coverage_stats = coverage_stats,
-        coverage_files = coverage_files
+        coverage_files = coverage_files,
+        merged_vcf = "merged_multisample.vcf.gz" if config["merge_vcf"] else []
 
 rule create_tmp:
     """
@@ -520,3 +521,23 @@ rule gvcf2coverage:
         containers["gvcf2coverage"]
     shell:
         "gvcf2coverage -t {wildcards.threshold} < {input} 2> {log} | cut -f 1,2,3 > {output}"
+
+rule merge_vcf:
+    """ Merge all vcf files into a single multisample vcf """
+    input:
+        vcfs = expand("{sample}/vcf/{sample}.vcf.gz", sample=config["samples"])
+    output:
+        "merged_multisample.vcf.gz"
+    log:
+        "log/merged_multisample.log"
+    container:
+        containers["bcftools"]
+    threads:
+        8
+    shell:
+        "bcftools merge --merge both "
+        "--output-type z "
+        "--output {output} "
+        "--threads 8 "
+        "{input} 2> {log} && "
+        "bcftools index --tbi --thread 8 {output}"

@@ -306,3 +306,14 @@
   files:
     - path: 'micro/bams/micro.hs_metrics.txt'
     - path: 'multiqc_report/multiqc_data/multiqc_picard_HsMetrics.json'
+
+- name: integration-merge
+  tags:
+    - integration
+  command: >
+    snakemake --use-singularity --singularity-args ' --containall --bind /tmp '
+    --jobs 1 -w 120 -r -p
+    --configfile tests/data/config/sample_config_merge_samples.json
+  files:
+    - path: 'merged_multisample.vcf.gz'
+    - path: 'merged_multisample.vcf.gz.tbi'

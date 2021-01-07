@@ -17,6 +17,7 @@
       - micro/bams/micro.insert_size_metrics
     must_not_contain:
       - rror
+      - rule merge_vcf
   stderr:
     must_not_contain:
       - rror
@@ -52,3 +53,15 @@
     - 'output: micro/vcf/micro_60.bed'
     - 'output: micro/vcf/micro_120.bed'
     - 'output: micro/vcf/micro_196.bed'
+
+- name: dry-run-merge
+  tags:
+    - dry-run
+  command: >
+    snakemake -s Snakefile -n --configfile
+    tests/data/config/sample_config_merge_samples.json
+  exit_code: 0
+  stdout:
+    contains:
+      - Job counts
+      - rule merge_vcf

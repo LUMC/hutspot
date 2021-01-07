@@ -16,6 +16,7 @@
         "coverage_threshold",
         "restrict_BQSR",
         "gatk_jar",
+        "merge_vcf",
         "baitsfile"
     ],
     "properties": {
@@ -78,6 +79,10 @@
     "restrict_BQSR": {
         "description": "Restrict BQSR to the listed chromosome",
         "type": "string"
+    },
+    "merge_vcf": {
+        "description": "Create a merged output vcf file containing all samples",
+        "type": "boolean"
     },
     "refflat": {
         "description": "RefFlat file with transcripts",

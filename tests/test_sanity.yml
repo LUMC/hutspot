@@ -68,6 +68,13 @@
     contains:
       - 'Invalid --configfile: sample names should not overlap ("micro1" is contained in "micro12")'
 
+- name: sanity-merge
+  tags:
+    - sanity
+  command: >
+    snakemake -s Snakefile -n --configfile
+    tests/data/config/sample_config_merge_samples.json
+
 - name: sanity-snakemake-lint
   tags:
     - sanity
