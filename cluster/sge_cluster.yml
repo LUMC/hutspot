@@ -41,3 +41,6 @@ fastqc:
   vem: 8G
 scatterregions:
   vmem: 30G
+merge_vcf:
+  threads: 8
+  vmem: 10G
