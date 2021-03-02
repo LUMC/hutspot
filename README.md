@@ -157,7 +157,7 @@ The following configuration options are **optional**:
 | `scatter_size` | The size of chunks to divide the reference into for parallel execution. Default = 1000000000 |
 | `coverage_threshold` | One or more threshold coverage values. For each value, a sample specific bed file will be created that contains the regions where the coverage is above the threshold |
 | `restrict_BQSR` | Restrict GATK BaseRecalibration to a single chromosome. This is faster, but the recalibration is possibly less reliable |
-| `merge_vcf` | Merge the VCF files for each sample into a single multisample VCF file |
+| `multisample_vcf` | Create a true multisample VCF file, in addition to the regular per-sample VCF files |
 
 
 ## Cluster configuration

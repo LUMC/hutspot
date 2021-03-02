@@ -16,7 +16,7 @@
         "coverage_threshold",
         "restrict_BQSR",
         "gatk_jar",
-        "merge_vcf",
+        "multisample_vcf",
         "baitsfile"
     ],
     "properties": {
@@ -80,8 +80,8 @@
         "description": "Restrict BQSR to the listed chromosome",
         "type": "string"
     },
-    "merge_vcf": {
-        "description": "Create a merged output vcf file containing all samples",
+    "multisample_vcf": {
+        "description": "Create a true multisample VCF file, in addition to the regular per-sample VCF files",
         "type": "boolean"
     },
     "refflat": {

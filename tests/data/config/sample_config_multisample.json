@@ -22,5 +22,5 @@
   "known_sites": ["tests/data/reference/database.vcf.gz"],
   "targetsfile": "tests/data/reference/full_chrM.bed",
   "baitsfile":  "tests/data/reference/target_baits.bed",
-  "merge_vcf": true
+  "multisample_vcf": true
 }

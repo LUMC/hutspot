@@ -59,7 +59,7 @@ def process_config():
     # Set the default config values
     set_default('scatter_size', 1000000000)
     set_default('female_threshold', 0.6)
-    set_default('merge_vcf', False)
+    set_default('multisample_vcf', False)
 
     # Hide the absolute path so the snakemake linter doesn't cry about it
     set_default('gatk_jar', os.path.join(os.path.sep,'usr','GenomeAnalysisTK.jar'))
