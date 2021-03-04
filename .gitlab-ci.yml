@@ -36,7 +36,7 @@ test_dry_run:
 test_integration_singularity:
   before_script:
     - apt update -y --allow-releaseinfo-change && apt install -y python3-pip
-    - pip3 install -r requirements-dev.txt
+    - pip3 install -r requirements-dev.txt requirements.txt
   script:
     - py.test --tag singularity-integration
   image: lumc/singularity-snakemake:3.0.3-5.4.0
