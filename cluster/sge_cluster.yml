@@ -22,7 +22,7 @@ genotype_scatter:
 genotype_gather:
   vmem: 10G
 covstats:
-  vmem: 10G
+  vmem: 20G
 multiqc:
   vmem: 30G
 split_vcf:

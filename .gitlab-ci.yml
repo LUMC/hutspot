@@ -36,7 +36,6 @@ test_dry_run:
 test_integration_singularity:
   before_script:
     - apt update -y --allow-releaseinfo-change && apt install -y python3-pip
-    - pip3 install pyfaidx
     - pip3 install -r requirements-dev.txt
   script:
     - py.test --tag singularity-integration
