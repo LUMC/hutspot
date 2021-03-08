@@ -1,22 +1,67 @@
-- name: test-dry-run
+- name: dry-run-vanilla
+  tags:
+    - dry-run
   command: >
-    snakemake
-    -n -r -p -s Snakefile
-    --config
-    OUTPUT_DIR=teststtest
-    REFERENCE=tests/data/ref.fa
-    DBSNP=tests/data/database.vcf.gz
-    KNOWN_SITES=tests/data/database.vcf.gz
-    SAMPLE_CONFIG=tests/data/sample_config.json
+    snakemake -n -r -p -s Snakefile --configfile
+    tests/data/config/sample_config.json
   exit_code: 0
   stdout:
     contains:
-      - "Job counts"
-      - "localrule all:"
+      - Job counts
+      - 'localrule all:'
+      - 'output: micro/vcf/micro.vcf.gz'
+      - 'output: micro/vcf/micro.g.vcf.gz'
+      - multiple_metrics
+      - 'output: stats.tsv'
+      - micro/bams/micro.alignment_summary_metrics
+      - micro/bams/micro.insert_size_metrics
     must_not_contain:
-      - "rror"
+      - rror
+      - rule multisample_vcf
   stderr:
     must_not_contain:
-      - "rror"
+      - rror
+
+- name: dry-run-target-baits
   tags:
     - dry-run
+  command: >
+    snakemake -n -r -p -s Snakefile --configfile
+    tests/data/config/sample_config_target_baits.json
+  exit_code: 0
+  stdout:
+    contains:
+      - Job counts
+      - 'localrule all:'
+      - hs_metrics
+      - micro.hs_metrics.txt
+    must_not_contain:
+      - rror
+  stderr:
+    must_not_contain:
+      - rror
+
+- name: dry-run-bed-coverage
+  tags:
+    - dry-run
+  command: >
+    snakemake -s Snakefile -n --configfile
+    tests/data/config/sample_config_bed_coverage.json
+  stdout:
+    contains:
+    - 'output: micro/vcf/micro_10.bed'
+    - 'output: micro/vcf/micro_60.bed'
+    - 'output: micro/vcf/micro_120.bed'
+    - 'output: micro/vcf/micro_196.bed'
+
+- name: dry-run-multisample
+  tags:
+    - dry-run
+  command: >
+    snakemake -s Snakefile -n --configfile
+    tests/data/config/sample_config_multisample.json
+  exit_code: 0
+  stdout:
+    contains:
+      - Job counts
+      - rule multisample_vcf

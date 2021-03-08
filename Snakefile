@@ -1,5 +1,5 @@
 #   hutspot - a DNAseq variant calling pipeline
-#   Copyright (C) 2017-2019, Sander Bollen, Leiden University Medical Center
+#   Copyright (C) 2017-2019, Leiden University Medical Center
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -21,726 +21,523 @@ Main Snakefile for the pipeline.
 :license: AGPL-3.0
 """
 
-import json
-from functools import partial
-from os.path import join, basename
-from pathlib import Path
-import itertools
+include: "common.smk"
 
-from pyfaidx import Fasta
+process_config()
 
-REFERENCE = config.get("REFERENCE")
-if REFERENCE is None:
-    raise ValueError("You must set --config REFERENCE=<path>")
-if not Path(REFERENCE).exists():
-    raise FileNotFoundError("Reference file {0} "
-                            "does not exist.".format(REFERENCE))
-DBSNP = config.get("DBSNP")
-if DBSNP is None:
-    raise ValueError("You must set --config DBSNP=<path>")
-if not Path(DBSNP).exists():
-    raise FileNotFoundError("{0} does not exist".format(DBSNP))
-
-SCONFIG = config.get("SAMPLE_CONFIG")
-if SCONFIG is None:
-    raise ValueError("You must set --config SAMPLE_CONFIG=<path>")
-if not Path(SCONFIG).exists():
-    raise FileNotFoundError("{0} does not exist".format(SCONFIG))
-
-KNOWN_SITES = config.get("KNOWN_SITES")
-if KNOWN_SITES is None:
-    raise ValueError("You must set --config KNOWN_SITES=<path>")
-
-# The user can specify multiple known sites
-KNOWN_SITES = KNOWN_SITES.split(',')
-for filename in KNOWN_SITES:
-    if not Path(filename).exists():
-        raise FileNotFoundError("{0} does not exist".format(filename))
-
-
-# these are all optional
-BED = config.get("BED", "")  # comma-separated list of BED files
-REFFLAT = config.get("REFFLAT", "")  # comma-separated list of refFlat files
-FEMALE_THRESHOLD = config.get("FEMALE_THRESHOLD", 0.6)
-MAX_BASES = config.get("MAX_BASES", "")
-
-# Generate the input string for basrecalibration
-BSQR_known_sites = ''
-for argument, filename in zip(itertools.repeat('-knownSites'), KNOWN_SITES):
-    BSQR_known_sites +=' {} {}'.format(argument, filename)
-
-def fsrc_dir(*args):
-    """Wrapper around snakemake's srcdir to work like os.path.join"""
-    if len(args) == 1:
-        return srcdir(args[0])
-    return srcdir(join(*args))
-
-covpy = fsrc_dir("src", "covstats.py")
-colpy = fsrc_dir("src", "collect_stats.py")
-mpy = fsrc_dir("src", "merge_stats.py")
-seq = fsrc_dir("src", "seqtk.sh")
-fqpy = fsrc_dir("src", "fastqc_stats.py")
-tsvpy = fsrc_dir("src", "stats_to_tsv.py")
-fqsc = fsrc_dir("src", "safe_fastqc.sh")
-pywc = fsrc_dir("src", "pywc.py")
-
-# sample config parsing
-with open(config.get("SAMPLE_CONFIG")) as handle:
-    SAMPLE_CONFIG = json.load(handle)
-SAMPLES = SAMPLE_CONFIG['samples'].keys()
-
-if BED != "":
-    BEDS = BED.split(",")
-else:
-    BEDS = []
-
-if REFFLAT != "":
-    REFFLATS = REFFLAT.split(",")
-else:
-    REFFLATS = []
-
-BASE_BEDS = [basename(x) for x in BEDS]
-BASE_REFFLATS = [basename(x) for x in REFFLATS]
-
-
-def split_genome(ref, approx_n_chunks=100):
-    """
-    Split genome in chunks.
-
-    Chunks are strings in the format: `<ctg>:<start>-<end>`
-    These follow the region string format as used by htslib,
-    which uses _1_-based indexing.
-    See: http://www.htslib.org/doc/tabix.html
-    """
-    fa = Fasta(ref)
-    tot_size = sum([len(x) for x in fa.records.values()])
-    chunk_size = tot_size//approx_n_chunks
-    chunks = []
-    for chrom_name, chrom_value in fa.records.items():
-        pos = 1
-        while pos <= len(chrom_value):
-            end = pos+chunk_size
-            if end <= len(chrom_value):
-                chunk = "{0}:{1}-{2}".format(chrom_name, pos, end)
-            else:
-                chunk = "{0}:{1}-{2}".format(chrom_name, pos, len(chrom_value))
-            chunks.append(chunk)
-            pos = end
-    return chunks
-
-CHUNKS = split_genome(REFERENCE)
-
-
-
-def get_r(strand, wildcards):
-    """Get fastq files on a single strand for a sample"""
-    s = SAMPLE_CONFIG['samples'].get(wildcards.sample)
-    rs = []
-    for l in sorted(s['libraries'].keys()):
-        rs.append(s['libraries'][l][strand])
-    return rs
-
-get_r1 = partial(get_r, "R1")
-get_r2 = partial(get_r, "R2")
-
-
-def get_bedpath(wildcards):
-    """Get absolute path of a bed file"""
-    return next(x for x in BEDS if basename(x) == wildcards.bed)
-
-
-def get_refflatpath(wildcards):
-    """Get absolute path of a refflat file"""
-    return next(x for x in REFFLATS if basename(x) == wildcards.ref)
-
-
-def sample_gender(wildcards):
-    """Get sample gender"""
-    sam = SAMPLE_CONFIG['samples'].get(wildcards.sample)
-    return sam.get("gender", "null")
-
-
-def metrics(do_metrics=True):
-    if not do_metrics:
-        return ""
-
-    fqcr = expand("{sample}/pre_process/raw_fastqc/.done.txt",
-                  sample=SAMPLES)
-    fqcm = expand("{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
-                  sample=SAMPLES)
-    fqcp = expand("{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
-                  sample=SAMPLES)
-    if len(REFFLATS) >= 1:
-        coverage_stats = expand("{sample}/coverage/{ref}.coverages.tsv",
-                                sample=SAMPLES, ref=BASE_REFFLATS)
-    else:
-        coverage_stats = []
-    stats = "stats.json"
-    return  fqcr + fqcm + fqcp + coverage_stats + [stats]
-
-
-localrules: gvcf_chunkfile, genotype_chunkfile
-
+localrules:
+    collectstats,
+    create_tmp,
+    cutadapt_summary,
+    merge_stats,
+    stats_tsv
 
 rule all:
     input:
-        combined="multisample/genotyped.vcf.gz",
-        report="multiqc_report/multiqc_report.html",
-        bais=expand("{sample}/bams/{sample}.markdup.bam.bai",sample=SAMPLES),
-        vcfs=expand("{sample}/vcf/{sample}_single.vcf.gz",sample=SAMPLES),
-        stats=metrics()
+        multiqc = "multiqc_report/multiqc_report.html",
+        stats = "stats.json",
+        stats_tsv = "stats.tsv",
+        bam = expand("{s}/bams/{s}.bam", s=config["samples"]),
+        vcfs = expand("{s}/vcf/{s}.vcf.gz", s=config["samples"]),
+        vcf_tbi = expand("{s}/vcf/{s}.vcf.gz.tbi", s=config["samples"]),
+        gvcfs = expand("{s}/vcf/{s}.g.vcf.gz", s=config["samples"]),
+        gvcf_tbi = expand("{s}/vcf/{s}.g.vcf.gz.tbi", s=config["samples"]),
+        coverage_stats = coverage_stats,
+        coverage_files = coverage_files,
+        multisample_vcf = "multisample.vcf.gz" if config["multisample_vcf"] else []
 
-
-rule create_markdup_tmp:
-    """Create tmp directory for mark duplicates"""
-    output: directory("tmp")
-    singularity: "docker://debian:buster-slim"
-    shell: "mkdir -p {output}"
+rule create_tmp:
+    """
+    Create a local tmp directory to use. This is useful when executing the
+    pipeline in an HPC environment, where execution nodes might have limited
+    space in /tmp.
+    """
+    output:
+        directory("tmp")
+    log:
+        "log/create_tmp.log"
+    container:
+        containers["debian"]
+    shell:
+        "mkdir -p {output} 2> {log}"
 
 rule genome:
     """Create genome file as used by bedtools"""
-    input: REFERENCE
-    output: "current.genome"
-    singularity: "docker://debian:buster-slim"
-    shell: "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output}"
-
-rule merge_r1:
-    """Merge all forward fastq files into one"""
-    input: get_r1
-    output: temp("{sample}/pre_process/{sample}.merged_R1.fastq.gz")
-    singularity: "docker://debian:buster-slim"
-    shell: "cat {input} > {output}"
-
-rule merge_r2:
-    """Merge all reverse fastq files into one"""
-    input: get_r2
-    output: temp("{sample}/pre_process/{sample}.merged_R2.fastq.gz")
-    singularity: "docker://debian:buster-slim"
-    shell: "cat {input} > {output}"
-
-
-rule seqtk_r1:
-    """Either subsample or link forward fastq file"""
     input:
-        stats="{sample}/pre_process/{sample}.preqc_count.json",
-        fastq="{sample}/pre_process/{sample}.merged_R1.fastq.gz",
-        seqtk=seq
-    params:
-        max_bases=str(MAX_BASES)
+        config["reference"]
     output:
-        fastq=temp("{sample}/pre_process/{sample}.sampled_R1.fastq.gz")
-    singularity: "docker://quay.io/biocontainers/mulled-v2-13686261ac0aa5682c680670ff8cda7b09637943:d143450dec169186731bb4df6f045a3c9ee08eb6-0"
-    shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
-           "{params.max_bases}"
-
-
-rule seqtk_r2:
-    """Either subsample or link reverse fastq file"""
-    input:
-        stats = "{sample}/pre_process/{sample}.preqc_count.json",
-        fastq = "{sample}/pre_process/{sample}.merged_R2.fastq.gz",
-        seqtk=seq
-    params:
-        max_bases =str(MAX_BASES)
-    output:
-        fastq = temp("{sample}/pre_process/{sample}.sampled_R2.fastq.gz")
-    singularity: "docker://quay.io/biocontainers/mulled-v2-13686261ac0aa5682c680670ff8cda7b09637943:d143450dec169186731bb4df6f045a3c9ee08eb6-0"
-    shell: "bash {input.seqtk} {input.stats} {input.fastq} {output.fastq} "
-           "{params.max_bases}"
-
-
-# contains original merged fastq files as input to prevent them from being prematurely deleted
-rule sickle:
-    """Trim fastq files"""
-    input:
-        r1 = "{sample}/pre_process/{sample}.sampled_R1.fastq.gz",
-        r2 = "{sample}/pre_process/{sample}.sampled_R2.fastq.gz",
-        rr1 = "{sample}/pre_process/{sample}.merged_R1.fastq.gz",
-        rr2 = "{sample}/pre_process/{sample}.merged_R2.fastq.gz"
-    output:
-        r1 = temp("{sample}/pre_process/{sample}.trimmed_R1.fastq"),
-        r2 = temp("{sample}/pre_process/{sample}.trimmed_R2.fastq"),
-        s = "{sample}/pre_process/{sample}.trimmed_singles.fastq"
-    singularity: "docker://quay.io/biocontainers/sickle-trim:1.33--ha92aebf_4"
-    shell: "sickle pe -f {input.r1} -r {input.r2} -t sanger -o {output.r1} "
-           "-p {output.r2} -s {output.s}"
+        "current.genome"
+    log:
+        "log/genome.log"
+    container:
+        containers["debian"]
+    shell:
+        "awk -v OFS='\t' {{'print $1,$2'}} {input}.fai > {output} 2> {log}"
 
 rule cutadapt:
     """Clip fastq files"""
     input:
-        r1 = "{sample}/pre_process/{sample}.trimmed_R1.fastq",
-        r2 = "{sample}/pre_process/{sample}.trimmed_R2.fastq"
+        r1 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R1']),
+        r2 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R2'])
     output:
-        r1 = temp("{sample}/pre_process/{sample}.cutadapt_R1.fastq"),
-        r2 = temp("{sample}/pre_process/{sample}.cutadapt_R2.fastq")
-    singularity: "docker://quay.io/biocontainers/cutadapt:1.14--py36_0"
-    shell: "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG -m 1 -o {output.r1} "
-           "{input.r1} -p {output.r2} {input.r2}"
+        r1 = "{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
+        r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz"
+    log:
+        "{sample}/pre_process/{sample}-{read_group}.txt"
+    container:
+        containers["cutadapt"]
+    threads:
+        8
+    shell:
+        "cutadapt -a AGATCGGAAGAG -A AGATCGGAAGAG "
+        "--minimum-length 1 --quality-cutoff=20,20 "
+        "--compression-level=1 -j 8 "
+        "--output {output.r1} --paired-output {output.r2} -Z "
+        "{input.r1} {input.r2} "
+        "--report=minimal > {log}"
 
 rule align:
     """Align fastq files"""
     input:
-        r1 = "{sample}/pre_process/{sample}.cutadapt_R1.fastq",
-        r2 = "{sample}/pre_process/{sample}.cutadapt_R2.fastq",
-        ref = REFERENCE,
-        tmp = ancient("tmp")
+        r1 = rules.cutadapt.output.r1,
+        r2 = rules.cutadapt.output.r2,
+        ref = config["reference"],
+        tmp = rules.create_tmp.output
+    output:
+        "{sample}/bams/{sample}-{read_group}.sorted.bam"
     params:
-        rg = "@RG\\tID:{sample}_lib1\\tSM:{sample}\\tPL:ILLUMINA"
-    output: temp("{sample}/bams/{sample}.sorted.bam")
-    singularity: "docker://quay.io/biocontainers/mulled-v2-002f51ea92721407ef440b921fb5940f424be842:43ec6124f9f4f875515f9548733b8b4e5fed9aa6-0"
-    shell: "bwa mem -t 8 -R '{params.rg}' {input.ref} {input.r1} {input.r2} "
-           "| picard -Xmx4G -Djava.io.tmpdir={input.tmp} SortSam "
-           "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
-           "INPUT=/dev/stdin OUTPUT={output} SORT_ORDER=coordinate"
+        compression_level = 1,
+        rg = "@RG\\tID:{sample}-library-{read_group}\\tSM:{sample}\\tLB:library\\tPL:ILLUMINA"
+
+    log:
+        bwa = "log/{sample}/align.{read_group}.bwa.log",
+        samtools = "log/{sample}/align.{read_group}.samtools.log"
+    container:
+        containers["bwa-0.7.17-samtools-1.10"]
+    threads:
+        8
+    shell:
+        "set -eo pipefail;"
+        "bwa mem -t {threads} -R '{params.rg}' {input.ref} "
+        "{input.r1} {input.r2} 2> {log.bwa} | "
+        "samtools sort "
+        "-l {params.compression_level} "
+        "- -o {output} 2> {log.samtools};"
+        "samtools index {output}"
 
 rule markdup:
     """Mark duplicates in BAM file"""
     input:
-        bam = "{sample}/bams/{sample}.sorted.bam",
-        tmp = ancient("tmp")
+        bam = sample_bamfiles,
+        tmp = rules.create_tmp.output
     output:
-        bam = "{sample}/bams/{sample}.markdup.bam",
-        bai = "{sample}/bams/{sample}.markdup.bai",
-        metrics = "{sample}/bams/{sample}.markdup.metrics"
-    singularity: "docker://quay.io/biocontainers/picard:2.14--py36_0"
-    shell: "picard -Xmx4G -Djava.io.tmpdir={input.tmp} MarkDuplicates "
-           "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
-           "INPUT={input.bam} OUTPUT={output.bam} "
-           "METRICS_FILE={output.metrics} "
-           "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500"
-
-rule bai:
-    """Copy bai files as some genome browsers can only .bam.bai files"""
-    input:
-        bai = "{sample}/bams/{sample}.markdup.bai"
-    output:
-        bai = "{sample}/bams/{sample}.markdup.bam.bai"
-    singularity: "docker://debian:buster-slim"
-    shell: "cp {input.bai} {output.bai}"
+        bam = "{sample}/bams/{sample}.bam",
+        bai = "{sample}/bams/{sample}.bai",
+        metrics = "{sample}/bams/{sample}.metrics"
+    params:
+        bams = lambda wc: expand("INPUT={bam}", bam=sample_bamfiles(wc))
+    log:
+        "log/{sample}/markdup.log"
+    container:
+        containers["picard"]
+    shell:
+        "picard -Xmx4G -Djava.io.tmpdir={input.tmp} MarkDuplicates "
+        "PROGRAM_RECORD_ID=null "
+        "CREATE_INDEX=TRUE TMP_DIR={input.tmp} "
+        "{params.bams} OUTPUT={output.bam} "
+        "METRICS_FILE={output.metrics} "
+        "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=500 2> {log}"
 
 rule baserecal:
     """Base recalibrated BAM files"""
     input:
-        bam = "{sample}/bams/{sample}.markdup.bam",
-        ref = REFERENCE,
+        bam = sample_bamfiles,
+        ref = config["reference"],
+        vcfs = config["known_sites"]
     output:
-        grp = "{sample}/bams/{sample}.baserecal.grp"
+        "{sample}/bams/{sample}.baserecal.grp"
     params:
-        known_sites = BSQR_known_sites
-    singularity: "docker://broadinstitute/gatk3:3.7-0"
-    shell: "java -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar -T "
-           "BaseRecalibrator -I {input.bam} -o {output.grp} -nct 8 "
-           "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
-           "-cov CycleCovariate -cov ContextCovariate {params.known_sites}"
+        known_sites = expand("-knownSites {vcf}", vcf=config["known_sites"]),
+        region = f"-L {config['restrict_BQSR']}" if "restrict_BQSR" in config else "",
+        gatk_jar = config["gatk_jar"],
+        bams = lambda wc: expand("-I {bam}", bam=sample_bamfiles(wc))
+    log:
+        "log/{sample}/baserecal.log"
+    container:
+        containers["gatk"]
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 6000,
+    threads:
+        8
+    shell:
+        "java -XX:ParallelGCThreads=1 -jar {params.gatk_jar} -T "
+        "BaseRecalibrator {params.bams} -o {output} -nct {threads} "
+        "-R {input.ref} -cov ReadGroupCovariate -cov QualityScoreCovariate "
+        "-cov CycleCovariate -cov ContextCovariate {params.known_sites} "
+        "{params.region} 2> {log}"
+
+checkpoint scatterregions:
+    """Scatter the reference genome"""
+    input:
+        ref = config["reference"],
+    output:
+        directory("scatter")
+    params:
+        size = config["scatter_size"]
+    log:
+        "log/scatterregions.log"
+    container:
+        containers["biopet-scatterregions"]
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 10000
+    shell:
+        "mkdir -p {output} && "
+        "biopet-scatterregions -Xmx24G "
+        "--referenceFasta {input.ref} --scatterSize {params.size} "
+        "--outputDir scatter 2> {log}"
 
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
     input:
-        bam="{sample}/bams/{sample}.markdup.bam",
-        bqsr="{sample}/bams/{sample}.baserecal.grp",
-        dbsnp=DBSNP,
-        ref=REFERENCE,
-    params:
-        chunk="{chunk}"
+        bam = rules.markdup.output.bam,
+        bqsr = rules.baserecal.output,
+        dbsnp = config["dbsnp"],
+        ref = config["reference"],
+        region = "scatter/scatter-{chunk}.bed"
     output:
-        gvcf=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz"),
-        gvcf_tbi=temp("{sample}/vcf/{sample}.{chunk}.part.vcf.gz.tbi")
-    singularity: "docker://broadinstitute/gatk3:3.7-0"
-    shell: "java -jar -Xmx4G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar "
-           "-T HaplotypeCaller -ERC GVCF -I "
-           "{input.bam} -R {input.ref} -D {input.dbsnp} "
-           "-L '{params.chunk}' -o '{output.gvcf}' "
-           "-variant_index_type LINEAR -variant_index_parameter 128000 "
-           "-BQSR {input.bqsr}"
-
-
-rule gvcf_chunkfile:
-    """
-    Create simple text file with paths to chunks for GVCF.
-
-    This uses a run directive in stead of a shell directive because
-    the amount of chunks may be so large the shell would error out with
-    an "argument list too long" error.
-    See https://unix.stackexchange.com/a/120842 for more info
-
-    This also means this rule lives outside of singularity and is
-    executed in snakemake's own environment.
-    """
+        gvcf = temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz"),
+        gvcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.g.vcf.gz.tbi")
     params:
-        chunkfiles = expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
-                            chunk=CHUNKS)
-    output:
-        file = "{sample}/vcf/chunkfile.txt"
-    run:
-        with open(output.file, "w") as ohandle:
-            for filename in params.chunkfiles:
-                corrected = filename.format(sample=wildcards.sample)
-                ohandle.write(corrected + "\n")
+        gatk_jar = config["gatk_jar"],
+    log:
+        "log/{sample}/gvcf_scatter.{chunk}.log"
+    container:
+        containers["gatk"]
+    shell:
+        "java -jar -Xmx4G -XX:ParallelGCThreads=1 {params.gatk_jar} -T "
+        "HaplotypeCaller -ERC GVCF -I "
+        "{input.bam} -R {input.ref} -D {input.dbsnp} "
+        "-L '{input.region}' -o '{output.gvcf}' "
+        "-variant_index_type LINEAR -variant_index_parameter 128000 "
+        "-BQSR {input.bqsr} "
+        "--GVCFGQBands 20 --GVCFGQBands 40 --GVCFGQBands 60 "
+        "--GVCFGQBands 80 --GVCFGQBands 100 2> {log}"
 
 rule gvcf_gather:
-    """Gather all GVCF scatters"""
+    """Join the gvcf files together"""
     input:
-        gvcfs = expand("{{sample}}/vcf/{{sample}}.{chunk}.part.vcf.gz",
-                       chunk=CHUNKS),
-        chunkfile = "{sample}/vcf/chunkfile.txt"
+        gvcfs = gather_gvcf,
+        tbis = gather_gvcf_tbi
     output:
-        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
-    singularity: "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4"
-    shell: "bcftools concat -f {input.chunkfile} -n > {output.gvcf}"
-
-
-rule gvcf_gather_tbi:
-    """Index GVCF"""
-    input:
-        gvcf = "{sample}/vcf/{sample}.g.vcf.gz"
-    output:
-        tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
-    singularity: "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0"
-    shell: "tabix -pvcf {input.gvcf}"
-
+        gvcf = "{sample}/vcf/{sample}.g.vcf.gz",
+        gvcf_tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi"
+    log:
+        concat = "log/{sample}/gvcf_gather_concat.log",
+        index = "log/{sample}/gvcf_gather_index.log"
+    container:
+        containers["bcftools"]
+    shell:
+        "bcftools concat {input.gvcfs} --allow-overlaps "
+        "--output {output.gvcf} --output-type z 2> {log.concat} && "
+        "bcftools index --tbi --output-file {output.gvcf_tbi} "
+        "{output.gvcf} 2> {log.index}"
 
 rule genotype_scatter:
     """Run GATK's GenotypeGVCFs by chunk"""
     input:
-        gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=SAMPLES),
-        tbis = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi",
-                      sample=SAMPLES),
-        ref=REFERENCE
-    params:
-        li=" -V ".join(expand("{sample}/vcf/{sample}.g.vcf.gz",
-                              sample=SAMPLES)),
-        chunk="{chunk}"
+        gvcf = rules.gvcf_scatter.output.gvcf,
+        tbi = rules.gvcf_scatter.output.gvcf_tbi,
+        ref = config["reference"]
     output:
-        vcf=temp("multisample/genotype.{chunk}.part.vcf.gz"),
-        vcf_tbi=temp("multisample/genotype.{chunk}.part.vcf.gz.tbi")
-    singularity: "docker://broadinstitute/gatk3:3.7-0"
-    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
-           "GenotypeGVCFs -R {input.ref} "
-           "-V {params.li} -L '{params.chunk}' -o '{output.vcf}'"
-
-
-rule genotype_chunkfile:
-    """
-    Create simple text file with paths to chunks for genotyping
-
-    This uses a run directive in stead of a shell directive because
-    the amount of chunks may be so large the shell would error out with
-    an "argument list too long" error.
-    See https://unix.stackexchange.com/a/120842 for more info
-
-    This also means this rule lives outside of singularity and is
-    executed in snakemake's own environment.
-    """
+        vcf = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz"),
+        vcf_tbi = temp("{sample}/vcf/{sample}.{chunk}.vcf.gz.tbi")
     params:
-        vcfs = expand("multisample/genotype.{chunk}.part.vcf.gz",
-                      chunk=CHUNKS)
-    output:
-        file = "multisample/chunkfile.txt"
-    run:
-        with open(output.file, "w") as ohandle:
-            for filename in params.vcfs:
-                ohandle.write(filename + "\n")
-
+        gatk_jar = config["gatk_jar"]
+    log:
+        "log/{sample}/genotype_scatter.{chunk}.log"
+    container:
+        containers["gatk"]
+    resources:
+        mem_mb = 6000
+    shell:
+        "java -jar -Xmx15G -XX:ParallelGCThreads=1 {params.gatk_jar} -T "
+        "GenotypeGVCFs -R {input.ref} "
+        "-V {input.gvcf} -o {output.vcf} 2> {log}"
 
 rule genotype_gather:
     """Gather all genotyping VCFs"""
     input:
-        vcfs = expand("multisample/genotype.{chunk}.part.vcf.gz",
-                      chunk=CHUNKS),
-        chunkfile = "multisample/chunkfile.txt"
+        vcfs = gather_vcf,
+        vcfs_tbi = gather_vcf_tbi
     output:
-        vcf = "multisample/genotyped.vcf.gz"
-    singularity: "docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4"
-    shell: "bcftools concat -f {input.chunkfile} -n > {output.vcf}"
+        vcf = "{sample}/vcf/{sample}.vcf.gz",
+        vcf_tbi = "{sample}/vcf/{sample}.vcf.gz.tbi"
+    log:
+        "log/{sample}/genotype_gather.log"
+    container:
+        containers["bcftools"]
+    shell:
+        "bcftools concat {input.vcfs} --allow-overlaps "
+        "--output {output.vcf} --output-type z 2> {log} && "
+        "bcftools index --tbi --output-file {output.vcf_tbi} {output.vcf}"
 
-
-rule genotype_gather_tbi:
-    """Index genotyped vcf file"""
+rule fastqc:
+    """Run fastqc on fastq files post pre-processing"""
     input:
-        vcf = "multisample/genotyped.vcf.gz"
+        r1 = rules.cutadapt.output.r1,
+        r2 = rules.cutadapt.output.r2
     output:
-        tbi = "multisample/genotyped.vcf.gz.tbi"
-    singularity: "docker://quay.io/biocontainers/tabix:0.2.6--ha92aebf_0"
-    shell: "tabix -pvcf {input.vcf}"
-
-
-rule split_vcf:
-    """Split multisample VCF in single samples"""
-    input:
-        vcf="multisample/genotyped.vcf.gz",
-        tbi = "multisample/genotyped.vcf.gz.tbi",
-        ref=REFERENCE
-    params:
-        s="{sample}"
-    output:
-        splitted="{sample}/vcf/{sample}_single.vcf.gz"
-    singularity: "docker://broadinstitute/gatk3:3.7-0"
-    shell: "java -Xmx15G -XX:ParallelGCThreads=1 -jar /usr/GenomeAnalysisTK.jar "
-           "-T SelectVariants -sn {params.s} -env -R {input.ref} -V "
-           "{input.vcf} -o {output.splitted}"
-
-
-## bam metrics
-rule mapped_reads_bases:
-    """Calculate number of mapped reads"""
-    input:
-        bam="{sample}/bams/{sample}.sorted.bam",
-        pywc=pywc
-    output:
-        reads="{sample}/bams/{sample}.mapped.num",
-        bases="{sample}/bams/{sample}.mapped.basenum"
-    singularity: "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0"
-    shell: "samtools view -F 4 {input.bam} | cut -f 10 | python {input.pywc} "
-           "--reads {output.reads} --bases {output.bases}"
-
-
-rule unique_reads_bases:
-    """Calculate number of unique reads"""
-    input:
-        bam="{sample}/bams/{sample}.markdup.bam",
-        pywc=pywc
-    output:
-        reads="{sample}/bams/{sample}.unique.num",
-        bases="{sample}/bams/{sample}.usable.basenum"
-    singularity: "docker://quay.io/biocontainers/mulled-v2-eb9e7907c7a753917c1e4d7a64384c047429618a:1abf1824431ec057c7d41be6f0c40e24843acde4-0"
-    shell: "samtools view -F 4 -F 1024 {input.bam} | cut -f 10 | python {input.pywc} "
-           "--reads {output.reads} --bases {output.bases}"
-
-
-## fastqc
-
-rule fastqc_raw:
-    """
-    Run fastqc on raw fastq files
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
-    perl missing in the container of 0.11.5
-    """
-    input:
-        r1=get_r1,
-        r2=get_r2
-    params:
-        odir="{sample}/pre_process/raw_fastqc"
-    output:
-        aux="{sample}/pre_process/raw_fastqc/.done.txt"
-    singularity: "docker://quay.io/biocontainers/fastqc:0.11.7--4"
-    shell: "fastqc --threads 4 --nogroup -o {params.odir} {input.r1} {input.r2} "
-           "&& echo 'done' > {output.aux}"
-
-
-rule fastqc_merged:
-    """
-    Run fastqc on merged fastq files
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
-    perl missing in the container of 0.11.5
-    """
-    input:
-        r1="{sample}/pre_process/{sample}.merged_R1.fastq.gz",
-        r2="{sample}/pre_process/{sample}.merged_R2.fastq.gz",
-        fq=fqsc
-    params:
-        odir="{sample}/pre_process/merged_fastqc"
-    output:
-        r1="{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
-        r2="{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip"
-    singularity: "docker://quay.io/biocontainers/fastqc:0.11.7--4"
-    shell: "bash {input.fq} {input.r1} {input.r2} "
-           "{output.r1} {output.r2} {params.odir}"
-
-
-rule fastqc_postqc:
-    """
-    Run fastqc on fastq files post pre-processing
-    NOTE: singularity version uses 0.11.7 in stead of 0.11.5 due to
-    perl missing in the container of 0.11.5
-    """
-    input:
-        r1="{sample}/pre_process/{sample}.cutadapt_R1.fastq",
-        r2="{sample}/pre_process/{sample}.cutadapt_R2.fastq",
-        fq=fqsc
-    params:
-        odir="{sample}/pre_process/postqc_fastqc"
-    output:
-        r1="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
-        r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip"
-    singularity: "docker://quay.io/biocontainers/fastqc:0.11.7--4"
-    shell: "bash {input.fq} {input.r1} {input.r2} "
-           "{output.r1} {output.r2} {params.odir}"
-
-
-## fastq-count
-
-rule fqcount_preqc:
-    """Calculate number of reads and bases before pre-processing"""
-    input:
-        r1="{sample}/pre_process/{sample}.merged_R1.fastq.gz",
-        r2="{sample}/pre_process/{sample}.merged_R2.fastq.gz"
-    output:
-        "{sample}/pre_process/{sample}.preqc_count.json"
-    singularity: "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0"
-    shell: "fastq-count {input.r1} {input.r2} > {output}"
-
-
-rule fqcount_postqc:
-    """Calculate number of reads and bases after pre-processing"""
-    input:
-        r1="{sample}/pre_process/{sample}.cutadapt_R1.fastq",
-        r2="{sample}/pre_process/{sample}.cutadapt_R2.fastq"
-    output:
-        "{sample}/pre_process/{sample}.postqc_count.json"
-    singularity: "docker://quay.io/biocontainers/fastq-count:0.1.0--h14c3975_0"
-    shell: "fastq-count {input.r1} {input.r2} > {output}"
-
-
-# fastqc stats
-rule fastqc_stats:
-    """Collect fastq stats for a sample in json format"""
-    input:
-        preqc_r1="{sample}/pre_process/merged_fastqc/{sample}.merged_R1_fastqc.zip",
-        preqc_r2="{sample}/pre_process/merged_fastqc/{sample}.merged_R2_fastqc.zip",
-        postqc_r1="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R1_fastqc.zip",
-        postqc_r2="{sample}/pre_process/postqc_fastqc/{sample}.cutadapt_R2_fastqc.zip",
-        sc=fqpy
-    singularity: "docker://python:3.6-slim"
-    output:
-        "{sample}/pre_process/fastq_stats.json"
-    shell: "python {input.sc} --preqc-r1 {input.preqc_r1} "
-           "--preqc-r2 {input.preqc_r2} "
-           "--postqc-r1 {input.postqc_r1} "
-           "--postqc-r2 {input.postqc_r2} > {output}"
-
-## coverages
+        done = "{sample}/pre_process/trimmed-{sample}-{read_group}/.done"
+    log:
+        "log/{sample}/fastqc.{read_group}.log"
+    container:
+        containers["fastqc"]
+    threads:
+        4
+    shell:
+        "fastqc --threads {threads} --nogroup -o $(dirname {output.done}) "
+        "{input.r1} {input.r2} 2> {log} && "
+        "touch {output.done}"
 
 rule covstats:
     """Calculate coverage statistics on bam file"""
     input:
-        bam="{sample}/bams/{sample}.markdup.bam",
-        genome="current.genome",
-        covpy=covpy,
-        bed=get_bedpath
-    params:
-        subt="Sample {sample}"
+        bam = rules.markdup.output.bam,
+        genome = "current.genome",
+        covstats = srcdir("src/covstats.py"),
+        bed = config.get("targetsfile", "")
     output:
-        covj="{sample}/coverage/{bed}.covstats.json",
-        covp="{sample}/coverage/{bed}.covstats.png"
-    singularity: "docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0"
-    shell: "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
-           "-b {input.bam} -d  | python {input.covpy} - --plot {output.covp} "
-           "--title 'Targets coverage' --subtitle '{params.subt}' "
-           "> {output.covj}"
-
+        covj = "{sample}/coverage/covstats.json",
+        covp = "{sample}/coverage/covstats.png"
+    params:
+        subt = "Sample {sample}"
+    log:
+        bedtools = "log/{sample}/covstats_bedtools.log",
+        covstats = "log/{sample}/covstats_covstats.log"
+    container:
+        containers["bedtools-2.26-python-2.7"]
+    resources:
+        mem_mb = 6000
+    threads:
+        2
+    shell:
+        "bedtools coverage -sorted -g {input.genome} -a {input.bed} "
+        "-b {input.bam} -d  2> {log.bedtools} | python {input.covstats} - "
+        "--plot {output.covp} --title 'Targets coverage' "
+        "--subtitle '{params.subt}' > {output.covj} 2> {log.covstats}"
 
 rule vtools_coverage:
     """Calculate coverage statistics per transcript"""
     input:
-        gvcf="{sample}/vcf/{sample}.g.vcf.gz",
-        tbi = "{sample}/vcf/{sample}.g.vcf.gz.tbi",
-        ref=get_refflatpath
+        gvcf = rules.gvcf_gather.output.gvcf,
+        tbi = rules.gvcf_gather.output.gvcf_tbi,
+        ref = config.get("refflat", "")
     output:
-        tsv="{sample}/coverage/{ref}.coverages.tsv"
-    singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
-    shell: "vtools-gcoverage -I {input.gvcf} -R {input.ref} > {output.tsv}"
+        "{sample}/coverage/refFlat_coverage.tsv"
+    log:
+        "log/{sample}/vtools_coverage.log"
+    container:
+        containers["vtools"]
+    shell:
+        "vtools-gcoverage -I {input.gvcf} "
+        "-R {input.ref} > {output} 2> {log}"
 
-
-## vcfstats
-
-rule vcfstats:
-    """Calculate vcf statistics"""
+rule cutadapt_summary:
+    """Colect cutadapt summary from each readgroup per sample """
     input:
-        vcf="multisample/genotyped.vcf.gz",
-        tbi = "multisample/genotyped.vcf.gz.tbi"
+        cutadapt = sample_cutadapt_files,
+        cutadapt_summary = srcdir("src/cutadapt_summary.py")
     output:
-        stats="multisample/vcfstats.json"
-    singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
-    shell: "vtools-stats -i {input.vcf} > {output.stats}"
+        "{sample}/cutadapt.json"
+    log:
+        "log/{sample}/cutadapt_summary.log"
+    container:
+        containers["python3"]
+    shell:
+        "python {input.cutadapt_summary} --sample {wildcards.sample} "
+        "--cutadapt-summary {input.cutadapt} > {output}"
 
+rule collectstats:
+    """Collect all stats for a particular sample"""
+    input:
+        cov = rules.covstats.output.covj if "targetsfile" in config else [],
+        cutadapt = rules.cutadapt_summary.output,
+        collect_stats = srcdir("src/collect_stats.py")
+    output:
+        "{sample}/{sample}.stats.json"
+    params:
+        fthresh = config["female_threshold"]
+    log:
+        "log/{sample}/collectstats.log"
+    container:
+        containers["python3"]
+    shell:
+        "python {input.collect_stats} --sample-name {wildcards.sample} "
+        "--female-threshold {params.fthresh} "
+        "--cutadapt {input.cutadapt} "
+        "--covstats {input.cov} > {output} 2> {log}"
 
-## collection
-if len(BASE_BEDS) >= 1:
-    rule collectstats:
-        """Collect all stats for a particular sample with beds"""
-        input:
-            preqc="{sample}/pre_process/{sample}.preqc_count.json",
-            postq="{sample}/pre_process/{sample}.postqc_count.json",
-            mnum="{sample}/bams/{sample}.mapped.num",
-            mbnum="{sample}/bams/{sample}.mapped.basenum",
-            unum="{sample}/bams/{sample}.unique.num",
-            ubnum="{sample}/bams/{sample}.usable.basenum",
-            fastqc="{sample}/pre_process/fastq_stats.json",
-            cov=expand("{{sample}}/coverage/{bed}.covstats.json",
-                       bed=BASE_BEDS),
-            colpy=colpy
-        params:
-            sample_name="{sample}",
-            fthresh=FEMALE_THRESHOLD
-        output:
-            "{sample}/{sample}.stats.json"
-        singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
-        shell: "python {input.colpy} --sample-name {params.sample_name} "
-               "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
-               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
-               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-               "--female-threshold {params.fthresh} "
-               "--fastqc-stats {input.fastqc} {input.cov} > {output}"
-else:
-    rule collectstats:
-        """Collect all stats for a particular sample without beds"""
-        input:
-            preqc = "{sample}/pre_process/{sample}.preqc_count.json",
-            postq = "{sample}/pre_process/{sample}.postqc_count.json",
-            mnum = "{sample}/bams/{sample}.mapped.num",
-            mbnum = "{sample}/bams/{sample}.mapped.basenum",
-            unum = "{sample}/bams/{sample}.unique.num",
-            ubnum = "{sample}/bams/{sample}.usable.basenum",
-            fastqc="{sample}/pre_process/fastq_stats.json",
-            colpy = colpy
-        params:
-            sample_name = "{sample}",
-            fthresh = FEMALE_THRESHOLD
-        output:
-            "{sample}/{sample}.stats.json"
-        singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
-        shell: "python {input.colpy} --sample-name {params.sample_name} "
-               "--pre-qc-fastq {input.preqc} --post-qc-fastq {input.postq} "
-               "--mapped-num {input.mnum} --mapped-basenum {input.mbnum} "
-               "--unique-num {input.unum} --usable-basenum {input.ubnum} "
-               "--female-threshold {params.fthresh} "
-               "--fastqc-stats {input.fastqc}  > {output}"
+rule multiple_metrics:
+    """Run picard CollectMultipleMetrics"""
+    input:
+        bam = rules.markdup.output.bam,
+        ref = config["reference"]
+    output:
+        alignment = "{sample}/bams/{sample}.alignment_summary_metrics",
+        insertMetrics = "{sample}/bams/{sample}.insert_size_metrics"
+    params:
+        prefix = lambda wildcards, output: output.alignment[:-26]
+    log:
+        "log/{sample}/multiple_metrics.log"
+    container:
+        containers["picard"]
+    shell:
+        "picard -Xmx8G -XX:CompressedClassSpaceSize=256m CollectMultipleMetrics "
+        "I={input.bam} O={params.prefix} "
+        "R={input.ref} "
+        "PROGRAM=CollectAlignmentSummaryMetrics "
+        "PROGRAM=CollectInsertSizeMetrics 2> {log}"
+
+rule bed_to_interval:
+    """Run picard BedToIntervalList
+
+    This is needed to convert the bed files for the capture kit to a format
+    picard can read
+    """
+    input:
+        targets = config.get("targetsfile", ""),
+        baits = config.get("baitsfile", ""),
+        ref = config["reference"]
+    output:
+        target_interval = "target.interval",
+        baits_interval = "baits.interval"
+    log:
+        target = "log/bed_to_interval_target.log",
+        baits = "log/bed_to_interval_target.log"
+    container:
+        containers["picard"]
+    shell:
+        "picard -Xmx4G BedToIntervalList "
+        "I={input.targets} O={output.target_interval} "
+        "SD={input.ref} 2> {log.target} && "
+        "picard BedToIntervalList "
+        "I={input.baits} O={output.baits_interval} "
+        "SD={input.ref} 2> {log.baits}"
+
+rule hs_metrics:
+    """Run picard CollectHsMetrics"""
+    input:
+        bam = rules.markdup.output.bam,
+        ref = config["reference"],
+        targets = rules.bed_to_interval.output.target_interval,
+        baits = rules.bed_to_interval.output.baits_interval
+    output:
+        "{sample}/bams/{sample}.hs_metrics.txt"
+    log:
+        "log/{sample}/hs_metrics.log"
+    container:
+        containers["picard"]
+    shell:
+        "picard -Xmx8G -XX:CompressedClassSpaceSize=256m CollectHsMetrics "
+        "I={input.bam} O={output} "
+        "R={input.ref} "
+        "BAIT_INTERVALS={input.baits} "
+        "TARGET_INTERVALS={input.targets}"
+
+rule multiqc:
+    """
+    Create MultiQC report by parsing the current folder. Inputs are only used
+    to make sure that MultiQC is ran when all other tasks have been completed.
+    """
+    input:
+        bam = expand("{s}/bams/{s}.bam", s=config["samples"]),
+        metric = expand("{s}/bams/{s}.metrics", s=config["samples"]),
+        alignment_metrics = expand("{s}/bams/{s}.alignment_summary_metrics", s=config["samples"]),
+        insert_metrics = expand("{s}/bams/{s}.insert_size_metrics", s=config["samples"]),
+        fastqc = all_trimmed_fastqc,
+        tmp = rules.create_tmp.output,
+        hs_metric = expand("{s}/bams/{s}.hs_metrics.txt", s=config["samples"]) if "baitsfile" in config else []
+    output:
+        html = "multiqc_report/multiqc_report.html",
+        insertSize = "multiqc_report/multiqc_data/multiqc_picard_insertSize.json",
+        AlignmentMetrics = "multiqc_report/multiqc_data/multiqc_picard_AlignmentSummaryMetrics.json",
+        DuplicationMetrics = "multiqc_report/multiqc_data/multiqc_picard_dups.json",
+        HsMetrics = "multiqc_report/multiqc_data/multiqc_picard_HsMetrics.json" if "baitsfile" in config else []
+    log:
+        "log/multiqc.log"
+    container:
+        containers["multiqc"]
+    shell:
+        "export TMPDIR={input.tmp}; "
+        "multiqc --data-format json --force "
+        "--outdir multiqc_report . 2> {log} "
+        "|| touch {output}"
 
 rule merge_stats:
     """Merge all stats of all samples"""
     input:
-        cols=expand("{sample}/{sample}.stats.json", sample=SAMPLES),
-        vstat="multisample/vcfstats.json",
-        mpy=mpy
+        cols = expand("{sample}/{sample}.stats.json", sample=config["samples"]),
+        merge_stats = srcdir("src/merge_stats.py"),
+        insertSize = rules.multiqc.output.insertSize,
+        AlignmentMetrics = rules.multiqc.output.AlignmentMetrics,
+        DuplicationMetrics = rules.multiqc.output.DuplicationMetrics,
+        HsMetrics = rules.multiqc.output.HsMetrics
     output:
-        stats="stats.json"
-    singularity: "docker://quay.io/biocontainers/vtools:1.0.0--py37h3010b51_0"
-    shell: "python {input.mpy} --vcfstats {input.vstat} {input.cols} "
-           "> {output.stats}"
-
+        "stats.json"
+    log:
+        "log/stats.tsv.log"
+    container:
+        containers["vtools"]
+    shell:
+        "python {input.merge_stats} --collectstats {input.cols} "
+        "--picard-insertSize {input.insertSize} "
+        "--picard-AlignmentMetrics {input.AlignmentMetrics} "
+        "--picard-DuplicationMetrics {input.DuplicationMetrics} "
+        "--picard-HsMetrics {input.HsMetrics} > {output} 2> {log}"
 
 rule stats_tsv:
     """Convert stats.json to tsv"""
     input:
-        stats="stats.json",
-        sc=tsvpy
+        stats = rules.merge_stats.output,
+        stats_to_tsv = srcdir("src/stats_to_tsv.py")
     output:
-        stats="stats.tsv"
-    singularity: "docker://python:3.6-slim"
-    shell: "python {input.sc} -i {input.stats} > {output.stats}"
+        "stats.tsv"
+    log:
+        "log/stats.tsv.log"
+    container:
+        containers["python3"]
+    shell:
+        "python {input.stats_to_tsv} -i {input.stats} > {output} 2> {log}"
 
-
-rule multiqc:
-    """
-    Create multiQC report
-    Depends on stats.tsv to forcefully run at end of pipeline
-    """
+rule gvcf2coverage:
+    """ Determine coverage from gvcf files """
     input:
-        stats="stats.tsv"
-    params:
-        odir=".",
-        rdir="multiqc_report"
+        rules.gvcf_gather.output.gvcf
     output:
-        report="multiqc_report/multiqc_report.html"
-    singularity: "docker://quay.io/biocontainers/multiqc:1.5--py36_0"
-    shell: "multiqc -f -o {params.rdir} {params.odir} || touch {output.report}"
+        "{sample}/vcf/{sample}_{threshold}.bed"
+    log:
+        "log/{sample}/gvcf2coverage.{threshold}.log"
+    container:
+        containers["gvcf2coverage"]
+    shell:
+        "gvcf2coverage -t {wildcards.threshold} < {input} 2> {log} | cut -f 1,2,3 > {output}"
+
+rule multisample_vcf:
+    """ Generate a true multisample VCF file with all samples """
+    input:
+        gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=config["samples"]),
+        tbis = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi", sample=config["samples"]),
+        ref = config["reference"]
+    params:
+        gvcf_files = lambda wc: expand("-V {sample}/vcf/{sample}.g.vcf.gz", sample=config["samples"]),
+    output:
+        "multisample.vcf.gz"
+    log:
+        "log/multisample.log"
+    container:
+        containers["gatk"]
+    threads:
+        8
+    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
+           "GenotypeGVCFs -R {input.ref} "
+           "{params.gvcf_files} -o '{output}'"

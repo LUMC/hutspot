@@ -1,0 +1,16 @@
+{
+  "samples": {
+    "micro": {
+      "read_groups": {
+        "lib_01": {
+        "R1": "tests/data/fastq/micro_R1.fq.gz",
+        "R2": "tests/data/fastq/micro_R2.fq.gz"
+        }
+      }
+    }
+  },
+  "reference":"tests/data/reference/ref.fa",
+  "dbsnp": "tests/data/reference/database.vcf.gz",
+  "known_sites": ["tests/data/reference/database.vcf.gz"],
+  "targetsfile": "tests/data/reference/target_genes.bed"
+}

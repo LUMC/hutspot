@@ -22,7 +22,7 @@ collect_stats.py
 :license: AGPL-3.0
 """
 
-import click
+import argparse
 import json
 
 
@@ -31,24 +31,106 @@ def parse_json(path):
         return json.load(handle)
 
 
-@click.command()
-@click.option("--vcfstats",
-              type=click.Path(exists=True, dir_okay=False, readable=True),
-              required=True,
-              help="Path to vcfstats json")
-@click.argument("collectstats",
-              type=click.Path(exists=True, dir_okay=False, readable=True),
-              nargs=-1,
-              required=True)
-def main(vcfstats, collectstats):
-    v = parse_json(vcfstats)
-    cs = [parse_json(x) for x in collectstats]
-    d = {
-        "sample_stats": cs,
-        "multisample_vcfstats": v
-    }
-    print(json.dumps(d))
+def add_picard_insertSize(data, filename):
+    """ Add the picard insertSize for each sample to data """
+    insert = parse_json(filename)
+
+    for sample in insert.values():
+        name = sample.pop('SAMPLE_NAME')
+        for d in data['sample_stats']:
+            if d['sample_name'] == name:
+                d['picard_insertSize'] = sample
+                break
+        else:
+            raise RuntimeError(f"Unknown sample {name}")
+
+
+def add_picard_HsMetrics(data, filename):
+    """ Add the picard HsMetrics for each sample to data """
+    HsMetrics = parse_json(filename)
+
+    for sample in HsMetrics:
+        for d in data['sample_stats']:
+            if d['sample_name'] == sample:
+                d['picard_HsMetrics'] = HsMetrics[sample]
+                break
+        else:
+            raise RuntimeError(f"Unknown sample {sample}")
+
+
+def add_picard_AlignmentMetrics(data, filename):
+    AlignmentMetrics = parse_json(filename)
+
+    for sample in AlignmentMetrics:
+        for d in data['sample_stats']:
+            if d['sample_name'] == sample:
+                d['picard_AlignmentSummaryMetrics'] = AlignmentMetrics[sample]
+                break
+        else:
+            raise RuntimeError(f"Unknown sample {sample}")
+
+
+def add_picard_DuplicationMetrics(data, filename):
+    DuplicationMetrics = parse_json(filename)
+
+    for sample in DuplicationMetrics:
+        for d in data['sample_stats']:
+            if sample.startswith(d['sample_name']):
+                d['picard_DuplicationMetrics'] = DuplicationMetrics[sample]
+                break
+        else:
+            raise RuntimeError(f"Unknown sample {sample}")
+
+
+def main(args):
+    data = dict()
+    data["sample_stats"] = list()
+
+    for stats in args.collectstats:
+        cs = parse_json(stats)
+        data["sample_stats"].append(cs)
+
+    if args.picard_insertSize:
+        add_picard_insertSize(data, args.picard_insertSize)
+
+    if args.picard_HsMetrics:
+        add_picard_HsMetrics(data, args.picard_HsMetrics)
+
+    if args.picard_AlignmentMetrics:
+        add_picard_AlignmentMetrics(data,
+                args.picard_AlignmentMetrics)
+
+    if args.picard_DuplicationMetrics:
+        add_picard_DuplicationMetrics(data, args.picard_DuplicationMetrics)
+
+    print(json.dumps(data))
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--collectstats',
+                        nargs='+',
+                        required=True,
+                        help='Path to the collected stats for each sample')
+    parser.add_argument('--picard-insertSize',
+                        required=False,
+                        help=('Path to multiQC json summary for picard '
+                        'insertSize'))
+    parser.add_argument('--picard-HsMetrics',
+                        required=False,
+                        nargs='?',
+                        help=('Path to multiQC json summary for picard '
+                        'HsMetrics'))
+    parser.add_argument('--picard-AlignmentMetrics',
+                        required=False,
+                        nargs='?',
+                        help=('Path to multiQC json summary for picard '
+                        'AlignmentSummaryMetrics'))
+    parser.add_argument('--picard-DuplicationMetrics',
+                        required=False,
+                        nargs='?',
+                        help=('Path to multiQC json summary for picard '
+                        'DuplicationMetrics'))
+    args = parser.parse_args()
+    main(args)

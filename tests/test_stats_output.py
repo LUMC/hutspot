@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 
+import json
 import pathlib
 import pytest
 import os
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
+@pytest.mark.workflow('integration-vanilla')
 def test_stats_file_exists(workflow_dir):
     stats_file = 'stats.tsv'
     full_path = workflow_dir / pathlib.Path(stats_file)
     assert os.path.exists(full_path)
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
+@pytest.mark.workflow('integration-vanilla')
 def test_stats_file_name(workflow_dir):
     """ Read in the stats file and do some tests """
     stats_file = 'stats.tsv'
@@ -26,7 +27,7 @@ def test_stats_file_name(workflow_dir):
     assert data['sample_name'] == 'micro'
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
+@pytest.mark.workflow('integration-vanilla')
 def test_stats_file_mapped_reads(workflow_dir):
     """ Read in the stats file and do some tests """
     stats_file = 'stats.tsv'
@@ -37,10 +38,10 @@ def test_stats_file_mapped_reads(workflow_dir):
         values = next(fin).strip().split('\t')
     data = dict(zip(header, values))
 
-    assert data['mapped_reads'] == '15515'
+    assert data['mapped_reads'] == '15424'
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
+@pytest.mark.workflow('integration-vanilla')
 def test_stats_file_mapped_bases(workflow_dir):
     """ Read in the stats file and do some tests """
     stats_file = 'stats.tsv'
@@ -51,11 +52,11 @@ def test_stats_file_mapped_bases(workflow_dir):
         values = next(fin).strip().split('\t')
     data = dict(zip(header, values))
 
-    assert data['mapped_bases'] == '2275114'
+    assert data['mapped_bases'] == '2262944'
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
-def test_stats_file_usable_reads(workflow_dir):
+@pytest.mark.workflow('integration-vanilla')
+def test_stats_file_preqc_reads(workflow_dir):
     """ Read in the stats file and do some tests """
     stats_file = 'stats.tsv'
     full_path = workflow_dir / pathlib.Path(stats_file)
@@ -65,11 +66,11 @@ def test_stats_file_usable_reads(workflow_dir):
         values = next(fin).strip().split('\t')
     data = dict(zip(header, values))
 
-    assert data['usable_reads'] == '15477'
+    assert data['preqc_reads'] == '15440'
 
 
-@pytest.mark.workflow('test-integration-no-cluster')
-def test_stats_file_usable_bases(workflow_dir):
+@pytest.mark.workflow('integration-vanilla')
+def test_stats_file_preqc_bases(workflow_dir):
     """ Read in the stats file and do some tests """
     stats_file = 'stats.tsv'
     full_path = workflow_dir / pathlib.Path(stats_file)
@@ -79,4 +80,18 @@ def test_stats_file_usable_bases(workflow_dir):
         values = next(fin).strip().split('\t')
     data = dict(zip(header, values))
 
-    assert data['usable_bases'] == '2270739'
+    assert data['preqc_bases'] == '2276743'
+
+
+@pytest.mark.parametrize("json_field", [
+    ('sample_name'), ('gender'), ('coverage'), ('picard_insertSize'),
+    ('picard_AlignmentSummaryMetrics')])
+@pytest.mark.workflow('integration-gene-bedfile')
+def test_stats_file_preqc_bases(workflow_dir, json_field):
+    """ Read in the stats json file """
+    stats_file = 'stats.json'
+    full_path = workflow_dir / pathlib.Path(stats_file)
+    json_data = json.load(open(full_path))
+
+    for sample in json_data['sample_stats']:
+        assert json_field in sample
