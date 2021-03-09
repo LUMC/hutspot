@@ -1,0 +1,79 @@
+name: Continuous Integration
+
+on: [push, pull_request]
+
+defaults:
+  run:
+    # This is needed for miniconda, see:
+    # https://github.com/marketplace/actions/setup-miniconda#important.
+    shell: bash -l {0}
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test:
+          - sanity-snakemake
+          - sanity-snakemake-lint
+          - sanity-singularity
+          - sanity-no-reference
+          - sanity-reference-does-not-exist
+          - sanity-baits-only
+          - sanity-targets-only
+          - sanity-samples-overlapping-name
+          - sanity-multisample
+
+          - dry-run-vanilla
+          - dry-run-target-baits
+          - dry-run-bed-coverage
+          - dry-run-multisample
+
+          - integration-vanilla
+          - integration-small-scatter
+          - integration-refflat
+          - integration-all-on-target
+          - integration-gene-bedfile
+          - integration-two-known-sites
+          - integration-two-readgroups
+          - integration-two-samples
+          - integration-target-baits
+          - integration-bed-coverage
+          - integration-restrict_BQSR
+          - integration-targets-only
+          - integration-multisample
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: eWaterCycle/setup-singularity@v6
+      with:
+        singularity-version: 3.6.4
+
+    - uses: conda-incubator/setup-miniconda@v2.0.1
+      # https://github.com/conda-incubator/setup-miniconda.
+      with:
+        activate-environment: hutspot
+        environment-file: environment.yml
+        auto-activate-base: false
+
+    - name: Run test in conda evironment
+      # Use --symlink to limit disk usage.
+      run: >-
+        pytest --keep-workflow-wd-on-fail --tag ${{ matrix.test }} --symlink tests/
+
+    - name: Check job stderr messages in case of failure
+      if: ${{ failure() }}
+      run: >-
+        bash -c '
+        for file in $(find /tmp/pytest_workflow_* -name log.err); do
+          echo $file; cat $file
+        done
+        '
+    - name: Check job stdout messages in case of failure
+      if: ${{ failure() }}
+      run: >-
+        bash -c '
+        for file in $(find /tmp/pytest_workflow_* -name log.out); do
+          echo $file; cat $file
+        done
+        '
