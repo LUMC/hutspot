@@ -30,7 +30,6 @@ jobs:
           - dry-run-multisample
 
           - integration-vanilla
-          - integration-small-scatter
           - integration-refflat
           - integration-all-on-target
           - integration-gene-bedfile
