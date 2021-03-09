@@ -1,0 +1,10 @@
+# This file may be used to create an environment using:
+# $ conda env create --file environment.yml
+# platform: linux-64
+name: hutspot
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - pytest-workflow>=1.4.0
+  - snakemake-minimal>=5.22.1
