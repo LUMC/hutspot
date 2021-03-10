@@ -71,14 +71,14 @@
         - 'chrM\t263\t.\tA\tG\t323.*GT:AD:DP:GQ:PL\t1/1:0,108:108:99:3267,323,0'
         - 'chrM\t4745\t.\tA\tG\t56.*GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,134:135:99:1|1:4745_A_G:5718,407,0'
         - 'chrM\t4769\t.\tA\tG\t5182.*GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,120:121:99:1|1:4745_A_G:5211,363,0'
-        - 'chrM\t16023\t.\tG\tA\t1906.*GT:AD:DP:GQ:PL\t0/1:74,74:148:99:1935,0,1903'
+        - 'chrM\t16023\t.\tG\tA\t.*GT:AD:DP:GQ:PL\t0/1:75,74:'
     - path: micro/vcf/micro.g.vcf.gz
       contains:
         - "chrM\t1\t.\tG\t<NON_REF>\t.\t.\tEND=151\tGT:DP:GQ:MIN_DP:PL\t0/0:164:99:137:0,120,1800"
         - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:195:0:187:0,0,0"
       contains_regex:
         - 'chrM\t152\t.\tT\tC,<NON_REF>\t3960.*GT:AD:DP:GQ:PL:SB\t1/1:0,130,0:130:99:3989,388,0,3989,388,3989:0,0,47,83'
-        - 'chrM\t16023\t.\tG\tA,<NON_REF>\t1906.*GT:AD:DP:GQ:PL:SB\t0/1:74,74,0:148:99:1935,0,1903,2157,2123,4280:36,38,37,37'
+        - 'chrM\t16023\t.\tG\tA,<NON_REF>\t.*GT:AD:DP:GQ:PL:SB\t0/1:75,74,0:'
     - path: micro/vcf/micro.g.vcf.gz.tbi
     - path: micro/vcf/micro.0.vcf.gz
       should_exist: false
