@@ -39,7 +39,7 @@ jobs:
           - integration-two-samples
           - integration-target-baits
           - integration-bed-coverage
-          - integration-restrict_BQSR
+          - integration-restrict-BQSR
           - integration-targets-only
           - integration-multisample
     steps:
