@@ -179,7 +179,7 @@ rule baserecal:
 checkpoint scatterregions:
     """Scatter the reference genome"""
     input:
-        ref = config["reference"],
+        ref = config["reference"] + '.fai',
     output:
         directory("scatter")
     params:
@@ -187,14 +187,16 @@ checkpoint scatterregions:
     log:
         "log/scatterregions.log"
     container:
-        containers["biopet-scatterregions"]
+        containers["chunked-scatter"]
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 10000
     shell:
         "mkdir -p {output} && "
-        "biopet-scatterregions -Xmx24G "
-        "--referenceFasta {input.ref} --scatterSize {params.size} "
-        "--outputDir scatter 2> {log}"
+        "scatter-regions "
+        "--scatter-size {params.size} "
+        "--split-contigs "
+        "--prefix {output}/scatter- "
+        "{input.ref} 2> {log}"
 
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""

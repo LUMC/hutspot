@@ -24,23 +24,12 @@ conda environments are no long available.
 
 # Installation
 
-To run this pipeline you will need the following at minimum:
-
-* python 3.6
-* snakemake 5.2.0 or newer
-
 This repository contains a [conda](https://conda.io/docs/)
-environment file that you can use to install all minimum dependencies in a
+environment file that you can use to install all dependencies in a
 conda environment:
 
 ```bash
 conda env create -f environment.yml
-```
-
-Alternatively, you can set up a python virtualenv and run
-
-```bash
-pip install -r requirements.txt
 ```
 
 ## Singularity
