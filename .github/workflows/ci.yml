@@ -42,8 +42,9 @@ jobs:
           - integration-restrict-BQSR
           - integration-targets-only
           - integration-multisample
-steps:
-- uses: actions/checkout@v2
+
+    steps:
+    - uses: actions/checkout@v2
 
     - name: Install singularity
       uses: eWaterCycle/setup-singularity@v6
