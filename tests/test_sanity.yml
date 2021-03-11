@@ -1,0 +1,82 @@
+- name: sanity-no-reference
+  tags:
+    - sanity
+  command: >
+    snakemake -n -r -p -s Snakefile --configfile
+    tests/data/config/invalid_config_no_ref.json
+  exit_code: 1
+  stdout:
+    contains:
+      - 'Invalid --configfile: ''reference'' is a required property'
+
+- name: sanity-reference-does-not-exist
+  tags:
+    - sanity
+  command: >
+    snakemake -n -r -p -s Snakefile --configfile
+    tests/data/config/invalid_config_fake_ref.json
+  exit_code: 1
+  stdout:
+    contains:
+      - Missing input files for rule align
+      - /this/file/is/not/there
+
+- name: sanity-snakemake
+  tags:
+    - sanity
+  command: |
+    snakemake --version
+
+- name: sanity-singularity
+  tags:
+    - sanity
+  command: |
+    singularity --version
+  stdout:
+    contains:
+      - singularity version 3
+
+- name: sanity-baits-only
+  tags:
+    - sanity
+  command: >
+    snakemake -s Snakefile -n --configfile
+    tests/data/config/invalid_config_baitsfile_only.json
+  exit_code: 1
+  stdout:
+    contains:
+      - 'Invalid --configfile: "baitsfile" specified without "targetsfile"'
+
+- name: sanity-targets-only
+  tags:
+    - sanity
+  command: >
+    snakemake -s Snakefile -n --configfile
+    tests/data/config/sample_config_targets_only.json
+  stdout:
+    contains:
+      - rule hs_metrics
+
+- name: sanity-samples-overlapping-name
+  tags:
+    - sanity
+  command: >
+    snakemake -s Snakefile -n --configfile
+    tests/data/config/invalid_config_two_samples.json
+  exit_code: 1
+  stdout:
+    contains:
+      - 'Invalid --configfile: sample names should not overlap ("micro1" is contained in "micro12")'
+
+- name: sanity-multisample
+  tags:
+    - sanity
+  command: >
+    snakemake -s Snakefile -n --configfile
+    tests/data/config/sample_config_multisample.json
+
+- name: sanity-snakemake-lint
+  tags:
+    - sanity
+  command: >
+    snakemake --lint --configfile tests/data/config/sample_config.json

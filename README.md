@@ -3,99 +3,78 @@
 
 # Hutspot
 
-This is a multisample DNA variant calling pipeline based on Snakemake, bwa and the
-GATK HaplotypeCaller.  
+This is a multi sample DNA variant calling pipeline based on Snakemake, bwa and
+the GATK HaplotypeCaller.
 
-## Features 
+## Features
 * Any number of samples is supported
-* Whole-genome calling, regardless of wet-lab library preparation. 
+* Whole-genome calling, regardless of wet-lab library preparation.
 * Follows modern best practices
-    * Each sample is individually called as as a GVCF. 
-    * A multisample VCF is then produced by genotyping the collection of GVCFs.
+    * Each sample is individually called as as a GVCF.
+    * A VCF is then produced by genotyping the individual GVCFs separately
+      for each sample.
 * Data parallelization for calling and genotyping steps.
-    * Using ~100 chunks, we call an entire exome in ~15 minutes!
+    * Using the `scatter_size` setting in the configuration file, the reference
+      genome is split into chunks, and each chunk can be processed
+      independenly. The default value of 1 billon will scatter the human
+      reference genoom into 6 chunks.
 * Reasonably fast.
     * 96 exomes in < 24 hours.
 * No unnecessary jobs
-* Coverage metrics for any number of bed files.
-* Fully containerized rules through singularity and biocontainers. Legacy 
-conda environments are available as well.  
-* Optionally sub-sample inputs when number of bases exceeds a user-defined
-threshold.
+* Calculate coverage metrics if a `bedfile` is specified.
+* Fully containerized rules through singularity and biocontainers. Legacy
+conda environments are no long available.
 
 # Installation
 
-To run this pipeline you will need the following at minimum:
-
-* python 3.6
-* snakemake 5.2.0 or newer
-* pyfaidx 
-
-This repository contains a [conda](https://conda.io/docs/) 
-environment file that you can use to install all minimum dependencies in a 
+This repository contains a [conda](https://conda.io/docs/)
+environment file that you can use to install all dependencies in a
 conda environment:
 
 ```bash
 conda env create -f environment.yml
-``` 
-
-Alternatively, you can set up a python virtualenv and run
-
-```bash
-pip install -r requirements.txt
 ```
 
-## Singularity 
+## Singularity
 
-We highly recommend the user of the containerized rules through 
+We highly recommend the user of the containerized rules through
 [singularity](https://www.sylabs.io/singularity/).
 
-This option does, however,
-require you to install singularity on your system. As this usually requires 
-administrative privileges, singularity is not contained within our provided
-conda environment file.
+This option does require you to install singularity on your system. As this
+usually requires administrative privileges, singularity is not contained
+within our provided conda environment file.
 
-If you want to use singularity, make sure you install version 3 or higher. 
+If you want to use singularity, make sure you install version 3 or higher.
 
 ### Debian
 If you happen to use Debian buster, singularity 3.0.3 comes straight out
 of the box with a simple:
 
 ```bash
-sudo apt install singularity-container 
+sudo apt install singularity-container
 ```
 
 ### Docker
 
-You can run singularity within a docker container. Please note that 
-the container **MUST** run in privileged mode for this to work. 
+You can run singularity within a docker container. Please note that
+the container **MUST** run in privileged mode for this to work.
 
 We have provided our own container that includes singularity and snakemake
-[here](https://hub.docker.com/r/lumc/singularity-snakemake). 
+[here](https://hub.docker.com/r/lumc/singularity-snakemake).
 
 ### Manual install
 
 If you don't use Debian buster and cannot run a privileged docker container,
-you - unfortunately :-( - will have to install singularity manually. 
-Please see the installation instructions 
+you - unfortunately :-( - will have to install singularity manually.
+Please see the installation instructions
 [here](https://github.com/sylabs/singularity/blob/master/INSTALL.md) on how
-to do that. 
+to do that.
 
-
-## GATK
-
-For license reasons, conda and singularity cannot fully install the GATK. The JAR 
-must be registered by running `gatk-register` after the environment is
-created, which conflicts with the automated environment/container creation.
- 
-For this reason, hutspot **requires** you to manually specify the path to
-the GATK executable JAR via `--config GATK=/path/to/gatk.jar`.
 
 ## Operating system
 
 Hutspot was tested on Ubuntu 16.04 only.
-It should reasonably work on most modern Linux distributions. 
-   
+It should reasonably work on most modern Linux distributions.
 
 # Requirements
 
@@ -103,24 +82,31 @@ For every sample you wish to analyze, we require one or more paired end
 readgroups in fastq format. They must be compressed with either `gzip` or
 `bgzip`.
 
-Samples must be passed to the pipeline through a config file. This is a
-simple json file listing the samples and their associated readgroups/libraries.
+The configuration must be passed to the pipeline through a configuration file.
+This is a json file listing the samples and their associated readgroups
+as well as the other settings to be used.
 An example config json can be found [here](config/example.json), and a
-json schema describing the configuration file can be found [here](config/schema.json). 
+json schema describing the configuration file can be found [here](config/schema.json).
 This json schema can also be used to validate your configuration file.
 
 ## Reference files
 
-The following reference files **must** be provided:
+The following reference files **must** be provided in the configuration:
 
-1. A reference genome, in fasta format. Must be indexed with `samtools faidx`.
-2. A dbSNP VCF file
-3. A VCF file from 1000Genomes
-4. A VCF file from the HapMap project.
+1. `reference`: A reference genome, in fasta format. Must be indexed with
+   `samtools faidx`.
+2. `dbsnp`: A dbSNP VCF file
+3. `known_sites`: One ore more VCF files with known sites for base
+    recalibration
 
 The following reference files **may** be provided:
 
-1. Any number of BED files to calculate coverage on.
+1. `targetsfile`: Bed file of the targets of the capture kit. Used to calculate coverage.
+2. `baitsfile`: Bed file of the baits of the capture kit. Used to calculate picard HsMetric.
+3. `refflat`: A refFlat file to calculate coverage over transcripts.
+4. `scatter_size`: Size of the chunks to split the variant calling into.
+5. `female_threshold`: Fraction of reads between X and the autosomes to call as
+    female.
 
 
 # How to run
@@ -131,7 +117,7 @@ the pipeline can be started with:
 ```bash
 snakemake -s Snakefile \
 --use-singularity \
---config <CONFIGURATION VALUES>
+--configfile tests/data/config/sample_config.json
 ```
 
 This would start all jobs locally. Obviously this is not what one would
@@ -139,26 +125,31 @@ regularly do for a normal pipeline run. How to submit jobs on a cluster is
 described later. Let's first move on to the necessary configuration values.
 
 ## Configuration values
+The required and optional outputs are specified in the json schema located in
+`config/schema.json`. Before running, the content of the `--configfile` is
+validated against this schema.
 
 The following configuration values are **required**:
 
 | configuration | description |
 | ------------- | ----------- |
-| `REFERENCE` | Absolute path to fasta file |
-| `SAMPLE_CONFIG` | Path to config file as described above |
-| `GATK` | Path to GATK jar. **Must** be version 3.7  |
-| `DBSNP` | Path to dbSNP VCF |
-| `ONETHOUSAND` | Path to 1000Genomes VCF |
-| `HAPMAP` | Path to HapMap VCF |
+| `reference` | Absolute path to fasta file |
+| `samples` | One or more samples, with associated fastq files |
+| `dbsnp` | Path to dbSNP VCF file|
+| `known_sites` | Path to one or more VCF files with known sites. Can be the same as the `dbsnp` file|
+
 
 The following configuration options are **optional**:
 
 | configuration | description |
 | ------------- | ----------- |
-| `BED` | Comma-separate list of paths to BED files of interest |
-| `FEMALE_THRESHOLD` | Float between 0 and 1 that signifies the threshold of the ratio between coverage on X/overall coverage that 'calls' a sample as female. Default = 0.6 |
-| `FASTQ_COUNT` | Path to `fastq-count` executable |
-| `MAX_BASES` | Maximum allowed number of bases per sample before subsampling. Default = None (no subsampling) |
+| `targetsfile` | Bed file of the targets of the capture kit. Used to calculate coverage |
+| `baitsfile` | Bed file of the baits of the capture kit. Used to calculate picard HsMetrics |
+| `female_threshold` | Float between 0 and 1 that signifies the threshold of the ratio between coverage on X/overall coverage that 'calls' a sample as female. Default = 0.6 |
+| `scatter_size` | The size of chunks to divide the reference into for parallel execution. Default = 1000000000 |
+| `coverage_threshold` | One or more threshold coverage values. For each value, a sample specific bed file will be created that contains the regions where the coverage is above the threshold |
+| `restrict_BQSR` | Restrict GATK BaseRecalibration to a single chromosome. This is faster, but the recalibration is possibly less reliable |
+| `multisample_vcf` | Create a true multisample VCF file, in addition to the regular per-sample VCF files |
 
 
 ## Cluster configuration
@@ -166,12 +157,12 @@ The following configuration options are **optional**:
 To run on a cluster, snakemake needs to be called with some extra arguments.
 Additionally, it needs a cluster yaml file describing resources per job.
 
-If you run on a cluster with drmaa support,an environment variable named 
-`DRMAA_LIBRARY_PATH` must be in the executing shell environment. This variable 
+If you run on a cluster with drmaa support,an environment variable named
+`DRMAA_LIBRARY_PATH` must be in the executing shell environment. This variable
 points to the `.so` file of the DRMAA library.
 
-An sge-cluster.yml is bundled with this pipeline in the cluster directory. 
-It is optimized for SGE clusters, where the default vmem limit is 4G. 
+An sge-cluster.yml is bundled with this pipeline in the cluster directory.
+It is optimized for SGE clusters, where the default vmem limit is 4G.
 If you run SLURM, or any other cluster system, you will have to write your own
 cluster yaml file. Please see the [snakemake documentation](http://snakemake.readthedocs.io/en/stable/snakefiles/configuration.html#cluster-configuration)
 for details on how to do so. Given the provided sge-cluster.yml, activating the
@@ -183,23 +174,29 @@ snakemake -s Snakefile \
 --drmaa ' -pe <PE_NAME> {cluster.threads} -q all.q -l h_vmem={cluster.vmem} -cwd -V -N hutspot' \
 ```
 
+## Limitations
+Sample names should be unique, and not overlap (such as `sample1` and
+`sample10`). This is due to the way output files are parsed by multiQC,
+when sample names overlap, the json output for picard DuplicationMetrics cannot
+be parsed unambiguously.
+
 ## Binding additional directories under singularity
 
-In singularity mode, snakemake binds the location of itself in the container. 
-The current working directory is also visible directly in the container. 
+In singularity mode, snakemake binds the location of itself in the container.
+The current working directory is also visible directly in the container.
 
 In many cases, this is not enough, and will result in `FileNotFoundError`s.
-E.g., suppose you run your pipeline in `/runs`, but your fastq files live in 
+E.g., suppose you run your pipeline in `/runs`, but your fastq files live in
 `/fastq` and your reference genome lives in `/genomes`. We would have to bind
-`/fastq` and `/genomes` in the container. 
+`/fastq` and `/genomes` in the container.
 
-This can be accomplished with `--singularity-args`, which accepts a simple 
+This can be accomplished with `--singularity-args`, which accepts a simple
 string of arguments passed to singularity. E.g. in the above example,
 we could do:
 
 ```bash
 snakemake -S Snakefile \
---use-singularity  \ 
+--use-singularity  \
 --singularity-args ' --bind /fastq:/fastq --bind /genomes:/genomes '
 ```
 
@@ -218,38 +215,16 @@ snakemake -s Snakefile \
 -w 120 \
 --max-jobs-per-second 30 \
 --restart-times 2 \
---config SAMPLE_CONFIG=samples.json \
-REFERENCE=/path/to/genome.fasta \
-GATK=/path/to/GenomeAnalysisTK.jar \
-DBSNP=/path/to/dbsnp.vcf.gz \
-ONETHOUSAND=/path/to/onekg.vcf \
-HAPMAP=/path/to/hapmap.vcf \
-FASTQ_COUNT=/path/to/fastq-count \
-BED=/path/to/interesting_region.bed
+--configfile config.json
 ```
-
-## Using conda instead of singularity
-
-Legacy conda environments are also available for each and every rule. 
-Simply use `--use-conda` instead of `--use-singularity` to enable conda
-environments.
-
-As dependency conflicts can and do arise with conda, it is recommended to 
-combine this flag with `--conda-prefix`, such that you only have to 
-build the environments once.
-
-The conda environments use the same versions of tools as the singularity
-containers, bar one:
-
-* `fastqc` uses version 0.11.5 on conda, but 0.11.7 on singularity.    
 
 # Graph
 
-Below you can see the rulegraph of the pipeline. The main variant calling flow
+Below you can see the rule graph of the pipeline. The main variant calling flow
 is highlighted in red. This only shows dependencies
 between rules, and not between jobs. The actual job graph is considerably
 more complex, as nearly all rules are duplicated by sample and some
-(the scatter jobs) additionally by chunk. 
+(the scatter jobs) additionally by chunk.
 
 As a rough estimate of the total number of jobs in pipeline you can use
 the following formula:
@@ -271,111 +246,76 @@ Having trouble viewing the graph? See [this](img/rulegraph.svg) static SVG inste
 ```plantuml
 digraph snakemake_dag {
     graph[bgcolor=white, margin=0];
-    rankdir=LR;
     node[shape=box, style=rounded, fontname=sans,                 fontsize=10, penwidth=2];
     edge[penwidth=2, color=grey];
-	0[label = "all", color = "0.62 0.6 0.85", style="rounded"];
-	1[label = "genotype_gather", color = "0.31 0.6 0.85", style="rounded"];
-	2[label = "multiqc", color = "0.14 0.6 0.85", style="rounded"];
-	3[label = "bai", color = "0.41 0.6 0.85", style="rounded"];
-	4[label = "split_vcf", color = "0.53 0.6 0.85", style="rounded"];
-	5[label = "fastqc_raw", color = "0.63 0.6 0.85", style="rounded"];
-	6[label = "fastqc_merged", color = "0.24 0.6 0.85", style="rounded"];
-	7[label = "fastqc_postqc", color = "0.26 0.6 0.85", style="rounded"];
-	8[label = "vtools_coverage", color = "0.58 0.6 0.85", style="rounded"];
-	9[label = "merge_stats", color = "0.36 0.6 0.85", style="rounded"];
-	10[label = "genotype_scatter", color = "0.09 0.6 0.85", style="rounded"];
-	11[label = "genotype_chunkfile", color = "0.29 0.6 0.85", style="rounded"];
-	12[label = "stats_tsv", color = "0.51 0.6 0.85", style="rounded"];
-	13[label = "markdup", color = "0.55 0.6 0.85", style="rounded"];
-	14[label = "genotype_gather_tbi", color = "0.19 0.6 0.85", style="rounded"];
-	15[label = "merge_r1", color = "0.60 0.6 0.85", style="rounded"];
-	16[label = "merge_r2", color = "0.10 0.6 0.85", style="rounded"];
-	17[label = "cutadapt", color = "0.17 0.6 0.85", style="rounded"];
-	18[label = "gvcf_gather", color = "0.32 0.6 0.85", style="rounded"];
-	19[label = "gvcf_gather_tbi", color = "0.27 0.6 0.85", style="rounded"];
-	20[label = "collectstats", color = "0.03 0.6 0.85", style="rounded"];
-	21[label = "vcfstats", color = "0.00 0.6 0.85", style="rounded"];
-	22[label = "align", color = "0.05 0.6 0.85", style="rounded"];
-	23[label = "create_markdup_tmp", color = "0.44 0.6 0.85", style="rounded"];
-	24[label = "sickle", color = "0.39 0.6 0.85", style="rounded"];
-	25[label = "gvcf_scatter", color = "0.02 0.6 0.85", style="rounded"];
-	26[label = "gvcf_chunkfile", color = "0.56 0.6 0.85", style="rounded"];
-	27[label = "fqcount_preqc", color = "0.38 0.6 0.85", style="rounded"];
-	28[label = "fqcount_postqc", color = "0.12 0.6 0.85", style="rounded"];
-	29[label = "mapped_num", color = "0.50 0.6 0.85", style="rounded"];
-	30[label = "mapped_basenum", color = "0.43 0.6 0.85", style="rounded"];
-	31[label = "unique_num", color = "0.65 0.6 0.85", style="rounded"];
-	32[label = "usable_basenum", color = "0.22 0.6 0.85", style="rounded"];
-	33[label = "fastqc_stats", color = "0.46 0.6 0.85", style="rounded"];
-	34[label = "covstats", color = "0.07 0.6 0.85", style="rounded"];
-	35[label = "seqtk_r1", color = "0.34 0.6 0.85", style="rounded"];
-	36[label = "seqtk_r2", color = "0.21 0.6 0.85", style="rounded"];
-	37[label = "baserecal", color = "0.48 0.6 0.85", style="rounded"];
-	38[label = "genome", color = "0.15 0.6 0.85", style="rounded"];
-	9 -> 0
-	4 -> 0 [color = "red"]
+	0[label = "all", color = "0.30 0.6 0.85", style="rounded"];
+	1[label = "multiqc", color = "0.60 0.6 0.85", style="rounded"];
+	2[label = "merge_stats", color = "0.17 0.6 0.85", style="rounded"];
+	3[label = "bai", color = "0.09 0.6 0.85", style="rounded"];
+	4[label = "genotype_gather\nsample: micro", color = "0.06 0.6 0.85", style="rounded"];
+	5[label = "gvcf_gather\nsample: micro", color = "0.32 0.6 0.85", style="rounded"];
+	6[label = "fastqc_raw\nsample: micro", color = "0.00 0.6 0.85", style="rounded"];
+	7[label = "fastqc_merged", color = "0.11 0.6 0.85", style="rounded"];
+	8[label = "fastqc_postqc", color = "0.02 0.6 0.85", style="rounded"];
+	9[label = "stats_tsv", color = "0.45 0.6 0.85", style="rounded"];
+	10[label = "collectstats", color = "0.24 0.6 0.85", style="rounded"];
+	11[label = "vcfstats\nsampel: micro", color = "0.52 0.6 0.85", style="rounded"];
+	12[label = "markdup", color = "0.47 0.6 0.85", style="rounded"];
+	13[label = "scatterregions", color = "0.56 0.6 0.85", style="rounded"];
+	14[label = "merge_r1\nsample: micro", color = "0.65 0.6 0.85", style="rounded"];
+	15[label = "merge_r2\nsample: micro", color = "0.26 0.6 0.85", style="rounded"];
+	16[label = "cutadapt", color = "0.22 0.6 0.85", style="rounded"];
+	17[label = "fqcount_preqc", color = "0.37 0.6 0.85", style="rounded"];
+	18[label = "fqcount_postqc", color = "0.58 0.6 0.85", style="rounded"];
+	19[label = "mapped_reads_bases", color = "0.43 0.6 0.85", style="rounded"];
+	20[label = "unique_reads_bases", color = "0.34 0.6 0.85", style="rounded"];
+	21[label = "fastqc_stats", color = "0.13 0.6 0.85", style="rounded"];
+	22[label = "covstats", color = "0.39 0.6 0.85", style="rounded"];
+	23[label = "align", color = "0.49 0.6 0.85", style="rounded"];
+	24[label = "create_markdup_tmp", color = "0.41 0.6 0.85", style="rounded,dashed"];
+	25[label = "sickle", color = "0.19 0.6 0.85", style="rounded"];
+	26[label = "genome", color = "0.62 0.6 0.85", style="rounded"];
+	1 -> 0
+	2 -> 0
 	3 -> 0
+	4 -> 0
+	5 -> 0
 	6 -> 0
 	7 -> 0
-	1 -> 0
 	8 -> 0
-	2 -> 0
-	5 -> 0
-	11 -> 1 [color = "red"]
-	10 -> 1 [color = "red"]
-	12 -> 2
-	13 -> 3
-	1 -> 4 [color = "red"]
-	14 -> 4 [color = "red"]
-	16 -> 6
-	15 -> 6
-	17 -> 7
-	19 -> 8
-	18 -> 8
-	20 -> 9
-	21 -> 9
-	19 -> 10 [color = "red"]
-	18 -> 10 [color = "red"]
-	9 -> 12
-	23 -> 13 [color = "red"]
-	22 -> 13 [color = "red"]
-	1 -> 14  [color = "red"]
-	24 -> 17 [color = "red"]
-	25 -> 18 [color = "red"]
-	26 -> 18 [color = "red"]
-	18 -> 19 [color = "red"]
-	28 -> 20
-	27 -> 20
-	32 -> 20
-	30 -> 20
-	33 -> 20
-	34 -> 20
-	29 -> 20
-	31 -> 20
-	1 -> 21
-	14 -> 21
-	17 -> 22 [color = "red"]
-	36 -> 24 [color = "red"]
-	35 -> 24 [color = "red"]
-	37 -> 25 [color = "red"]
-	13 -> 25 [color = "red"]
-	16 -> 27 [color = "red"]
-	15 -> 27 [color = "red"]
-	17 -> 28
-	22 -> 29
-	22 -> 30
-	13 -> 31
-	13 -> 32
-	7 -> 33
-	6 -> 33
-	38 -> 34
-	13 -> 34
-	27 -> 35 [color = "red"]
-	15 -> 35 [color = "red"]
-	27 -> 36 [color = "red"]
-	16 -> 36 [color = "red"]
-	13 -> 37 [color = "red"]
+	9 -> 1
+	10 -> 2
+	11 -> 2
+	12 -> 3
+	13 -> 4
+	13 -> 5
+	14 -> 7
+	15 -> 7
+	16 -> 8
+	2 -> 9
+	17 -> 10
+	18 -> 10
+	19 -> 10
+	20 -> 10
+	21 -> 10
+	22 -> 10
+	4 -> 11
+	23 -> 12
+	24 -> 12
+	25 -> 16
+	14 -> 17
+	15 -> 17
+	16 -> 18
+	23 -> 19
+	12 -> 20
+	7 -> 21
+	8 -> 21
+	12 -> 22
+	26 -> 22
+	16 -> 23
+	24 -> 23
+	14 -> 25
+	15 -> 25
 }
 ```
 

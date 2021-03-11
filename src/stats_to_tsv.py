@@ -28,24 +28,9 @@ from collections import OrderedDict
 from pathlib import Path
 
 
-def get_vcf_stats(sample_name, vcfstats):
-    vcf_sample = next(x for x in vcfstats['samples'] if x['name'] == sample_name)
-    return {
-        "total_variants": vcf_sample['total_variants'],
-        "snps": vcf_sample['variant_types']['snps'],
-        "insertions": vcf_sample['variant_types']['insertions'],
-        "deletions": vcf_sample['variant_types']['deletions'],
-        "transversions": vcf_sample['transversions'],
-        "transitions": vcf_sample['transitions'],
-        "ti_tv_ratio": vcf_sample['ti_tv_ratio'],
-        "homozygous_variants": vcf_sample['genotypes']['hom_alt'],
-        "heterozygous_variants": vcf_sample['genotypes']['het']
-    }
-
-
 def get_covstats(cov_d):
-    s_d = cov_d['covstats']['stats']['coverage']['_all']
-    tmp_d = {
+    s_d = cov_d['_all']
+    return {
         'median_coverage': s_d['median'],
         'mean_coverage': s_d['mean'],
         'modal_coverage': s_d['mode'],
@@ -56,9 +41,7 @@ def get_covstats(cov_d):
         'coverage_frac_min_30x': s_d['frac_min_30x'],
         'coverage_frac_min_40x': s_d['frac_min_40x'],
         'coverage_frac_min_50x': s_d['frac_min_50x'],
-        'determined_gender': cov_d['gender']
     }
-    return {"{0}_{1}".format(cov_d['name'], k): v for k, v in tmp_d.items()}
 
 
 if __name__ == "__main__":
@@ -72,26 +55,20 @@ if __name__ == "__main__":
 
     sdicts = []
 
-    vcfstats = orig_dict['multisample_vcfstats']
-
     for sample in orig_dict['sample_stats']:
         sname = sample['sample_name']
         sample_dict = OrderedDict()
         sample_dict.update({
             "sample_name": sname,
-            "preqc_reads": sample['pre_qc_fastq_count']['reads'],
-            "preqc_bases": sample['pre_qc_fastq_count']['bases'],
-            "postqc_reads": sample['post_qc_fastq_count']['reads'],
-            "postqc_bases": sample['post_qc_fastq_count']['bases'],
-            "mapped_reads": sample['n_mapped_reads'],
-            "mapped_bases": sample['n_mapped_bases'],
-            "usable_reads": sample['n_usable_reads'],
-            "usable_bases": sample['n_usable_bases']
+            "preqc_reads" : sample['preqc_reads'],
+            "preqc_bases" : sample['preqc_bases'],
+            "postqc_reads": sample['postqc_reads'],
+            "postqc_bases": sample['postqc_bases'],
+            "mapped_reads": int(sample['picard_AlignmentSummaryMetrics']['PF_HQ_ALIGNED_READS']),
+            "mapped_bases": int(sample['picard_AlignmentSummaryMetrics']['PF_HQ_ALIGNED_BASES'])
         })
-        sample_dict.update(get_vcf_stats(sname, vcfstats))
-        if "covstats" in sample:
-            for cov_d in sample['covstats']:
-                sample_dict.update(get_covstats(cov_d))
+        if 'coverage' in sample:
+            sample_dict.update(get_covstats(sample['coverage']))
         sdicts.append(sample_dict)
 
     lens = [len(list(x.keys())) for x in sdicts]

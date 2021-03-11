@@ -3,20 +3,32 @@ variables:
 
 .docker_before_script_anchor: &docker_before_script_anchor
   before_script:
-    - pip install -r requirements.txt
-    - pip install -r requirements-dev.txt
+    - pip3 install -r requirements.txt
+    - pip3 install -r requirements-dev.txt
+
+.singularity_before_script_anchor: &singularity_before_script_anchor
+  before_script:
+    - export BASETEMP=$RUN_BASE_DIR/$CI_COMMIT_REF_NAME/$CI_JOB_ID
+    - source ${CONDA_SH}
+    - conda activate hutspot-pipeline || conda create -n hutspot-pipeline --file requirements.txt --file requirements-dev.txt -y && conda activate hutspot-pipeline
+    - export PATH=${PATH}:${SINGULARITY_PATH}
+    - echo "#!/usr/bin/env bash" > snakemake
+    - echo "$(which snakemake) --profile slurm-test \"\$@\"" >> snakemake
+    - chmod +x snakemake
+    - export PATH=$(pwd):${PATH}
+    - hash -r
+
 
 stages:
   - sanity
   - dry-run
   - integration
-  - functional
 
 test_sanities:
   <<: *docker_before_script_anchor
   script:
-    - py.test --tag sanity
-  image: python:3.6-stretch
+    - pytest --tag sanity --workflow-threads 8
+  image: lumc/singularity-snakemake:3.5.2-5.15.0
   tags:
     - docker
   stage: sanity
@@ -24,49 +36,17 @@ test_sanities:
 test_dry_run:
   <<: *docker_before_script_anchor
   script:
-    - py.test --tag dry-run
-  image: python:3.6-stretch
+    - pytest --tag dry-run --workflow-threads 8
+  image: lumc/singularity-snakemake:3.5.2-5.15.0
   tags:
     - docker
   stage: dry-run
 
 
-# this requires a priviliged docker container.
-# most docker runners will not do this
-test_integration_singularity:
-  before_script:
-    - apt-get update && apt-get install -y python3-pip
-    - pip3 install pyfaidx
-    - pip3 install -r requirements-dev.txt
-  script:
-    - py.test --tag singularity-integration
-  image: lumc/singularity-snakemake:3.0.3-5.4.0
-  tags:
-    - docker
-  stage: integration
-
 test_integration:
-  before_script:
-    - export BASETEMP=$(mktemp -p ${RUN_BASE_DIR} -d)
+  <<: *singularity_before_script_anchor
   script:
-    - source ${CONDA_SH}
-    - conda activate hutspot-pipeline
-    - export PATH=${PATH}:${CONDA_EXTRA_PATH}
-    - py.test --tag integration --basetemp ${BASETEMP} --keep-workflow-wd
+    - pytest --tag integration --basetemp ${BASETEMP} --keep-workflow-wd --workflow-threads 8
   tags:
     - slurm
   stage: integration
-
-test_functional:
-  before_script:
-    - export BASETEMP=$(mktemp -p ${RUN_BASE_DIR} -d)
-  script:
-    - source ${CONDA_SH}
-    - conda activate hutspot-pipeline
-    - export PATH=${PATH}:${CONDA_EXTRA_PATH}
-    - py.test --tag functional --basetemp ${BASETEMP} --keep-workflow-wd
-  tags:
-    - slurm
-  stage: functional
-  only:
-    - schedules

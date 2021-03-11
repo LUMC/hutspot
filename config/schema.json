@@ -2,16 +2,32 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "description": "JSON schema for samples config for the hutspot pipeline",
     "type": "object",
-    "required": ["samples"],
+    "additionalProperties": false,
+    "required": [
+        "samples",
+        "reference",
+        "dbsnp",
+        "known_sites"
+    ],
+    "optional": [
+        "scatter_size",
+        "female_threshold",
+        "bedfile",
+        "coverage_threshold",
+        "restrict_BQSR",
+        "gatk_jar",
+        "multisample_vcf",
+        "baitsfile"
+    ],
     "properties": {
         "samples": {
             "type": "object",
             "additionalProperties": {
                 "description": "sample object",
                 "type": "object",
-                "required": ["libraries"],
+                "required": ["read_groups"],
                 "properties": {
-                    "libraries": {
+                    "read_groups": {
                         "type": "object",
                         "additionalProperties": {
                             "description": "library",
@@ -25,6 +41,52 @@
                     }
                 }
             }
-        }
+        },
+    "reference": {
+        "description": "Reference fasta file to map against",
+        "type": "string"
+    },
+    "dbsnp": {
+        "description": "VCF file to be used to annotate variants",
+        "type": "string"
+    },
+    "known_sites": {
+        "description": "VCF files of known sites, to be used to recalibrate the quality scores",
+        "type": "array",
+        "minItems": 1
+    },
+    "scatter_size": {
+        "description": "Size of the chunks to split the variant calling into",
+        "type": "integer"
+    },
+    "female_threshold": {
+        "description": "Fraction of reads between X and the autosomes to call as female",
+        "type": "number"
+    },
+    "targetsfile": {
+        "description": "Bed file of the targets of the capture kit. Used to calculate coverage",
+        "type": "string"
+    },
+    "baitsfile": {
+        "description": "Bed file of the baits of the capture kit. Used to calculate picard HsMetrics",
+        "type": "string"
+    },
+    "coverage_threshold": {
+        "description": "One or more thresholds to calculate coverage for, one bedfile per value per sample",
+        "type": "array",
+        "minItems": 1
+    },
+    "restrict_BQSR": {
+        "description": "Restrict BQSR to the listed chromosome",
+        "type": "string"
+    },
+    "multisample_vcf": {
+        "description": "Create a true multisample VCF file, in addition to the regular per-sample VCF files",
+        "type": "boolean"
+    },
+    "refflat": {
+        "description": "RefFlat file with transcripts",
+        "type": "string"
     }
+  }
 }

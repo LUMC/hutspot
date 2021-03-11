@@ -21,7 +21,7 @@ collect_stats.py
 :copyright: (c) 2017-2019 Leiden University Medical Center
 :license: AGPL-3.0
 """
-import click
+import argparse
 import json
 
 from os.path import basename
@@ -61,82 +61,44 @@ def determine_gender(covstat, fthresh):
     return "male"
 
 
-@click.command()
-@click.option("--sample-name",
-              type=click.STRING,
-              required=True,
-              help="Sample name")
-@click.option("--pre-qc-fastq",
-              type=click.Path(dir_okay=False, exists=True, readable=True),
-              required=True,
-              help="pre-qc json from fastq-count")
-@click.option("--post-qc-fastq",
-              type=click.Path(dir_okay=False, exists=True, readable=True),
-              required=True,
-              help="Post-qc json from fastq-count")
-@click.option("--mapped-num",
-              type=click.Path(dir_okay=False, exists=True, readable=True),
-              required=True,
-              help="Mapped num file")
-@click.option("--mapped-basenum",
-              type=click.Path(dir_okay=False, exists=True, readable=True),
-              required=True,
-              help="Mapped basenum file")
-@click.option("--unique-num",
-              type=click.Path(dir_okay=False, exists=True, readable=True),
-              required=True,
-              help="Unique num file")
-@click.option("--usable-basenum",
-              type=click.Path(dir_okay=False, exists=True, readable=True),
-              required=True,
-              help="Usable basenum")
-@click.option("--female-threshold",
-              type=click.FLOAT,
-              default=0.6,
-              help="Female threshold of X/all cov")
-@click.option("--fastqc-stats",
-              type=click.Path(dir_okay=False, exists=True, readable=True),
-              required=True,
-              help="Path to fastqc stats json")
-@click.argument("covstats",
-                type=click.Path(dir_okay=False, exists=True, readable=True),
-                nargs=-1)
-def main(sample_name, pre_qc_fastq, post_qc_fastq, mapped_num, mapped_basenum,
-         unique_num, usable_basenum, female_threshold, fastqc_stats, covstats):
-
-    preqcd = parse_json_file(pre_qc_fastq)
-    posqcd = parse_json_file(post_qc_fastq)
-    fastqc = parse_json_file(fastqc_stats)
-
-    mpnum = parse_num_file(mapped_num)
-    mpbnum = parse_num_file(mapped_basenum)
-    unum = parse_num_file(unique_num)
-    ubnum = parse_num_file(usable_basenum)
-
-    covl = []
-    for c in covstats:
-        cd = parse_json_file(c)
-        cdd = {
-            "name": basename(c),
-            "gender": determine_gender(cd, female_threshold),
-            "covstats": cd
-        }
-        covl.append(cdd)
+def main(args):
+    cutadapt = parse_json_file(args.cutadapt)
 
     d = {
-        "sample_name": sample_name,
-        "pre_qc_fastq_count": preqcd,
-        "post_qc_fastq_count": posqcd,
-        "n_mapped_reads": mpnum,
-        "n_mapped_bases": mpbnum,
-        "n_usable_reads": unum,
-        "n_usable_bases": ubnum,
-        "fastqc": fastqc,
-        "covstats": covl
+        "sample_name": args.sample_name,
+        "preqc_reads": cutadapt["preqc_reads"],
+        "preqc_bases": cutadapt["preqc_bases"],
+        "postqc_reads": cutadapt["postqc_reads"],
+        "postqc_bases": cutadapt["postqc_bases"]
     }
+
+    # If a covstats file was specified
+    if args.covstats:
+        # Read the json file
+        covstats = parse_json_file(args.covstats)
+
+        # Determine the gender from the coverage data
+        gender = determine_gender(covstats, args.female_threshold)
+        d['gender'] = gender
+
+        # Add the per chromosome coverage to the stats file
+        chromosome_coverage = covstats['stats']['coverage']
+        d['coverage'] = chromosome_coverage
 
     print(json.dumps(d))
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--sample-name", required=True,
+                        help="Sample name")
+    parser.add_argument("--female-threshold", default=0.6, type=float,
+                        help="Female threshold of X/all cov")
+    parser.add_argument("--cutadapt", required=True,
+                        help="Cutadapt summary output")
+    parser.add_argument("--covstats", nargs="?",
+                        help="Coverage statistics")
+
+    args = parser.parse_args()
+    main(args)

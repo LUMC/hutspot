@@ -6,8 +6,17 @@ __default__:
 align:
   threads: 8
   vmem: 4G
+bed_to_interval:
+  threads: 1
+  vmem: 16G
+hs_metrics:
+  threads: 1
+  vmem: 20G
 markdup:
-  vmem: 10G
+  vmem: 20G
+multiple_metrics:
+  threads: 1
+  vmem: 20G
 baserecal:
   threads: 8
   vmem: 6G
@@ -22,8 +31,16 @@ genotype_scatter:
 genotype_gather:
   vmem: 10G
 covstats:
-  vmem: 6G
-multiqc:
   vmem: 20G
+multiqc:
+  vmem: 30G
 split_vcf:
   vmem: 20G
+fastqc:
+  threads: 4
+  vem: 8G
+scatterregions:
+  vmem: 30G
+merge_vcf:
+  threads: 8
+  vmem: 10G
