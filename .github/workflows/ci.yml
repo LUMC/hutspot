@@ -38,29 +38,44 @@ jobs:
           - integration-two-samples
           - integration-target-baits
           - integration-bed-coverage
-          - integration-restrict_BQSR
+          - integration-restrict-BQSR
           - integration-targets-only
           - integration-multisample
-    steps:
-    - uses: actions/checkout@v2
+steps:
+- uses: actions/checkout@v2
 
-    - uses: eWaterCycle/setup-singularity@v6
+    - name: Install singularity
+      uses: eWaterCycle/setup-singularity@v6
       with:
         singularity-version: 3.6.4
 
-    - uses: conda-incubator/setup-miniconda@v2.0.1
+    - name: Cache conda environment
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-conda-environment
+        # Increase this value to reset the cache without changing
+        # environment.yml
+        cache-number: 0
+      with:
+        path: ~/conda_pkgs_dir
+        key: build-${{ env.cache-name }}-${{ env.cache-number }}-${{ hashFiles('environment.yml') }}
+
+    - name: Install miniconda
+      uses: conda-incubator/setup-miniconda@v2.0.1
       # https://github.com/conda-incubator/setup-miniconda.
+      # https://github.com/marketplace/actions/setup-miniconda
       with:
         activate-environment: hutspot
         environment-file: environment.yml
         auto-activate-base: false
+        use-only-tar-bz2: true
 
     - name: Run test in conda evironment
       # Use --symlink to limit disk usage.
       run: >-
-        pytest --keep-workflow-wd-on-fail --tag ${{ matrix.test }} --symlink tests/
+        pytest --keep-workflow-wd-on-fail --tag ${{ matrix.test }} tests/
 
-    - name: Check job stderr messages in case of failure
+    - name: Check pipeline stderr messages in case of failure
       if: ${{ failure() }}
       run: >-
         bash -c '
@@ -68,11 +83,19 @@ jobs:
           echo $file; cat $file
         done
         '
-    - name: Check job stdout messages in case of failure
+    - name: Check pipeline stdout messages in case of failure
       if: ${{ failure() }}
       run: >-
         bash -c '
         for file in $(find /tmp/pytest_workflow_* -name log.out); do
+          echo $file; cat $file
+        done
+        '
+    - name: Check all job log files in case of failure
+      if: ${{ failure() }}
+      run: >-
+        bash -c '
+        for file in $(find /tmp/pytest_workflow_*/${{ matrix.test}}/log/ -type f); do
           echo $file; cat $file
         done
         '
