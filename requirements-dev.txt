@@ -1,2 +1,0 @@
-pytest
-pytest-workflow>=1.4.0
