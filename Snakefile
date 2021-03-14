@@ -44,7 +44,7 @@ rule all:
         gvcf_tbi = expand("{s}/vcf/{s}.g.vcf.gz.tbi", s=config["samples"]),
         coverage_stats = coverage_stats,
         coverage_files = coverage_files,
-        merged_vcf = "merged_multisample.vcf.gz" if config["merge_vcf"] else []
+        multisample_vcf = "multisample.vcf.gz" if config["multisample_vcf"] else []
 
 rule create_tmp:
     """
@@ -180,7 +180,7 @@ rule baserecal:
 checkpoint scatterregions:
     """Scatter the reference genome"""
     input:
-        ref = config["reference"],
+        ref = config["reference"] + '.fai',
     output:
         directory("scatter")
     params:
@@ -188,14 +188,16 @@ checkpoint scatterregions:
     log:
         "log/scatterregions.log"
     container:
-        containers["biopet-scatterregions"]
+        containers["chunked-scatter"]
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 10000
     shell:
         "mkdir -p {output} && "
-        "biopet-scatterregions -Xmx24G "
-        "--referenceFasta {input.ref} --scatterSize {params.size} "
-        "--outputDir scatter 2> {log}"
+        "scatter-regions "
+        "--scatter-size {params.size} "
+        "--split-contigs "
+        "--prefix {output}/scatter- "
+        "{input.ref} 2> {log}"
 
 rule gvcf_scatter:
     """Run HaplotypeCaller in GVCF mode by chunk"""
@@ -523,22 +525,22 @@ rule gvcf2coverage:
     shell:
         "gvcf2coverage -t {wildcards.threshold} < {input} 2> {log} | cut -f 1,2,3 > {output}"
 
-rule merge_vcf:
-    """ Merge all vcf files into a single multisample vcf """
+rule multisample_vcf:
+    """ Generate a true multisample VCF file with all samples """
     input:
-        vcfs = expand("{sample}/vcf/{sample}.vcf.gz", sample=config["samples"])
+        gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=config["samples"]),
+        tbis = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi", sample=config["samples"]),
+        ref = config["reference"]
+    params:
+        gvcf_files = lambda wc: expand("-V {sample}/vcf/{sample}.g.vcf.gz", sample=config["samples"]),
     output:
-        "merged_multisample.vcf.gz"
+        "multisample.vcf.gz"
     log:
-        "log/merged_multisample.log"
+        "log/multisample.log"
     container:
-        containers["bcftools"]
+        containers["gatk"]
     threads:
         8
-    shell:
-        "bcftools merge --merge both "
-        "--output-type z "
-        "--output {output} "
-        "--threads 8 "
-        "{input} 2> {log} && "
-        "bcftools index --tbi --thread 8 {output}"
+    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
+           "GenotypeGVCFs -R {input.ref} "
+           "{params.gvcf_files} -o '{output}'"

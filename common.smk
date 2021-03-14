@@ -6,8 +6,8 @@ import os
 containers = {
    'bcftools': 'docker://quay.io/biocontainers/bcftools:1.9--ha228f0b_4',
    'bedtools-2.26-python-2.7': 'docker://quay.io/biocontainers/mulled-v2-3251e6c49d800268f0bc575f28045ab4e69475a6:4ce073b219b6dabb79d154762a9b67728c357edb-0',
-   'biopet-scatterregions': 'docker://quay.io/biocontainers/biopet-scatterregions:0.2--0',
    'bwa-0.7.17-samtools-1.10': 'docker://quay.io/biocontainers/mulled-v2-ad317f19f5881324e963f6a6d464d696a2825ab6:c59b7a73c87a9fe81737d5d628e10a3b5807f453-0',
+   'chunked-scatter': 'docker://quay.io/biocontainers/chunked-scatter:1.0.0--py_0',
    'cutadapt': 'docker://quay.io/biocontainers/cutadapt:2.9--py37h516909a_0',
    'debian': 'docker://debian:buster-slim',
    'fastqc': 'docker://quay.io/biocontainers/fastqc:0.11.7--4',
@@ -59,7 +59,7 @@ def process_config():
     # Set the default config values
     set_default('scatter_size', 1000000000)
     set_default('female_threshold', 0.6)
-    set_default('merge_vcf', False)
+    set_default('multisample_vcf', False)
 
     # Hide the absolute path so the snakemake linter doesn't cry about it
     set_default('gatk_jar', os.path.join(os.path.sep,'usr','GenomeAnalysisTK.jar'))
