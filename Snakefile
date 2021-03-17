@@ -80,8 +80,8 @@ rule cutadapt:
         r1 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R1']),
         r2 = lambda wc: (config['samples'][wc.sample]['read_groups'][wc.read_group]['R2'])
     output:
-        r1 = "{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz",
-        r2 = "{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz"
+        r1 = temp("{sample}/pre_process/{sample}-{read_group}_R1.fastq.gz"),
+        r2 = temp("{sample}/pre_process/{sample}-{read_group}_R2.fastq.gz")
     log:
         "{sample}/pre_process/{sample}-{read_group}.txt"
     container:
@@ -104,11 +104,11 @@ rule align:
         ref = config["reference"],
         tmp = rules.create_tmp.output
     output:
-        "{sample}/bams/{sample}-{read_group}.sorted.bam"
+        bam = temp("{sample}/bams/{sample}-{read_group}.sorted.bam"),
+        bai = temp("{sample}/bams/{sample}-{read_group}.sorted.bam.bai")
     params:
         compression_level = 1,
         rg = "@RG\\tID:{sample}-library-{read_group}\\tSM:{sample}\\tLB:library\\tPL:ILLUMINA"
-
     log:
         bwa = "log/{sample}/align.{read_group}.bwa.log",
         samtools = "log/{sample}/align.{read_group}.samtools.log"
@@ -122,13 +122,14 @@ rule align:
         "{input.r1} {input.r2} 2> {log.bwa} | "
         "samtools sort "
         "-l {params.compression_level} "
-        "- -o {output} 2> {log.samtools};"
-        "samtools index {output}"
+        "- -o {output.bam} 2> {log.samtools};"
+        "samtools index {output.bam}"
 
 rule markdup:
     """Mark duplicates in BAM file"""
     input:
         bam = sample_bamfiles,
+        bai = sample_baifiles,
         tmp = rules.create_tmp.output
     output:
         bam = "{sample}/bams/{sample}.bam",
@@ -152,6 +153,7 @@ rule baserecal:
     """Base recalibrated BAM files"""
     input:
         bam = sample_bamfiles,
+        bai = sample_baifiles,
         ref = config["reference"],
         vcfs = config["known_sites"]
     output:

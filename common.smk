@@ -99,6 +99,11 @@ def sample_bamfiles(wildcards):
         files.append(f'{sample_name}/bams/{sample_name}-{read_group}.sorted.bam')
     return files
 
+def sample_baifiles(wildcards):
+    """ Determine the bai files for a sample (one for each readgroup)
+    """
+    return [f"{bam}.bai" for bam in sample_bamfiles(wildcards)]
+
 def gather_gvcf(wildcards):
     """ Gather the gvcf files based on the scatterregions checkpoint
 

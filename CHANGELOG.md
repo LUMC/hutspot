@@ -10,6 +10,8 @@ that users understand how the changes affect the new version.
 
 v2.0.1
 ---------------------------
++ Intermediate .bam, .bai and fastq files are automatically removed when no
+longer needed.
 + Switch to using chunked-scatter
 
 v2.0.0

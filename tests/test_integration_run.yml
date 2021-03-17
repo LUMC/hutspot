@@ -46,6 +46,14 @@
         - WIDTH_OF_99_PERCENT
         - picard_AlignmentSummaryMetrics
         - picard_DuplicationMetrics
+    - path: micro/pre_process/micro-lib_01_R1.fastq.gz
+      should_exist: false
+    - path: micro/pre_process/micro-lib_01_R2.fastq.gz
+      should_exist: false
+    - path: micro/bams/bams/micro-lib_01.sorted.bam
+      should_exist: false
+    - path: micro/bams/bams/micro-lib_01.sorted.bam.bai
+      should_exist: false
 
 - name: integration-small-scatter
   tags:
