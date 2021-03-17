@@ -23,6 +23,7 @@ jobs:
           - sanity-targets-only
           - sanity-samples-overlapping-name
           - sanity-multisample
+          - sanity-example-config
 
           - dry-run-vanilla
           - dry-run-target-baits
