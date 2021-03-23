@@ -80,3 +80,9 @@
     - sanity
   command: >
     snakemake --lint --configfile tests/data/config/sample_config.json
+
+- name: sanity-example-config
+  tags:
+    - sanity
+  command: >
+    jsonschema -i config/example.json config/schema.json

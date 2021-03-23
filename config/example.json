@@ -1,31 +1,15 @@
 {
-    "samples": {
-        "sample_01": {
-            "read_groups": {
-                "lib_l1": {
-                    "R1": "1.fq.gz",
-                    "R2": "2.fq.gz"
-                },
-                "lib_l2": {
-                    "R1": "1.1.fq.gz",
-                    "R2": "1.2.fq.gz"
-                }
-            }
-        },
-        "sample_02": {
-            "read_groups": {
-                "lib_l1": {
-                    "R1": "3.1.fq.gz",
-                    "R2": "3.2.fq.gz"
-                }
-            }
+  "samples": {
+    "micro": {
+      "read_groups": {
+        "lib_01": {
+        "R1": "tests/data/fastq/micro_R1.fq.gz",
+        "R2": "tests/data/fastq/micro_R2.fq.gz"
         }
-    },
-    "reference": "/path/to/ref",
-    "dbsnp": "/path/to/vcf1",
-    "known_sites": ["/path/to/vcf1", "/path/to/vcf2"],
-    "scatter_size": 1000000000,
-    "female_threshold": 0.6,
-    "bedfile": "/path/to/bed",
-    "refflat": "/path/to/refflat"
+      }
+    }
+  },
+  "reference":"tests/data/reference/ref.fa",
+  "dbsnp": "tests/data/reference/database.vcf.gz",
+  "known_sites": ["tests/data/reference/database.vcf.gz"]
 }

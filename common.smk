@@ -99,6 +99,11 @@ def sample_bamfiles(wildcards):
         files.append(f'{sample_name}/bams/{sample_name}-{read_group}.sorted.bam')
     return files
 
+def sample_baifiles(wildcards):
+    """ Determine the bai files for a sample (one for each readgroup)
+    """
+    return [f"{bam}.bai" for bam in sample_bamfiles(wildcards)]
+
 def gather_gvcf(wildcards):
     """ Gather the gvcf files based on the scatterregions checkpoint
 
@@ -134,6 +139,24 @@ def gather_vcf_tbi(wildcards):
     """
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
     return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz.tbi",
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+def gather_multisample_vcf(wildcards):
+    """ Gather the multisample vcf files based on the scatterregions checkpoint
+    This is depends on the 'scatter_size' parameter and the reference genome
+    used
+    """
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("multisample/{i}.vcf.gz",
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+def gather_multisample_vcf_tbi(wildcards):
+    """ Gather the multisample vcf index files based on the scatterregions checkpoint
+    This is depends on the 'scatter_size' parameter and the reference genome
+    used
+    """
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("multisample/{i}.vcf.gz.tbi",
        i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
 
 def sample_cutadapt_files(wildcards):

@@ -46,6 +46,14 @@
         - WIDTH_OF_99_PERCENT
         - picard_AlignmentSummaryMetrics
         - picard_DuplicationMetrics
+    - path: micro/pre_process/micro-lib_01_R1.fastq.gz
+      should_exist: false
+    - path: micro/pre_process/micro-lib_01_R2.fastq.gz
+      should_exist: false
+    - path: micro/bams/bams/micro-lib_01.sorted.bam
+      should_exist: false
+    - path: micro/bams/bams/micro-lib_01.sorted.bam.bai
+      should_exist: false
 
 - name: integration-small-scatter
   tags:
@@ -315,5 +323,9 @@
     --jobs 1 -w 120 -r -p
     --configfile tests/data/config/sample_config_multisample.json
   files:
-    - path: 'multisample.vcf.gz'
-    - path: 'multisample.vcf.gz.tbi'
+    - path: 'multisample/multisample.vcf.gz'
+    - path: 'multisample/multisample.vcf.gz.tbi'
+    - path: 'multisample/0.vcf.gz'
+      should_exist: false
+    - path: 'multisample/0.vcf.gz.tbi'
+      should_exist: false
