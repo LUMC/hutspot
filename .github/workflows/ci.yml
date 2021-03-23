@@ -18,7 +18,7 @@ jobs:
 
           - dry-run
 
-          - integration
+          - integration-small-scatter
 
     steps:
     - uses: actions/checkout@v2
