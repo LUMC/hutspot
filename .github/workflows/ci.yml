@@ -78,3 +78,12 @@ jobs:
           echo $file; cat $file
         done
         '
+
+    - name: Check size of created files
+      if: ${{ failure() }}
+      run: >-
+        bash -c '
+        for file in $(find /tmp/pytest_workflow_*/${{ matrix.test}}/ -type f); do
+          du -sh $file
+        done
+        '
