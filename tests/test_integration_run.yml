@@ -323,5 +323,9 @@
     --jobs 1 -w 120 -r -p
     --configfile tests/data/config/sample_config_multisample.json
   files:
-    - path: 'multisample.vcf.gz'
-    - path: 'multisample.vcf.gz.tbi'
+    - path: 'multisample/multisample.vcf.gz'
+    - path: 'multisample/multisample.vcf.gz.tbi'
+    - path: 'multisample/0.vcf.gz'
+      should_exist: false
+    - path: 'multisample/0.vcf.gz.tbi'
+      should_exist: false

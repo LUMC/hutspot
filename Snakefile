@@ -44,7 +44,7 @@ rule all:
         gvcf_tbi = expand("{s}/vcf/{s}.g.vcf.gz.tbi", s=config["samples"]),
         coverage_stats = coverage_stats,
         coverage_files = coverage_files,
-        multisample_vcf = "multisample.vcf.gz" if config["multisample_vcf"] else []
+        multisample_vcf = "multisample/multisample.vcf.gz" if config["multisample_vcf"] else []
 
 rule create_tmp:
     """
@@ -278,6 +278,44 @@ rule genotype_gather:
         vcf_tbi = "{sample}/vcf/{sample}.vcf.gz.tbi"
     log:
         "log/{sample}/genotype_gather.log"
+    container:
+        containers["bcftools"]
+    shell:
+        "bcftools concat {input.vcfs} --allow-overlaps "
+        "--output {output.vcf} --output-type z 2> {log} && "
+        "bcftools index --tbi --output-file {output.vcf_tbi} {output.vcf}"
+
+rule multisample_scatter:
+    """ Generate a true multisample VCF file with all samples """
+    input:
+        gvcfs = expand("{sample}/vcf/{sample}.{{chunk}}.g.vcf.gz", sample=config["samples"]),
+        tbis = expand("{sample}/vcf/{sample}.{{chunk}}.g.vcf.gz.tbi", sample=config["samples"]),
+        ref = config["reference"]
+    params:
+        gvcf_files = lambda wc: expand("-V {sample}/vcf/{sample}.{chunk}.g.vcf.gz", sample=config["samples"], chunk=wc.chunk),
+    output:
+        multisample_vcf = temp("multisample/{chunk}.vcf.gz"),
+        multisample_tbi = temp("multisample/{chunk}.vcf.gz.tbi")
+    log:
+        "log/multisample.{chunk}.log"
+    container:
+        containers["gatk"]
+    threads:
+        8
+    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
+           "GenotypeGVCFs -R {input.ref} "
+           "{params.gvcf_files} -o {output.multisample_vcf} 2> {log}"
+
+rule multisample_gather:
+    """ Gather all multisample VCFs scatters, and join them together """
+    input:
+        vcfs = gather_multisample_vcf,
+        vcfs_tbi = gather_multisample_vcf_tbi
+    output:
+        vcf = "multisample/multisample.vcf.gz",
+        vcf_tbi = "multisample/multisample.vcf.gz.tbi"
+    log:
+        "log/multisample_gather.log"
     container:
         containers["bcftools"]
     shell:
@@ -525,23 +563,3 @@ rule gvcf2coverage:
         containers["gvcf2coverage"]
     shell:
         "gvcf2coverage -t {wildcards.threshold} < {input} 2> {log} | cut -f 1,2,3 > {output}"
-
-rule multisample_vcf:
-    """ Generate a true multisample VCF file with all samples """
-    input:
-        gvcfs = expand("{sample}/vcf/{sample}.g.vcf.gz", sample=config["samples"]),
-        tbis = expand("{sample}/vcf/{sample}.g.vcf.gz.tbi", sample=config["samples"]),
-        ref = config["reference"]
-    params:
-        gvcf_files = lambda wc: expand("-V {sample}/vcf/{sample}.g.vcf.gz", sample=config["samples"]),
-    output:
-        "multisample.vcf.gz"
-    log:
-        "log/multisample.log"
-    container:
-        containers["gatk"]
-    threads:
-        8
-    shell: "java -jar -Xmx15G -XX:ParallelGCThreads=1 /usr/GenomeAnalysisTK.jar -T "
-           "GenotypeGVCFs -R {input.ref} "
-           "{params.gvcf_files} -o '{output}'"

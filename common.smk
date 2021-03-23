@@ -141,6 +141,24 @@ def gather_vcf_tbi(wildcards):
     return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz.tbi",
        i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
 
+def gather_multisample_vcf(wildcards):
+    """ Gather the multisample vcf files based on the scatterregions checkpoint
+    This is depends on the 'scatter_size' parameter and the reference genome
+    used
+    """
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("multisample/{i}.vcf.gz",
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+def gather_multisample_vcf_tbi(wildcards):
+    """ Gather the multisample vcf index files based on the scatterregions checkpoint
+    This is depends on the 'scatter_size' parameter and the reference genome
+    used
+    """
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("multisample/{i}.vcf.gz.tbi",
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
 def sample_cutadapt_files(wildcards):
     """ Determine the cutadapt log files files for a sample (one for each
     readgroup).
