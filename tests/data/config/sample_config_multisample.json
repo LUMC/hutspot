@@ -22,6 +22,6 @@
   "known_sites": ["tests/data/reference/database.vcf.gz"],
   "targetsfile": "tests/data/reference/full_chrM.bed",
   "baitsfile":  "tests/data/reference/target_baits.bed",
-  "scatter_size": 1000,
+  "scatter_size": 8000,
   "multisample_vcf": true
 }
