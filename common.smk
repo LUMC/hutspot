@@ -12,7 +12,7 @@ containers = {
    'debian': 'docker://debian:buster-slim',
    'fastqc': 'docker://quay.io/biocontainers/fastqc:0.11.7--4',
    'gatk': 'docker://broadinstitute/gatk3:3.7-0',
-   'gvcf2coverage': 'docker://lumc/gvcf2coverage:0.1-dirty-2',
+   'gvcf2coverage': 'docker://redmar_van_den_berg/gvcf2coverage:0.1-dirty-2',
    'multiqc': 'docker://quay.io/biocontainers/multiqc:1.8--py_2',
    'picard': 'docker://quay.io/biocontainers/picard:2.22.8--0',
    'python3': 'docker://python:3.6-slim',
