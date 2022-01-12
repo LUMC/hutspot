@@ -14,35 +14,11 @@ jobs:
     strategy:
       matrix:
         test:
-          - sanity-snakemake
-          - sanity-snakemake-lint
-          - sanity-singularity
-          - sanity-no-reference
-          - sanity-reference-does-not-exist
-          - sanity-baits-only
-          - sanity-targets-only
-          - sanity-samples-overlapping-name
-          - sanity-multisample
-          - sanity-example-config
+          - sanity
 
-          - dry-run-vanilla
-          - dry-run-target-baits
-          - dry-run-bed-coverage
-          - dry-run-multisample
+          - dry-run
 
-          - integration-vanilla
           - integration-small-scatter
-          - integration-refflat
-          - integration-all-on-target
-          - integration-gene-bedfile
-          - integration-two-known-sites
-          - integration-two-readgroups
-          - integration-two-samples
-          - integration-target-baits
-          - integration-bed-coverage
-          - integration-restrict-BQSR
-          - integration-targets-only
-          - integration-multisample
 
     steps:
     - uses: actions/checkout@v2
@@ -100,5 +76,14 @@ jobs:
         bash -c '
         for file in $(find /tmp/pytest_workflow_*/${{ matrix.test}}/log/ -type f); do
           echo $file; cat $file
+        done
+        '
+
+    - name: Check size of created files
+      if: ${{ failure() }}
+      run: >-
+        bash -c '
+        for file in $(find /tmp/pytest_workflow_*/${{ matrix.test}}/ -type f); do
+          du -sh $file
         done
         '

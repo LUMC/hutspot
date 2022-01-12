@@ -12,5 +12,5 @@
   "reference":"tests/data/reference/ref.fa",
   "dbsnp": "tests/data/reference/database.vcf.gz",
   "known_sites": ["tests/data/reference/database.vcf.gz"],
-  "scatter_size": 1000
+  "scatter_size": 8000
 }

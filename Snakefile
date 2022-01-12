@@ -121,6 +121,7 @@ rule align:
         "bwa mem -t {threads} -R '{params.rg}' {input.ref} "
         "{input.r1} {input.r2} 2> {log.bwa} | "
         "samtools sort "
+        "-T {input.tmp} "
         "-l {params.compression_level} "
         "- -o {output.bam} 2> {log.samtools};"
         "samtools index {output.bam}"
