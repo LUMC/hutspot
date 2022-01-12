@@ -7,6 +7,4 @@ channels:
   - conda-forge
 dependencies:
   - pytest-workflow>=1.4.0
-  - snakemake-minimal
-  - boto3
-  - smart_open
+  - snakemake-minimal=5.31.1
