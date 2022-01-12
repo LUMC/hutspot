@@ -12,7 +12,7 @@ containers = {
    'debian': 'docker://debian:buster-slim',
    'fastqc': 'docker://quay.io/biocontainers/fastqc:0.11.7--4',
    'gatk': 'docker://broadinstitute/gatk3:3.7-0',
-   'gvcf2coverage': 'docker://lumc/gvcf2coverage:0.1-dirty-2',
+   'gvcf2coverage': 'docker://redmar_van_den_berg/gvcf2coverage:0.1-dirty-2',
    'multiqc': 'docker://quay.io/biocontainers/multiqc:1.8--py_2',
    'picard': 'docker://quay.io/biocontainers/picard:2.22.8--0',
    'python3': 'docker://python:3.6-slim',
@@ -99,6 +99,11 @@ def sample_bamfiles(wildcards):
         files.append(f'{sample_name}/bams/{sample_name}-{read_group}.sorted.bam')
     return files
 
+def sample_baifiles(wildcards):
+    """ Determine the bai files for a sample (one for each readgroup)
+    """
+    return [f"{bam}.bai" for bam in sample_bamfiles(wildcards)]
+
 def gather_gvcf(wildcards):
     """ Gather the gvcf files based on the scatterregions checkpoint
 
@@ -134,6 +139,24 @@ def gather_vcf_tbi(wildcards):
     """
     checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
     return expand("{{sample}}/vcf/{{sample}}.{i}.vcf.gz.tbi",
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+def gather_multisample_vcf(wildcards):
+    """ Gather the multisample vcf files based on the scatterregions checkpoint
+    This is depends on the 'scatter_size' parameter and the reference genome
+    used
+    """
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("multisample/{i}.vcf.gz",
+       i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
+
+def gather_multisample_vcf_tbi(wildcards):
+    """ Gather the multisample vcf index files based on the scatterregions checkpoint
+    This is depends on the 'scatter_size' parameter and the reference genome
+    used
+    """
+    checkpoint_output = checkpoints.scatterregions.get(**wildcards).output[0]
+    return expand("multisample/{i}.vcf.gz.tbi",
        i=glob_wildcards(os.path.join(checkpoint_output, 'scatter-{i}.bed')).i)
 
 def sample_cutadapt_files(wildcards):

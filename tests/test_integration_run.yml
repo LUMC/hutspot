@@ -46,6 +46,14 @@
         - WIDTH_OF_99_PERCENT
         - picard_AlignmentSummaryMetrics
         - picard_DuplicationMetrics
+    - path: micro/pre_process/micro-lib_01_R1.fastq.gz
+      should_exist: false
+    - path: micro/pre_process/micro-lib_01_R2.fastq.gz
+      should_exist: false
+    - path: micro/bams/bams/micro-lib_01.sorted.bam
+      should_exist: false
+    - path: micro/bams/bams/micro-lib_01.sorted.bam.bai
+      should_exist: false
 
 - name: integration-small-scatter
   tags:
@@ -63,7 +71,7 @@
       - rror
   files:
     - path: scatter/scatter-0.bed
-    - path: scatter/scatter-15.bed
+    - path: scatter/scatter-1.bed
     - path: micro/vcf/micro.vcf.gz.tbi
     - path: micro/vcf/micro.vcf.gz
       contains_regex:
@@ -71,14 +79,14 @@
         - 'chrM\t263\t.\tA\tG\t323.*GT:AD:DP:GQ:PL\t1/1:0,108:108:99:3267,323,0'
         - 'chrM\t4745\t.\tA\tG\t56.*GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,134:135:99:1|1:4745_A_G:5718,407,0'
         - 'chrM\t4769\t.\tA\tG\t5182.*GT:AD:DP:GQ:PGT:PID:PL\t1/1:1,120:121:99:1|1:4745_A_G:5211,363,0'
-        - 'chrM\t16023\t.\tG\tA\t.*GT:AD:DP:GQ:PL\t0/1:75,74:'
+        - 'chrM\t16023\t.\tG\tA\t.*GT:AD:DP:GQ:PL\t0/1:74,74:'
     - path: micro/vcf/micro.g.vcf.gz
       contains:
         - "chrM\t1\t.\tG\t<NON_REF>\t.\t.\tEND=151\tGT:DP:GQ:MIN_DP:PL\t0/0:164:99:137:0,120,1800"
         - "chrM\t16560\t.\tC\t<NON_REF>\t.\t.\tEND=16569\tGT:DP:GQ:MIN_DP:PL\t0/0:195:0:187:0,0,0"
       contains_regex:
         - 'chrM\t152\t.\tT\tC,<NON_REF>\t3960.*GT:AD:DP:GQ:PL:SB\t1/1:0,130,0:130:99:3989,388,0,3989,388,3989:0,0,47,83'
-        - 'chrM\t16023\t.\tG\tA,<NON_REF>\t.*GT:AD:DP:GQ:PL:SB\t0/1:75,74,0:'
+        - 'chrM\t16023\t.\tG\tA,<NON_REF>\t.*GT:AD:DP:GQ:PL:SB\t0/1:74,74,0:'
     - path: micro/vcf/micro.g.vcf.gz.tbi
     - path: micro/vcf/micro.0.vcf.gz
       should_exist: false
@@ -315,5 +323,9 @@
     --jobs 1 -w 120 -r -p
     --configfile tests/data/config/sample_config_multisample.json
   files:
-    - path: 'multisample.vcf.gz'
-    - path: 'multisample.vcf.gz.tbi'
+    - path: 'multisample/multisample.vcf.gz'
+    - path: 'multisample/multisample.vcf.gz.tbi'
+    - path: 'multisample/0.vcf.gz'
+      should_exist: false
+    - path: 'multisample/0.vcf.gz.tbi'
+      should_exist: false

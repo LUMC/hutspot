@@ -64,4 +64,4 @@
   stdout:
     contains:
       - Job counts
-      - rule multisample_vcf
+      - rule multisample_gather
